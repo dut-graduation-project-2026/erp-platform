@@ -11,7 +11,7 @@ Include context, motivation, and any important implementation details.
 
 _Select all that apply:_
 
-- [ ] Documentation (updates to the documentation, readme or JSdoc annotations)
+- [ ] Documentation (updates to the documentation)
 - [ ] Bug fix (a non-breaking change that fixes an issue)
 - [ ] Enhancement (improving an existing functionality like performance)
 - [ ] New feature (a non-breaking change that adds functionality)
@@ -26,8 +26,8 @@ _Select all that apply:_
 
 Briefly list the main changes:
 
--
--  
+- Change 1
+- Change 2
 
 ## Testing
 
