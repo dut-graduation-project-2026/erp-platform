@@ -14,7 +14,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-backend}",
+          "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-backend}"
         ]
 volumes:
   postgres_data:
