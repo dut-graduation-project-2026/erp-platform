@@ -4,3 +4,13 @@ spring:
   devtools:
     restart:
       enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+cookie:
+  secure: false
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
