@@ -1,6 +1,6 @@
 "use client";
 
-import LoginForm, { LoginFormValues } from "@/components/auth/login/LoginForm";
+import LoginForm, { LoginFormValues } from "@/features/auth/components/auth/login/LoginForm";
 import { useLogin } from "@/hooks/useAuth";
 
 const LoginPage = () => {

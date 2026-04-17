@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth as useAuthContext } from '@/contexts/AuthContext';
+import { useAuthStore } from '@/store/use-auth-store';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/useToast';
+import { login as loginApi, getCurrentUser, getUserOrganizations } from '@/services/authService';
 
 interface UseLoginReturn {
   loading: boolean;
@@ -12,7 +13,7 @@ interface UseLoginReturn {
 
 export const useLogin = (): UseLoginReturn => {
   const [loading, setLoading] = useState(false);
-  const { login } = useAuthContext();
+  const { setUser, setOrganizations } = useAuthStore();
   const { toastError } = useToast();
   const router = useRouter();
 
@@ -20,8 +21,12 @@ export const useLogin = (): UseLoginReturn => {
     setLoading(true);
 
     try {
-      await login(email, password);
-      router.push('/dashboard');
+      await loginApi({ email, password });
+      const user = await getCurrentUser();
+      const organizations = await getUserOrganizations();
+      setUser(user);
+      setOrganizations(organizations);
+      router.push('/select-org');
     } catch (err: unknown) {
       toastError(err, 'Sign in failed');
     } finally {
@@ -33,16 +38,14 @@ export const useLogin = (): UseLoginReturn => {
 };
 
 export const useRequireAuth = () => {
-  const { isAuthenticated, isLoading } = useAuthContext();
+  const { user } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!user) {
       router.push('/login');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [user, router]);
 
-  return { isAuthenticated, isLoading };
+  return { isAuthenticated: !!user };
 };
-
-export { useAuthContext as useAuth };
