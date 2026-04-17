@@ -43,6 +43,9 @@ public class Permission {
   @Column(name = "id", nullable = false, updatable = false)
   private UUID id;
 
+  @Column(name = "description", length = 500)
+  private String description;
+
   @Column(name = "name", nullable = false, length = 255)
   private String name;
 

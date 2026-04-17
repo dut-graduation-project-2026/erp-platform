@@ -4,8 +4,10 @@ spring:
   devtools:
     restart:
       enabled: true
-cookie:
-  secure: false
+app:
+  cookie:
+    secure: false
+    same-site: lax
 springdoc:
   api-docs:
     enabled: true

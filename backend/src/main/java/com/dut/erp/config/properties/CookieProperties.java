@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
-@ConfigurationProperties(prefix = "cookie")
+@ConfigurationProperties(prefix = "app.cookie")
 public record CookieProperties(
     @NotNull(message = "Cookie secure flag is required") Boolean secure,
     @NotNull(message = "Cookie httpOnly flag is required") Boolean httpOnly) {}

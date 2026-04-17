@@ -41,9 +41,11 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
   private Exception createExceptionFromErrorCode(
       ErrorCode errorCode, AuthenticationException fallback) {
     if (errorCode == null) {
+          log.debug("Creating exception for JWT error code: {}", errorCode);
       return fallback;
     }
 
+    log.debug("Creating exception for JWT error code: {}", errorCode);
     return switch (errorCode) {
       case TOKEN_EXPIRED -> new UnauthorizedAccessException("Authentication token has expired");
       case INVALID_TOKEN -> new UnauthorizedAccessException("Authentication token is invalid");

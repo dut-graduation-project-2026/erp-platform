@@ -8,17 +8,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
-
   @Query(
       """
           SELECT DISTINCT u
           FROM User u
           LEFT JOIN FETCH u.roles r
-          LEFT JOIN FETCH r.permissions p
-          LEFT JOIN FETCH p.actions
           WHERE u.id = :id
       """)
-  Optional<User> findByIdWithFullRoles(@Param("id") UUID userId);
+  Optional<User> findByIdWithRole(@Param("id") UUID userId);
 
   Optional<User> findByEmail(String email);
 

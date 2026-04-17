@@ -8,9 +8,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -53,6 +56,10 @@ public class Organization {
 
   @Column(name = "avatar_url")
   String avatarUrl;
+
+  @ManyToMany(mappedBy = "organizations", fetch = FetchType.LAZY)
+  @Builder.Default
+  Set<User> users = new HashSet<>();
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)

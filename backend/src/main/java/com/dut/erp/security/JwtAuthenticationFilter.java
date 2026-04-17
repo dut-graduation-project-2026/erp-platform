@@ -54,6 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private Optional<Claims> validateAndGetClaims(String token, HttpServletRequest request) {
     try {
+      log.debug("Validating JWT from path={}", request.getRequestURI());
       return Optional.of(jwtUtils.parseAndValidateAccessToken(token));
     } catch (ExpiredJwtException e) {
       log.debug("Expired access token on path={}", request.getRequestURI());
@@ -78,7 +79,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private Optional<User> getValidUser(String userIdString, HttpServletRequest request) {
     try {
       UUID userId = UUID.fromString(userIdString);
-      Optional<User> userOpt = userRepository.findByIdWithFullRoles(userId);
+      Optional<User> userOpt = userRepository.findByIdWithRole(userId);
       if (userOpt.isEmpty()) {
         log.warn("No user found for valid token: userId={}", userIdString);
         request.setAttribute(RequestAttributeKeys.JWT_ERROR, ErrorCode.USER_NOT_FOUND);
