@@ -5,6 +5,13 @@ export interface ApiResponse<T> {
   errors?: string[];
 }
 
+export interface ErrorResponse {
+  success: false;
+  message: string;
+  statusCode: number;
+  errors?: Record<string, string[]>; // Field-specific errors from Spring Boot validation
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;

@@ -29,6 +29,7 @@ public class CookieUtils {
     return ResponseCookie.from(name, value)
         .httpOnly(cookieProperties.httpOnly())
         .secure(cookieProperties.secure())
+        .sameSite("Lax") // Allow cross-site requests for development (localhost:3000 to localhost:8080)
         .path(path)
         .maxAge(maxAge)
         .build();

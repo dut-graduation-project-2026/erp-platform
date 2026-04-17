@@ -1,11 +1,20 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <main className="min-h-screen w-screen overflow-x-hidden">
       <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-2">
         {/* Left Section - Brand & Hero */}
-        <section className="relative hidden min-h-screen flex-col justify-between overflow-hidden bg-[url('/auth-bg.jpg')] bg-cover bg-center px-6 py-8 text-white lg:flex lg:px-12 lg:py-16">
+        <section className="relative hidden min-h-screen flex-col justify-between overflow-hidden bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 px-6 py-8 text-white lg:flex lg:px-12 lg:py-16">
+          <Image
+            src="/auth-bg.jpg"
+            alt="ERP Platform Background"
+            fill
+            priority
+            sizes="(max-width: 1024px) 0vw, 50vw" // Sửa lỗi missing sizes
+            className="object-cover" // Đảm bảo ảnh không bị méo
+          />
           {/* Overlay */}
           <div
             className="absolute inset-0 bg-[rgba(17,17,17,0.65)]"

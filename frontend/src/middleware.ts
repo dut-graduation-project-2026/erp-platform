@@ -1,27 +1,73 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/**
+ * Middleware for Authentication & Authorization
+ * 🟠 BƯỚC 4: DUY TRÌ PHIÊN & BẢO MẬT (MIDDLEWARE)
+ * 
+ * Chức năng:
+ * 1. Check access_token cookie trước khi cho phép access
+ * 2. Validate userRole cookie để đảm bảo đúng route cho role
+ * 3. Validate currentOrgId cho org-specific routes
+ * 4. Validate orgId nằm trong userOrgIds của user
+ */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if accessing org-specific routes
-  const orgRouteMatch = pathname.match(/^\/([^\/]+)(\/.*)?$/);
-  if (orgRouteMatch && !pathname.startsWith('/login') && !pathname.startsWith('/register') && !pathname.startsWith('/select-org')) {
-    const orgId = orgRouteMatch[1];
+  // Public routes - không cần auth
+  if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+    return NextResponse.next();
+  }
 
-    // Check if access token exists (HttpOnly cookie)
-    const accessToken = request.cookies.get('accessToken');
-    if (!accessToken) {
-      return NextResponse.redirect(new URL('/login', request.url));
+  // 🟠 BƯỚC 4.1: Check access token (HttpOnly cookie từ backend)
+  const accessToken = request.cookies.get('access_token');
+
+  // Protected routes - cần login
+  if (!accessToken) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // 🟠 BƯỚC 4.2: System Admin routes - /administration/...
+  if (pathname.startsWith('/administration')) {
+    const userRole = request.cookies.get('userRole');
+    
+    // Check nếu user là system_admin
+    if (userRole?.value !== 'system_admin') {
+      return NextResponse.redirect(new URL('/onboarding/select-org', request.url));
     }
+    
+    return NextResponse.next();
+  }
 
-    // For org routes, check if currentOrgId is set
-    const currentOrgId = request.cookies.get('currentOrgId');
-    if (!currentOrgId || currentOrgId.value !== orgId) {
-      return NextResponse.redirect(new URL('/select-org', request.url));
+  // 🟠 BƯỚC 4.3: Onboarding routes - /onboarding/select-org
+  if (pathname.startsWith('/onboarding')) {
+    return NextResponse.next();
+  }
+
+  // 🟠 BƯỚC 4.4: Dashboard routes - /dashboard/[orgId]/...
+  if (pathname.startsWith('/dashboard')) {
+    const orgRouteMatch = pathname.match(/^\/dashboard\/([^\/]+)(\/.*)?$/);
+    
+    if (orgRouteMatch) {
+      const orgId = orgRouteMatch[1];
+      
+      // Check nếu currentOrgId cookie match với route param
+      const currentOrgId = request.cookies.get('currentOrgId');
+      if (!currentOrgId || currentOrgId.value !== orgId) {
+        return NextResponse.redirect(new URL('/onboarding/select-org', request.url));
+      }
+
+      // Check nếu orgId nằm trong userOrgIds của user
+      const userOrgIds = request.cookies.get('userOrgIds')?.value?.split(',') || [];
+      if (!userOrgIds.includes(orgId)) {
+        return NextResponse.redirect(new URL('/onboarding/select-org', request.url));
+      }
+      
+      return NextResponse.next();
     }
   }
 
+  // Default: allow access if token exists
   return NextResponse.next();
 }
 
@@ -33,7 +79,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public assets (png, jpg, svg, etc)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -1,7 +1,7 @@
 import { useAuthStore } from "@/store/use-auth-store";
 
 export const usePermissions = () => {
-  const { user, organizations, currentOrgId } = useAuthStore();
+  const { organizations, currentOrgId } = useAuthStore();
 
   const currentOrg = organizations.find(org => org.id === currentOrgId);
 

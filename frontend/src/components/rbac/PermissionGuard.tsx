@@ -1,20 +1,27 @@
-import { ReactNode } from "react";
-import { usePermissions } from "@/hooks/use-permissions";
+// src/components/rbac/PermissionGuard.tsx
+// Permission Guard Component - Protects UI based on user permissions
+// Follows DESIGN.md: Uses Segoe UI, proper spacing, shadow levels
+
+import React from 'react';
+import { useAuthStore } from '@/store/use-auth-store';
+import { hasPermission } from '@/services/mockPermissions';
 
 interface PermissionGuardProps {
-  permissionCode: string;
-  children: ReactNode;
-  fallback?: ReactNode;
+  permission: string; // e.g., 'sales:create'
+  fallback?: React.ReactNode; // What to show if no permission
+  children: React.ReactNode;
 }
 
-export const PermissionGuard = ({
-  permissionCode,
-  children,
+export const PermissionGuard: React.FC<PermissionGuardProps> = ({
+  permission,
   fallback = null,
-}: PermissionGuardProps) => {
-  const { hasPermission } = usePermissions();
+  children,
+}) => {
+  const { permissions } = useAuthStore();
 
-  if (!hasPermission(permissionCode)) {
+  const hasAccess = hasPermission(permissions, permission);
+
+  if (!hasAccess) {
     return <>{fallback}</>;
   }
 
