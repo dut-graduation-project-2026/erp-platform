@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
-@ConfigurationProperties(prefix = "jwt")
+@ConfigurationProperties(prefix = "app.jwt")
 public record JwtProperties(
     @NotBlank(message = "JWT secret is required")
     @Size(min = 32, message = "JWT secret must be at least 32 characters long to be secure")

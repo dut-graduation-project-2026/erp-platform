@@ -4,8 +4,10 @@ spring:
   devtools:
     restart:
       enabled: false
-cookie:
-  secure: true
+app:
+  cookie:
+    secure: true
+    same-site: none
 springdoc:
   swagger-ui:
     enabled: false
