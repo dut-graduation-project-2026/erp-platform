@@ -47,8 +47,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
       case MISSING_TOKEN -> new UnauthorizedAccessException(ErrorCode.MISSING_TOKEN.getMessage());
       case TOKEN_EXPIRED -> new UnauthorizedAccessException(ErrorCode.TOKEN_EXPIRED.getMessage());
       case INVALID_TOKEN -> new UnauthorizedAccessException(ErrorCode.INVALID_TOKEN.getMessage());
-      case USER_NOT_FOUND ->
-          new UnauthorizedAccessException("User not found for provided authentication token");
       default -> fallback;
     };
   }

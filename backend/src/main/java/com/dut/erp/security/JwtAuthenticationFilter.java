@@ -86,7 +86,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       Optional<User> userOpt = userRepository.findByIdWithRole(userId);
       if (userOpt.isEmpty()) {
         log.warn("No user found for valid token: userId={}", userIdString);
-        request.setAttribute(RequestAttributeKeys.JWT_ERROR, ErrorCode.USER_NOT_FOUND);
+        request.setAttribute(RequestAttributeKeys.JWT_ERROR, ErrorCode.INVALID_TOKEN);
       }
       return userOpt;
     } catch (IllegalArgumentException e) {
