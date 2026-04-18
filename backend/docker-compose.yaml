@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: postgres-container
     environment:
-      POSTGRES_DB: ${DB_NAME:-backenderp}
+      POSTGRES_DB: ${DB_NAME:-backend}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
@@ -14,7 +14,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-backend}",
+          "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-backend}"
         ]
       interval: 10s
       timeout: 5s
