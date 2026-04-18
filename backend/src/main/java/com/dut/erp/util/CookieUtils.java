@@ -29,6 +29,7 @@ public class CookieUtils {
     return ResponseCookie.from(name, value)
         .httpOnly(cookieProperties.httpOnly())
         .secure(cookieProperties.secure())
+        .sameSite(cookieProperties.sameSite())
         .path(path)
         .maxAge(maxAge)
         .build();

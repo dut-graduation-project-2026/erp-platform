@@ -6,6 +6,7 @@ import com.dut.erp.dto.request.LoginRequest;
 import com.dut.erp.dto.request.RegisterRequest;
 import com.dut.erp.dto.response.AuthResponse;
 import com.dut.erp.entity.User;
+import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.UnauthorizedAccessException;
 import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.InvalidatedAccessTokenRepository;
@@ -78,7 +79,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     if (userRepository.existsByEmail(request.email())) {
       log.warn("Registration failed: email already in use: {}", request.email());
-      throw new UnauthorizedAccessException(
+      throw new ResourceAlreadyExistsException(
           "Registration failed.", Map.of("email", List.of("Email is already registered.")));
     }
 

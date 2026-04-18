@@ -1,14 +1,11 @@
 package com.dut.erp.config;
 
-import com.dut.erp.config.properties.CookieProperties;
 import com.dut.erp.config.properties.CorsProperties;
-import com.dut.erp.config.properties.JwtProperties;
-import com.dut.erp.security.AuthenticationAccessDeniedhandler;
+import com.dut.erp.security.AuthenticationAccessDeniedHandler;
 import com.dut.erp.security.CustomAuthenticationEntryPoint;
 import com.dut.erp.security.JwtAuthenticationFilter;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -28,11 +25,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
-@EnableConfigurationProperties(
-    value = {CorsProperties.class, CookieProperties.class, JwtProperties.class})
 public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
-  private final AuthenticationAccessDeniedhandler authenticationAccessDeniedHandler;
+  private final AuthenticationAccessDeniedHandler authenticationAccessDeniedHandler;
   private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
   private final CorsProperties corsProperties;
@@ -44,7 +39,7 @@ public class SecurityConfig {
   private static final String[] ALLOWED_CORS_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS"};
 
   private static final String[] ALLOWED_CORS_HEADERS = {
-    "Content-Type", "X-Requested-With", "Accept"
+    "Content-Type", "X-Requested-With", "Accept", "Authorization", "X-CSRF-Token"
   };
 
   @Bean

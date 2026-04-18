@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -23,6 +24,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AuthenticationException.class)
   public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
     return buildErrorResponse(ErrorCode.UNAUTHORIZED, null, null);
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+    return buildErrorResponse(ErrorCode.FORBIDDEN, null, null);
   }
 
   @ExceptionHandler({
@@ -57,7 +63,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception ex) {
-    log.error("Unexpected error: {}", ex);
+    log.error("Unexpected error", ex);
     return buildErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR, null, null);
   }
 

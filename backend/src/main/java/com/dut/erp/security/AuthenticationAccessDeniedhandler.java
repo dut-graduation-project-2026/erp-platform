@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Component
-public class AuthenticationAccessDeniedhandler implements AccessDeniedHandler {
+public class AuthenticationAccessDeniedHandler implements AccessDeniedHandler {
   private final HandlerExceptionResolver handlerExceptionResolver;
 
-  public AuthenticationAccessDeniedhandler(
+  public AuthenticationAccessDeniedHandler(
       @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
     this.handlerExceptionResolver = resolver;
   }

@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -26,7 +27,13 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "roles")
+@Table(
+    name = "roles",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uk_roles_organization_name",
+          columnNames = {"organization_id", "name"})
+    })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,7 +47,7 @@ public class Role {
   @Column(name = "id", nullable = false, updatable = false)
   UUID id;
 
-  @Column(name = "name", nullable = false, length = 50, unique = true)
+  @Column(name = "name", nullable = false, length = 50)
   String name;
 
   @ManyToOne(fetch = FetchType.LAZY)

@@ -37,8 +37,8 @@ databaseChangeLog:
                   type: UUID
         - addUniqueConstraint:
             tableName: roles
-            columnNames: name
-            constraintName: uk_roles_name
+            columnNames: organization_id, name
+            constraintName: uk_roles_organization_name
         - addForeignKeyConstraint:
             constraintName: fk_roles_organization
             baseTableName: roles
