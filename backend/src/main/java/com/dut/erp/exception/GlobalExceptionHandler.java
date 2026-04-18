@@ -31,11 +31,13 @@ public class GlobalExceptionHandler {
     HttpRequestMethodNotSupportedException.class
   })
   public ResponseEntity<ErrorResponse> handleNotFoundException(Exception ex) {
+    log.warn("Resource not found: {}", ex.getMessage());
     return buildErrorResponse(ErrorCode.RESOURCE_NOT_FOUND, null, null);
   }
 
   @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
   public ResponseEntity<ErrorResponse> handleValidationException(BindException ex) {
+    log.warn("Validation failed: {}", ex.getMessage());
     Map<String, List<String>> details =
         ex.getBindingResult().getFieldErrors().stream()
             .collect(
@@ -49,6 +51,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(BaseException.class)
   public ResponseEntity<ErrorResponse> handleBusinessException(BaseException ex) {
+    log.warn("Business error: {}", ex.getMessage());
     return buildErrorResponse(ex.getErrorCode(), ex.getMessage(), ex.getDetails());
   }
 
