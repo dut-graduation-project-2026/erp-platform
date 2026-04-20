@@ -83,7 +83,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private Optional<User> getValidUser(String userIdString, HttpServletRequest request) {
     try {
       UUID userId = UUID.fromString(userIdString);
-      Optional<User> userOpt = userRepository.findByIdWithRole(userId);
+      Optional<User> userOpt = userRepository.findByIdWithRoles(userId);
       if (userOpt.isEmpty()) {
         log.warn("No user found for valid token: userId={}", userIdString);
         request.setAttribute(RequestAttributeKeys.JWT_ERROR, ErrorCode.INVALID_TOKEN);

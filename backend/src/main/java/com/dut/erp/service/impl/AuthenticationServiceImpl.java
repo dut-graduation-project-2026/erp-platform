@@ -20,8 +20,6 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -48,22 +46,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   @Transactional
   public AuthResponse login(LoginRequest request) {
     log.info("Login attempt for email: {}", request.email());
-    User user =
-        userRepository
-            .findByEmail(request.email())
-            .orElseThrow(
-                () -> {
-                  log.warn("Login failed: user not found for email: {}", request.email());
-                  return new UnauthorizedAccessException(
-                      "Invalid credentials.",
-                      Map.of("email", List.of("No user found with this email.")));
-                });
 
-    if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-      log.warn("Login failed: incorrect password for email: {}", request.email());
-      throw new UnauthorizedAccessException(
-          "Invalid credentials.",
-          Map.of("password", List.of("The provided password is incorrect.")));
+    User user = userRepository.findByEmail(request.email()).orElse(null);
+
+    if (user == null || !passwordEncoder.matches(request.password(), user.getPassword())) {
+      if (user == null) {
+        log.warn("Login failed: user not found for email: {}", request.email());
+      } else {
+        log.warn("Login failed: incorrect password for email: {}", request.email());
+      }
+      throw new UnauthorizedAccessException("Invalid email or password.");
     }
 
     TokenPair tokens = generateTokens(user);
@@ -77,10 +69,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   public AuthResponse register(RegisterRequest request) {
     log.info("Register attempt for email: {}", request.email());
 
-    if (userRepository.existsByEmail(request.email())) {
+    boolean emailExists = userRepository.existsByEmail(request.email());
+
+    if (emailExists) {
       log.warn("Registration failed: email already in use: {}", request.email());
       throw new ResourceAlreadyExistsException(
-          "Registration failed.", Map.of("email", List.of("Email is already registered.")));
+          "An account with this email may already exist. Please try logging in or use a different"
+              + " email.");
     }
 
     User user =

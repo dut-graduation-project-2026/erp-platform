@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -42,10 +43,21 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
-  public ResponseEntity<ErrorResponse> handleValidationException(BindException ex) {
+  public ResponseEntity<ErrorResponse> handleValidationException(Exception ex) {
     log.warn("Validation failed: {}", ex.getMessage());
+
+    BindingResult bindingResult = null;
+
+    if (ex instanceof MethodArgumentNotValidException methodEx) {
+      bindingResult = methodEx.getBindingResult();
+    } else if (ex instanceof BindException bindEx) {
+      bindingResult = bindEx.getBindingResult();
+    } else {
+      return buildErrorResponse(ErrorCode.VALIDATION_FAILED, "Validation error", null);
+    }
+
     Map<String, List<String>> details =
-        ex.getBindingResult().getFieldErrors().stream()
+        bindingResult.getFieldErrors().stream()
             .collect(
                 Collectors.groupingBy(
                     FieldError::getField,
