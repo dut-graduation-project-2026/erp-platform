@@ -21,7 +21,7 @@ public class OrganizationController {
   public ResponseEntity<List<OrganizationResponse>> getOrganizationOfCurrentUser(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     List<OrganizationResponse> organizationResponses =
-        organizationService.getOrganizationByUserId(userDetails.getId());
+        organizationService.getOrganizationsByUserId(userDetails.getId());
     return ResponseEntity.ok(organizationResponses);
   }
 }

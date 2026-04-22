@@ -23,7 +23,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<OrganizationResponse> getOrganizationByUserId(UUID userId) {
+  public List<OrganizationResponse> getOrganizationsByUserId(UUID userId) {
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }

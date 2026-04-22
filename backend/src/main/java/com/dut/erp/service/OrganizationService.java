@@ -5,5 +5,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface OrganizationService {
-  List<OrganizationResponse> getOrganizationByUserId(UUID userId);
+  List<OrganizationResponse> getOrganizationsByUserId(UUID userId);
 }

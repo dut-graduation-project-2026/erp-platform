@@ -44,18 +44,22 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
     log.warn("Illegal argument: {}", ex.getMessage());
-    return buildResponse(ErrorCode.VALIDATION_FAILED);
+    return buildResponse(ErrorCode.VALIDATION_FAILED, ex.getMessage(), null);
   }
 
   // ============ Not Found Exceptions ============
-  @ExceptionHandler({
-    NoHandlerFoundException.class,
-    NoResourceFoundException.class,
-    HttpRequestMethodNotSupportedException.class
-  })
+  @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
   public ResponseEntity<ErrorResponse> handleNotFoundException(Exception ex) {
     log.warn("Resource not found: {}", ex.getMessage());
     return buildResponse(ErrorCode.RESOURCE_NOT_FOUND);
+  }
+
+  // =========== Method Not Allowed ============
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<ErrorResponse> handleMethodNotAllowed(
+      HttpRequestMethodNotSupportedException ex) {
+    log.warn("Method not allowed: {}", ex.getMessage());
+    return buildResponse(ErrorCode.METHOD_NOT_ALLOWED);
   }
 
   // ============ Business Exceptions ============
