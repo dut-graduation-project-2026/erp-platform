@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -19,5 +20,5 @@ public interface OrganizationRepository extends JpaRepository<Organization, UUID
       JOIN o.users u
       WHERE u.id = :userId
       """)
-  List<Organization> findAllWithUserId(UUID userId);
+  List<Organization> findAllWithUserId(@Param("userId") UUID userId);
 }
