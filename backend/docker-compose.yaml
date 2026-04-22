@@ -16,6 +16,29 @@ services:
           "CMD-SHELL",
           "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-backend}"
         ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  spring-boot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spring-boot-container
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-backend}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local

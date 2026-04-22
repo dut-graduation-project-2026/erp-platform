@@ -1,1 +1,4 @@
-databaseChangeLog: []
+databaseChangeLog:
+  - includeAll:
+      path: classpath:db/changelog/changes
+      endsWithFilter: .yaml
