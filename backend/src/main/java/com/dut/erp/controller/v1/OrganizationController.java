@@ -18,7 +18,7 @@ public class OrganizationController {
   private final OrganizationService organizationService;
 
   @GetMapping("/me")
-  public ResponseEntity<List<OrganizationResponse>> getOrganizationOfCurrentUser(
+  public ResponseEntity<List<OrganizationResponse>> getOrganizationsOfCurrentUser(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     List<OrganizationResponse> organizationResponses =
         organizationService.getOrganizationsByUserId(userDetails.getId());
