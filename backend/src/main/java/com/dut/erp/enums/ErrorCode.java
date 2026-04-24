@@ -25,7 +25,10 @@ public enum ErrorCode {
   RESOURCE_ALREADY_EXISTS(HttpStatus.CONFLICT, "Resource already exists."),
 
   // 500 Internal Server Error
-  INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error.");
+  INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error."),
+
+  // 405 Method Not Allowed
+  METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed.");
 
   private final HttpStatus status;
   private final String message;
