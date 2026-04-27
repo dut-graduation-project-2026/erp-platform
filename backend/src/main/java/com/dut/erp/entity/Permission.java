@@ -12,7 +12,6 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,13 +30,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(
-    name = "roles",
-    uniqueConstraints = {
-      @UniqueConstraint(
-          name = "uk_roles_organization_name",
-          columnNames = {"organization_id", "name"})
-    })
+@Table(name = "permissions")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,26 +38,31 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @EntityListeners(AuditingEntityListener.class)
-public class Role {
+public class Permission {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = "id", nullable = false, updatable = false)
-  UUID id;
+  private UUID id;
 
-  @Column(name = "name", nullable = false, length = 50)
-  String name;
+  @Column(name = "description", length = 500)
+  private String description;
+
+  @Column(name = "name", nullable = false, length = 255)
+  private String name;
+
+  @Column(name = "resource", nullable = false, length = 255)
+  private String resource;
+
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "permission_actions",
+      joinColumns = @JoinColumn(name = "permission_id"),
+      inverseJoinColumns = @JoinColumn(name = "action_id"))
+  @Builder.Default
+  Set<Action> actions = new HashSet<>();
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "organization_id", nullable = false)
   Organization organization;
-
-  @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "role_permissions",
-      joinColumns = @JoinColumn(name = "role_id"),
-      inverseJoinColumns = @JoinColumn(name = "permission_id"))
-  @Builder.Default
-  Set<Permission> permissions = new HashSet<>();
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)

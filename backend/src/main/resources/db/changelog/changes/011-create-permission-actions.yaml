@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-create-permission-actions-table
+      author: copilot
+      changes:
+        - createTable:
+            tableName: permission_actions
+            columns:
+              - column:
+                  name: permission_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: permission_actions
+            columnNames: permission_id, action_id
+            constraintName: pk_permission_actions
+        - addForeignKeyConstraint:
+            constraintName: fk_permission_actions_permission
+            baseTableName: permission_actions
+            baseColumnNames: permission_id
+            referencedTableName: permissions
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_permission_actions_action
+            baseTableName: permission_actions
+            baseColumnNames: action_id
+            referencedTableName: actions
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
