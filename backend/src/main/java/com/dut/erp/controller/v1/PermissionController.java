@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,8 +38,6 @@ public class PermissionController {
       summary = "Get organization permission catalog",
       description = "Returns all permissions defined in the organization.")
   @GetMapping
-  @PreAuthorize(
-      "@securityService.hasAuthority(#userDetails.id, #organizationId, 'PERMISSION:MANAGE')")
   public ResponseEntity<List<PermissionResponse>> getOrganizationPermissions(
       @Parameter(description = "UUID of the organization", required = true) @RequestParam
           UUID organizationId,
@@ -64,8 +61,6 @@ public class PermissionController {
       summary = "Get granted permissions of a user",
       description = "Returns all permissions granted to the specified user in the organization.")
   @GetMapping("/granted")
-  @PreAuthorize(
-      "@securityService.hasAuthority(#userDetails.id, #organizationId, 'PERMISSION:MANAGE')")
   public ResponseEntity<List<PermissionResponse>> getUserGrantedPermissions(
       @Parameter(description = "UUID of the organization", required = true) @RequestParam
           UUID organizationId,
@@ -92,7 +87,6 @@ public class PermissionController {
       summary = "Get my granted permissions",
       description = "Returns all permissions granted to the currently authenticated user.")
   @GetMapping("/granted/me")
-  @PreAuthorize("@securityService.isMemberOfOrganization(#userDetails.id, #organizationId)")
   public ResponseEntity<List<PermissionResponse>> getMyGrantedPermissions(
       @Parameter(description = "UUID of the organization", required = true) @RequestParam
           UUID organizationId,

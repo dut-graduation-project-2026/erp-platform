@@ -25,18 +25,10 @@ public class PermissionServiceImpl implements PermissionService {
         .toList();
   }
 
-    // @Override
-    // public List<PermissionResponse> getAllPermissionsOfUserWithActionsByUserRoleIdAndOrganizationId(
-    //     UUID userRoleId, UUID organizationId) {
-    //   return permissionRepository.findAllByUserRoleIdAndOrganizationIdWithActions(userRoleId, organizationId).stream()
-    //       .map(permissionMapper::toPermissionResponse)
-    //       .toList();
-    // }
-
-    @Override
-    public List<PermissionResponse> getAllPermissionsOfUserWithActionsByUserIdAndOrganizationId(UUID userId,
-            UUID organizationId) {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public List<PermissionResponse> getAllPermissionsOfUserWithActionsByUserIdAndOrganizationId(
+      UUID userId, UUID organizationId) {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

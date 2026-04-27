@@ -13,7 +13,8 @@ import org.springframework.stereotype.Repository;
 public interface RoleRepository extends JpaRepository<Role, UUID> {
   Optional<Role> findByNameAndOrganizationId(String name, UUID organizationId);
 
-  @Query("""
+  @Query(
+      """
       SELECT DISTINCT r
       FROM User u
       JOIN u.roles r
@@ -21,4 +22,7 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
       """)
   List<Role> findRolesByUserIdAndOrganizationId(
       @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
+
+  @Query("SELECT r FROM Role r WHERE r.organization.id = :organizationId")
+  List<Role> findAllByOrganizationId(UUID organizationId);
 }
