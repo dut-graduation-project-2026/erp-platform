@@ -27,7 +27,6 @@ public class OrganizationServiceImpl implements OrganizationService {
         .toList();
   }
 
-  @Override
   @Transactional
   public Organization getOrganizationById(UUID organizationId) {
     return organizationRepository

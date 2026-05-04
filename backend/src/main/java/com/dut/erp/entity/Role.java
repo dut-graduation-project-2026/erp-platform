@@ -54,10 +54,6 @@ public class Role {
   @Column(name = "name", nullable = false, length = 50)
   String name;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "organization_id", nullable = false)
-  Organization organization;
-
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(
       name = "role_permissions",
@@ -65,6 +61,10 @@ public class Role {
       inverseJoinColumns = @JoinColumn(name = "permission_id"))
   @Builder.Default
   Set<Permission> permissions = new HashSet<>();
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "organization_id", nullable = false)
+  Organization organization;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)

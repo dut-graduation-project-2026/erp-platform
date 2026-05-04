@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 005-create-invalidated-access-tokens-table
-      author: copilot
+      author: halwins
       changes:
         - createTable:
             tableName: invalidated_access_tokens

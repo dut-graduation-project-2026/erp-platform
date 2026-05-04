@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 010-create-permissions-table
-      author: copilot
+      author: halwins
       changes:
         - createTable:
             tableName: permissions
@@ -14,56 +14,38 @@ databaseChangeLog:
                     primaryKeyName: pk_permissions
                     nullable: false
               - column:
-                  name: description
-                  type: VARCHAR(500)
-              - column:
                   name: name
                   type: VARCHAR(255)
                   constraints:
                     nullable: false
               - column:
-                    name: resource
-                    type: VARCHAR(255)
-                    constraints:
-                        nullable: false
+                  name: description
+                  type: VARCHAR(2000)
+                  constraints:
+                    nullable: true
               - column:
-                  name: organization_id
-                  type: UUID
+                  name: code
+                  type: VARCHAR(255)
                   constraints:
                     nullable: false
               - column:
-                  name: created_at
-                  type: TIMESTAMP
-              - column:
-                  name: updated_at
-                  type: TIMESTAMP
-              - column:
-                  name: created_by
+                  name: module_id
                   type: UUID
-              - column:
-                  name: updated_by
-                  type: UUID
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: permissions
+            columnNames: name
+            constraintName: uk_permissions_name
+        - addUniqueConstraint:
+            tableName: permissions
+            columnNames: code
+            constraintName: uk_permissions_code
         - addForeignKeyConstraint:
-            constraintName: fk_permissions_organization
+            constraintName: fk_permissions_module
             baseTableName: permissions
-            baseColumnNames: organization_id
-            referencedTableName: organizations
+            baseColumnNames: module_id
+            referencedTableName: erp_modules
             referencedColumnNames: id
             onDelete: CASCADE
-            onUpdate: CASCADE
-        - addForeignKeyConstraint:
-            constraintName: fk_permissions_created_by
-            baseTableName: permissions
-            baseColumnNames: created_by
-            referencedTableName: users
-            referencedColumnNames: id
-            onDelete: SET NULL
-            onUpdate: CASCADE
-        - addForeignKeyConstraint:
-            constraintName: fk_permissions_updated_by
-            baseTableName: permissions
-            baseColumnNames: updated_by
-            referencedTableName: users
-            referencedColumnNames: id
-            onDelete: SET NULL
             onUpdate: CASCADE

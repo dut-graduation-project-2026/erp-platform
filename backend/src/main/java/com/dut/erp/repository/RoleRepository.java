@@ -24,5 +24,20 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
       @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
 
   @Query("SELECT r FROM Role r WHERE r.organization.id = :organizationId")
-  List<Role> findAllByOrganizationId(UUID organizationId);
+  List<Role> findAllByOrganizationId(@Param("organizationId") UUID organizationId);
+
+  @Query(
+      """
+      SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
+      FROM Role r
+      JOIN r.permissions p
+      JOIN p.actions a
+      WHERE r.id = :roleId
+        AND p.resource = :permissionName
+        AND a.name = :actionName
+      """)
+  boolean existsByIdAndPermissionNameAndActionName(
+      @Param("roleId") UUID roleId,
+      @Param("permissionName") String permissionName,
+      @Param("actionName") String actionName);
 }

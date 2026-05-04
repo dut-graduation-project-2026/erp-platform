@@ -15,6 +15,7 @@ public enum ErrorCode {
 
   // 403 Forbidden
   FORBIDDEN(HttpStatus.FORBIDDEN, "Access denied."),
+  ACCESS_DENIED(HttpStatus.FORBIDDEN, "You do not have permission to access this resource."),
 
   // 404 Not Found
   RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found."),

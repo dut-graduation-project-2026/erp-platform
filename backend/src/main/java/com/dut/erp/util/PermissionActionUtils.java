@@ -3,7 +3,7 @@ package com.dut.erp.util;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-public class AuthorityUtils {
+public class PermissionActionUtils {
   public static final String AUTHORITY_TEMPLATE = "%s:%s";
 
   public String formatAuthority(String resource, String action) {

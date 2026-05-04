@@ -3,7 +3,6 @@ package com.dut.erp.controller.v1;
 import com.dut.erp.dto.response.OrganizationResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.OrganizationService;
-import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,10 +26,6 @@ public class OrganizationController {
    * @param userDetails the authenticated user's details (injected from security context)
    * @return a ResponseEntity containing a list of OrganizationResponse objects
    */
-  @Operation(
-      summary = "Get organizations of current user",
-      description =
-          "Returns a list of organizations that the current authenticated user belongs to.")
   @GetMapping("/me")
   public ResponseEntity<List<OrganizationResponse>> getOrganizationsOfCurrentUser(
       @AuthenticationPrincipal CustomUserDetails userDetails) {

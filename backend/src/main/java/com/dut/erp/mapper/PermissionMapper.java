@@ -9,8 +9,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 @Mapper(
     componentModel = "spring",
     nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
-    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-    uses = {ActionMapper.class})
+    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface PermissionMapper {
   PermissionResponse toPermissionResponse(Permission entity);
 }

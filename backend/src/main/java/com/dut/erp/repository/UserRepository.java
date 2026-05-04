@@ -10,12 +10,13 @@ import org.springframework.data.repository.query.Param;
 public interface UserRepository extends JpaRepository<User, UUID> {
   @Query(
       """
-          SELECT DISTINCT u
-          FROM User u
-          LEFT JOIN FETCH u.roles r
-          WHERE u.id = :id
+        SELECT DISTINCT u
+        FROM User u
+        LEFT JOIN FETCH u.roles r
+        LEFT JOIN FETCH u.organizations o
+        WHERE u.id = :id
       """)
-  Optional<User> findByIdWithRoles(@Param("id") UUID userId);
+  Optional<User> findByIdWithRolesAndOrganizations(@Param("id") UUID userId);
 
   Optional<User> findByEmail(String email);
 
@@ -23,23 +24,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   @Query(
       """
-          SELECT DISTINCT u
-          FROM User u
-          LEFT JOIN u.organizations o
-          WHERE u.id = :userId AND o.id = :organizationId
+        SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END
+        FROM User u
+        JOIN u.organizations o
+        WHERE u.id = :userId AND o.id = :organizationId
       """)
-  Optional<User> findByIdAndOrganizationId(
-      @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
-
-  @Query(
-      """
-          SELECT COUNT(u) > 0
-          FROM User u
-          JOIN u.organizations o
-          JOIN u.roles r
-          JOIN r.permissions p
-          WHERE u.id = :userId AND o.id = :organizationId AND p.resource = :permissionResource AND p.action = :permissionAction
-      """)
-  boolean existsByIdAndAuthoritiesPermissionResourceAndAuthoritiesPermissionAction(
-      UUID userId, String permissionResource, String permissionAction);
+  boolean existsByIdAndOrganizations_Id(UUID userId, UUID organizationId);
 }

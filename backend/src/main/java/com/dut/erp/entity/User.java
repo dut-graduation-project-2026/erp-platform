@@ -12,6 +12,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -24,6 +25,7 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
@@ -52,9 +54,6 @@ public class User {
   @Column(name = "password", nullable = false, length = 255)
   private String password;
 
-  @Column(name = "avatar_url")
-  String avatarUrl;
-
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(
       name = "user_roles",
@@ -80,4 +79,8 @@ public class User {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "updated_by")
   User updatedBy;
+
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  Instant updatedAt;
 }
