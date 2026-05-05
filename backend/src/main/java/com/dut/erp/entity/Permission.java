@@ -31,7 +31,7 @@ public class Permission {
   @Column(name = "name", nullable = false, unique = true)
   String name;
 
-  @Column(name = "description", length = 500)
+  @Column(name = "description", length = 2000)
   String description;
 
   @Column(name = "code", nullable = false, length = 255, unique = true)

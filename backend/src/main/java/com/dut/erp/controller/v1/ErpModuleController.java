@@ -32,11 +32,11 @@ public class ErpModuleController {
    *
    * @param organizationId the ID of the organization to filter ERP modules by
    * @param userDetails the authenticated user's details (injected from security context)
-   * @return a ResponseEntity containing a list of ErpModuleResponse objects that the user has
+   * @return a ResponseEntity containing a list of ErpModuleBaseResponse objects that the user has
    *     access to
    */
   @GetMapping("/me")
-  @PreAuthorize("@securityAuthService.hasOrganizationAccess(#organizationId, #customUserDetails)")
+  @PreAuthorize("@securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)")
   public ResponseEntity<List<ErpModuleBaseResponse>> getMyErpModulesByOrganization(
       @RequestParam UUID organizationId, @AuthenticationPrincipal CustomUserDetails userDetails) {
     List<ErpModuleBaseResponse> modules =
@@ -56,9 +56,9 @@ public class ErpModuleController {
   @GetMapping
   @PreAuthorize(
       """
-        @securityAuthService.hasOrganizationAccess(#organizationId, #customUserDetails)
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('erp_module:read', #organizationId, #customUserDetails)
+        @securityAuthService.hasPermission('erp_module:read', #organizationId, #userDetails)
       """)
   public ResponseEntity<List<ErpModuleResponse>> getErpModulesByOrganization(
       @RequestParam UUID organizationId, @AuthenticationPrincipal CustomUserDetails userDetails) {

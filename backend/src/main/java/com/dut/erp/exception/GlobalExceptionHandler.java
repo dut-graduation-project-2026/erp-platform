@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
@@ -31,11 +30,6 @@ public class GlobalExceptionHandler {
     return buildResponse(ErrorCode.UNAUTHORIZED);
   }
 
-  @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
-    return buildResponse(ErrorCode.ACCESS_DENIED);
-  }
-
   // =========== Bad Request Exceptions ============
   @ExceptionHandler(MissingServletRequestParameterException.class)
   public ResponseEntity<ErrorResponse> handleMissingRequestParameter(
@@ -45,8 +39,6 @@ public class GlobalExceptionHandler {
     return buildResponse(ErrorCode.BAD_REQUEST, message, null);
   }
 
-  // FIX 1: Handle sai kiểu dữ liệu của @RequestParam (e.g. UUID nhận "abc")
-  // Nếu thiếu handler này, Spring sẽ fallthrough xuống handleUnexpectedException → trả về 500
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
   public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
       MethodArgumentTypeMismatchException ex) {
@@ -66,9 +58,6 @@ public class GlobalExceptionHandler {
     return handleValidationError(ex.getBindingResult());
   }
 
-  // FIX 2: BindException xảy ra khi bind @RequestParam/@ModelAttribute vào object thất bại,
-  // khác với MethodArgumentNotValidException (dành cho @RequestBody + @Valid).
-  // Nếu thiếu handler này, validation lỗi trên object param sẽ bị bắt bởi handleUnexpectedException → 500.
   @ExceptionHandler(BindException.class)
   public ResponseEntity<ErrorResponse> handleBindException(BindException ex) {
     log.warn("Bind exception: {}", ex.getMessage());

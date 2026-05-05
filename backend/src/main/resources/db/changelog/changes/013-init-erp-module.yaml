@@ -37,3 +37,13 @@ databaseChangeLog:
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
+
+        - insert:
+            tableName: erp_module_permissions
+            columns:
+              - column:
+                  name: erp_module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
+              - column:
+                  name: permission_id
+                  valueComputed: (SELECT id FROM permissions WHERE code = 'erp_module:read')
