@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 002-create-organizations-table
-      author: copilot
+      author: halwins
       changes:
         - createTable:
             tableName: organizations

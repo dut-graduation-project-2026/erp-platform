@@ -12,6 +12,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +31,13 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "roles")
+@Table(
+    name = "roles",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uk_roles_organization_name",
+          columnNames = {"organization_id", "name"})
+    })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -44,7 +51,7 @@ public class Role {
   @Column(name = "id", nullable = false, updatable = false)
   UUID id;
 
-  @Column(name = "name", nullable = false, length = 50, unique = true)
+  @Column(name = "name", nullable = false, length = 50)
   String name;
 
   @ManyToMany(fetch = FetchType.LAZY)

@@ -6,6 +6,7 @@ import com.dut.erp.dto.request.LoginRequest;
 import com.dut.erp.dto.request.RegisterRequest;
 import com.dut.erp.dto.response.AuthResponse;
 import com.dut.erp.entity.User;
+import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.UnauthorizedAccessException;
 import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.InvalidatedAccessTokenRepository;
@@ -19,8 +20,6 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -47,62 +46,53 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   @Transactional
   public AuthResponse login(LoginRequest request) {
     log.info("Login attempt for email: {}", request.email());
-    User user =
-        userRepository
-            .findByEmail(request.email())
-            .orElseThrow(
-                () -> {
-                  log.warn("Login failed - email not found: {}", request.email());
-                  return new UnauthorizedAccessException(
-                      "Invalid credentials.",
-                      Map.of("email", List.of("No user found with this email.")));
-                });
 
-    if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-      log.warn("Login failed - incorrect password for email: {}", request.email());
-      throw new UnauthorizedAccessException(
-          "Invalid credentials.",
-          Map.of("password", List.of("The provided password is incorrect.")));
+    User user = userRepository.findByEmail(request.email()).orElse(null);
+
+    if (user == null || !passwordEncoder.matches(request.password(), user.getPassword())) {
+      if (user == null) {
+        log.warn("Login failed: user not found for email: {}", request.email());
+      } else {
+        log.warn("Login failed: incorrect password for email: {}", request.email());
+      }
+      throw new UnauthorizedAccessException("Invalid email or password.");
     }
 
     TokenPair tokens = generateTokens(user);
 
-    log.info("Login successful for userId: {}", user.getId());
+    log.info("Login successful for userId: {}, email: {}", user.getId(), user.getEmail());
     return new AuthResponse(userMapper.toUserResponse(user), tokens);
   }
 
   @Override
-@Transactional
-public AuthResponse register(RegisterRequest request) {
+  @Transactional
+  public AuthResponse register(RegisterRequest request) {
     log.info("Register attempt for email: {}", request.email());
 
-    // Check tồn tại bằng exists (nhanh hơn find)
-    if (userRepository.existsByEmail(request.email())) {
-        log.warn("Registration failed - email already in use: {}", request.email());
-        throw new UnauthorizedAccessException(
-            "Registration failed.",
-            Map.of("email", List.of("Email is already registered."))
-        );
+    boolean emailExists = userRepository.existsByEmail(request.email());
+
+    if (emailExists) {
+      log.warn("Registration failed: email already in use: {}", request.email());
+      throw new ResourceAlreadyExistsException(
+          "An account with this email may already exist. Please try logging in or use a different"
+              + " email.");
     }
 
-    User user = User.builder()
-        .email(request.email())
-        .password(passwordEncoder.encode(request.password()))
-        .firstName(request.firstName())
-        .lastName(request.lastName())
-        .build();
+    User user =
+        User.builder()
+            .email(request.email())
+            .password(passwordEncoder.encode(request.password()))
+            .firstName(request.firstName())
+            .lastName(request.lastName())
+            .build();
 
     user = userRepository.save(user);
 
     TokenPair tokens = generateTokens(user);
 
-    log.info("User registered successfully with id: {}", user.getId());
-
-    return new AuthResponse(
-        userMapper.toUserResponse(user),
-        tokens
-    );
-}
+    log.info("User registered successfully with id: {}, email: {}", user.getId(), user.getEmail());
+    return new AuthResponse(userMapper.toUserResponse(user), tokens);
+  }
 
   @Override
   @Transactional
@@ -199,7 +189,7 @@ public AuthResponse register(RegisterRequest request) {
 
     if (deleted == 0) {
       log.warn("Refresh token already used or revoked - jti: {}", jwtUtils.getTruncatedJti(jti));
-      throw new UnauthorizedAccessException("Refresh token is invalid");
+      throw new UnauthorizedAccessException("Invalid refresh token.");
     } else {
       log.debug("Refresh token revoked - jti: {}", jwtUtils.getTruncatedJti(jti));
     }
@@ -218,10 +208,10 @@ public AuthResponse register(RegisterRequest request) {
       return parser.apply(token);
     } catch (ExpiredJwtException e) {
       log.debug("{} token expired", tokenType);
-      throw new UnauthorizedAccessException("Authentication token expired.");
+      throw new UnauthorizedAccessException(String.format("%s token has expired.", tokenType));
     } catch (JwtException e) {
       log.warn("Invalid JWT {} token received", tokenType);
-      throw new UnauthorizedAccessException("Invalid authentication token.");
+      throw new UnauthorizedAccessException(String.format("Invalid %s token.", tokenType));
     }
   }
 

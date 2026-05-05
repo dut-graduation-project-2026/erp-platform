@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 001-create-users-table
-      author: copilot
+      author: halwins
       changes:
         - createTable:
             tableName: users
@@ -34,8 +34,8 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: avatar_url
-                  type: VARCHAR(255)
+                  name: updated_at
+                  type: TIMESTAMP
               - column:
                   name: created_by
                   type: UUID

@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-invalidated-access-tokens-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: invalidated_access_tokens
+            columns:
+              - column:
+                  name: jti
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_invalidated_access_tokens
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: invalidated_access_tokens
+            indexName: idx_invalidated_access_tokens_expires_at
+            columns:
+              - column:
+                  name: expires_at

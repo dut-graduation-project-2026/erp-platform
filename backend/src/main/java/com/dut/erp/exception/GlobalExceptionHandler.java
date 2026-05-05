@@ -7,62 +7,130 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+  // ============ Security Exceptions ============
   @ExceptionHandler(AuthenticationException.class)
   public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
-    return buildErrorResponse(ErrorCode.UNAUTHORIZED, null, null);
+    return buildResponse(ErrorCode.UNAUTHORIZED);
   }
 
-  @ExceptionHandler({
-    NoHandlerFoundException.class,
-    NoResourceFoundException.class,
-    HttpRequestMethodNotSupportedException.class
-  })
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+    return buildResponse(ErrorCode.ACCESS_DENIED);
+  }
+
+  // =========== Bad Request Exceptions ============
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ErrorResponse> handleMissingRequestParameter(
+      MissingServletRequestParameterException ex) {
+    log.warn("Missing request parameter: {}", ex.getMessage());
+    String message = String.format("Missing required parameter: '%s'", ex.getParameterName());
+    return buildResponse(ErrorCode.BAD_REQUEST, message, null);
+  }
+
+  // FIX 1: Handle sai kiểu dữ liệu của @RequestParam (e.g. UUID nhận "abc")
+  // Nếu thiếu handler này, Spring sẽ fallthrough xuống handleUnexpectedException → trả về 500
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
+      MethodArgumentTypeMismatchException ex) {
+    log.warn("Method argument type mismatch: {}", ex.getMessage());
+    String expectedType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
+    String message = String.format(
+        "Invalid value '%s' for parameter '%s': expected type '%s'",
+        ex.getValue(), ex.getName(), expectedType);
+    return buildResponse(ErrorCode.BAD_REQUEST, message, null);
+  }
+
+  // ============ Validation Exceptions ============
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+      MethodArgumentNotValidException ex) {
+    log.warn("Method argument not valid: {}", ex.getMessage());
+    return handleValidationError(ex.getBindingResult());
+  }
+
+  // FIX 2: BindException xảy ra khi bind @RequestParam/@ModelAttribute vào object thất bại,
+  // khác với MethodArgumentNotValidException (dành cho @RequestBody + @Valid).
+  // Nếu thiếu handler này, validation lỗi trên object param sẽ bị bắt bởi handleUnexpectedException → 500.
+  @ExceptionHandler(BindException.class)
+  public ResponseEntity<ErrorResponse> handleBindException(BindException ex) {
+    log.warn("Bind exception: {}", ex.getMessage());
+    return handleValidationError(ex.getBindingResult());
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+    log.warn("Illegal argument: {}", ex.getMessage());
+    return buildResponse(ErrorCode.VALIDATION_FAILED, ex.getMessage(), null);
+  }
+
+  // ============ Not Found Exceptions ============
+  @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
   public ResponseEntity<ErrorResponse> handleNotFoundException(Exception ex) {
-    return buildErrorResponse(ErrorCode.RESOURCE_NOT_FOUND, null, null);
+    log.warn("Resource not found: {}", ex.getMessage());
+    return buildResponse(ErrorCode.RESOURCE_NOT_FOUND);
   }
 
-  @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
-  public ResponseEntity<ErrorResponse> handleValidationException(BindException ex) {
+  // =========== Method Not Allowed ============
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<ErrorResponse> handleMethodNotAllowed(
+      HttpRequestMethodNotSupportedException ex) {
+    log.warn("Method not allowed: {}", ex.getMessage());
+    return buildResponse(ErrorCode.METHOD_NOT_ALLOWED);
+  }
+
+  // ============ Business Exceptions ============
+  @ExceptionHandler(BaseException.class)
+  public ResponseEntity<ErrorResponse> handleBusinessException(BaseException ex) {
+    log.warn("Business error: {}", ex.getMessage());
+    return buildResponse(ex.getErrorCode(), ex.getMessage(), ex.getDetails());
+  }
+
+  // ============ Unexpected Exceptions ============
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception ex) {
+    log.error("Unexpected error", ex);
+    return buildResponse(ErrorCode.INTERNAL_SERVER_ERROR);
+  }
+
+  // ============ Helper Methods ============
+
+  private ResponseEntity<ErrorResponse> handleValidationError(BindingResult bindingResult) {
     Map<String, List<String>> details =
-        ex.getBindingResult().getFieldErrors().stream()
+        bindingResult.getFieldErrors().stream()
             .collect(
                 Collectors.groupingBy(
                     FieldError::getField,
                     Collectors.mapping(FieldError::getDefaultMessage, Collectors.toList())));
 
-    ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
-    return buildErrorResponse(errorCode, null, details);
+    return buildResponse(ErrorCode.VALIDATION_FAILED, null, details);
   }
 
-  @ExceptionHandler(BaseException.class)
-  public ResponseEntity<ErrorResponse> handleBusinessException(BaseException ex) {
-    return buildErrorResponse(ex.getErrorCode(), ex.getMessage(), ex.getDetails());
+  private ResponseEntity<ErrorResponse> buildResponse(ErrorCode errorCode) {
+    return buildResponse(errorCode, null, null);
   }
 
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception ex) {
-    log.error("Unexpected error: {}", ex);
-    return buildErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR, null, null);
-  }
-
-  private ResponseEntity<ErrorResponse> buildErrorResponse(
+  private ResponseEntity<ErrorResponse> buildResponse(
       ErrorCode errorCode, String customMessage, Map<String, List<String>> details) {
 
     String message = customMessage != null ? customMessage : errorCode.getMessage();
-
     ErrorResponse response = new ErrorResponse(errorCode.name(), message, details);
 
     return ResponseEntity.status(errorCode.getStatus()).body(response);

@@ -38,17 +38,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-    cookieUtils
-        .extractAccessToken(request)
-        .flatMap(token -> validateAndGetClaims(token, request))
-        .filter(claims -> isTokenNotRevoked(claims.getId(), request))
-        .flatMap(claims -> getValidUser(claims.getSubject(), request))
-        .ifPresent(
-            user -> {
-              setAuthentication(request, user);
-              log.debug(
-                  "Authenticated user: id={}, path={}", user.getId(), request.getRequestURI());
-            });
+    Optional<String> accessToken = cookieUtils.extractAccessToken(request);
+    if (accessToken.isEmpty()) {
+      request.setAttribute(RequestAttributeKeys.JWT_ERROR, ErrorCode.MISSING_TOKEN);
+    } else {
+      accessToken
+          .flatMap(token -> validateAndGetClaims(token, request))
+          .filter(claims -> isTokenNotRevoked(claims.getId(), request))
+          .flatMap(claims -> getValidUser(claims.getSubject(), request))
+          .ifPresent(
+              user -> {
+                setAuthentication(request, user);
+                log.debug(
+                    "Authenticated user: id={}, path={}", user.getId(), request.getRequestURI());
+              });
+    }
     filterChain.doFilter(request, response);
   }
 
@@ -79,10 +83,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private Optional<User> getValidUser(String userIdString, HttpServletRequest request) {
     try {
       UUID userId = UUID.fromString(userIdString);
-      Optional<User> userOpt = userRepository.findByIdWithRole(userId);
+      Optional<User> userOpt = userRepository.findByIdWithRolesAndOrganizations(userId);
       if (userOpt.isEmpty()) {
         log.warn("No user found for valid token: userId={}", userIdString);
-        request.setAttribute(RequestAttributeKeys.JWT_ERROR, ErrorCode.USER_NOT_FOUND);
+        request.setAttribute(RequestAttributeKeys.JWT_ERROR, ErrorCode.INVALID_TOKEN);
       }
       return userOpt;
     } catch (IllegalArgumentException e) {

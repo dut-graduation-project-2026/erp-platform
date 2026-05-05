@@ -9,11 +9,13 @@ public enum ErrorCode {
 
   // 401 Unauthorized
   UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Unauthorized."),
+  MISSING_TOKEN(HttpStatus.UNAUTHORIZED, "Authentication token is missing."),
   INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "Invalid authentication token."),
   TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Authentication token expired."),
 
   // 403 Forbidden
   FORBIDDEN(HttpStatus.FORBIDDEN, "Access denied."),
+  ACCESS_DENIED(HttpStatus.FORBIDDEN, "You do not have permission to access this resource."),
 
   // 404 Not Found
   RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found."),
@@ -24,7 +26,10 @@ public enum ErrorCode {
   RESOURCE_ALREADY_EXISTS(HttpStatus.CONFLICT, "Resource already exists."),
 
   // 500 Internal Server Error
-  INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error.");
+  INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error."),
+
+  // 405 Method Not Allowed
+  METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed.");
 
   private final HttpStatus status;
   private final String message;

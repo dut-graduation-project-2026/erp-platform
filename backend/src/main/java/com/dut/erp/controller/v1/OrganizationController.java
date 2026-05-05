@@ -17,11 +17,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrganizationController {
   private final OrganizationService organizationService;
 
+  /**
+   * Retrieves all organizations that the current authenticated user belongs to.
+   *
+   * <p>The user is resolved from the security context. Returns an empty list if the user is not a
+   * member of any organization.
+   *
+   * @param userDetails the authenticated user's details (injected from security context)
+   * @return a ResponseEntity containing a list of OrganizationResponse objects
+   */
   @GetMapping("/me")
-  public ResponseEntity<List<OrganizationResponse>> getOrganizationOfCurrentUser(
+  public ResponseEntity<List<OrganizationResponse>> getOrganizationsOfCurrentUser(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     List<OrganizationResponse> organizationResponses =
-        organizationService.getOrganizationByUserId(userDetails.getId());
+        organizationService.getOrganizationsByUserId(userDetails.getId());
     return ResponseEntity.ok(organizationResponses);
   }
 }

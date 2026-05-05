@@ -6,9 +6,8 @@ import com.dut.erp.exception.UnauthorizedAccessException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -45,10 +44,9 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     }
 
     return switch (errorCode) {
-      case TOKEN_EXPIRED -> new UnauthorizedAccessException("Authentication token has expired");
-      case INVALID_TOKEN -> new UnauthorizedAccessException("Authentication token is invalid");
-      case USER_NOT_FOUND ->
-          new UnauthorizedAccessException("User not found for provided authentication token");
+      case MISSING_TOKEN -> new UnauthorizedAccessException(ErrorCode.MISSING_TOKEN.getMessage());
+      case TOKEN_EXPIRED -> new UnauthorizedAccessException(ErrorCode.TOKEN_EXPIRED.getMessage());
+      case INVALID_TOKEN -> new UnauthorizedAccessException(ErrorCode.INVALID_TOKEN.getMessage());
       default -> fallback;
     };
   }

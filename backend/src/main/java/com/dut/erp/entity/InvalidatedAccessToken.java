@@ -3,6 +3,7 @@ package com.dut.erp.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.AccessLevel;
@@ -14,7 +15,11 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Entity
-@Table(name = "invalidated_access_tokens")
+@Table(
+    name = "invalidated_access_tokens",
+    indexes = {
+      @Index(name = "idx_invalidated_access_tokens_expires_at", columnList = "expires_at")
+    })
 @Getter
 @Setter
 @NoArgsConstructor

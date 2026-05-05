@@ -1,9 +1,12 @@
 package com.dut.erp.service;
 
 import com.dut.erp.dto.response.OrganizationResponse;
+import com.dut.erp.entity.Organization;
 import java.util.List;
 import java.util.UUID;
 
 public interface OrganizationService {
-  List<OrganizationResponse> getOrganizationByUserId(UUID userId);
+  List<OrganizationResponse> getOrganizationsByUserId(UUID userId);
+
+  Organization getOrganizationById(UUID organizationId);
 }
