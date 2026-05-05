@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-create-user-organizations-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: user_organizations
+            columns:
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: user_organizations
+            columnNames: user_id, organization_id
+            constraintName: pk_user_organizations
+        - addForeignKeyConstraint:
+            constraintName: fk_user_organizations_user
+            baseTableName: user_organizations
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_user_organizations_organization
+            baseTableName: user_organizations
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE

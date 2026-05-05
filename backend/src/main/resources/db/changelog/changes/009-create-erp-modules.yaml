@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-create-erp-modules-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_erp_modules
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(2000)
+                  constraints:
+                    nullable: true
+        - addUniqueConstraint:
+            tableName: erp_modules
+            columnNames: code
+            constraintName: uk_erp_modules_code
+        - addUniqueConstraint:
+            tableName: erp_modules
+            columnNames: name
+            constraintName: uk_erp_modules_name

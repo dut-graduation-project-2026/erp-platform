@@ -1,0 +1,10 @@
+spring:
+  liquibase:
+    contexts: prod
+  devtools:
+    restart:
+      enabled: false
+app:
+  cookie:
+    secure: true
+    same-site: none

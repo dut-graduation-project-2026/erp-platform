@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    show-sql: true
+  liquibase:
+    contexts: dev
+  devtools:
+    restart:
+      enabled: true
+app:
+  cookie:
+    secure: false
+    same-site: lax
