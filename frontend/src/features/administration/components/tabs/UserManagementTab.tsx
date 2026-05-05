@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, AlertCircle, ChevronDown } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, AlertCircle, ChevronDown, Users, UserCheck, UserX, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +51,71 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
 
   return (
     <div className="space-y-6">
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border-[#e0e0e0] shadow-[0px_1px_3px_rgba(0,0,0,0.12)]">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Tổng người dùng</p>
+                <p className="text-[32px] font-bold text-[#242424] mt-1">{orgUsers.length}</p>
+              </div>
+              <div className="h-12 w-12 bg-[#f0f4ff] rounded-[8px] flex items-center justify-center">
+                <Users className="h-6 w-6 text-[#0066cc]" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#e0e0e0] shadow-[0px_1px_3px_rgba(0,0,0,0.12)]">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Đang hoạt động</p>
+                <p className="text-[32px] font-bold text-[#28a745] mt-1">
+                  {orgUsers.filter(u => u.isActive).length}
+                </p>
+              </div>
+              <div className="h-12 w-12 bg-[#f0fff0] rounded-[8px] flex items-center justify-center">
+                <UserCheck className="h-6 w-6 text-[#28a745]" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#e0e0e0] shadow-[0px_1px_3px_rgba(0,0,0,0.12)]">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Không hoạt động</p>
+                <p className="text-[32px] font-bold text-[#dc3545] mt-1">
+                  {orgUsers.filter(u => !u.isActive).length}
+                </p>
+              </div>
+              <div className="h-12 w-12 bg-[#fff0f0] rounded-[8px] flex items-center justify-center">
+                <UserX className="h-6 w-6 text-[#dc3545]" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#e0e0e0] shadow-[0px_1px_3px_rgba(0,0,0,0.12)]">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Vai trò</p>
+                <p className="text-[32px] font-bold text-[#0066cc] mt-1">
+                  {new Set(orgUsers.map(u => u.roleId).filter(Boolean)).size}
+                </p>
+              </div>
+              <div className="h-12 w-12 bg-[#f0f4ff] rounded-[8px] flex items-center justify-center">
+                <Shield className="h-6 w-6 text-[#0066cc]" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

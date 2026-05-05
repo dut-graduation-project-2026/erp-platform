@@ -38,8 +38,34 @@ export default function OrganizationsPage() {
   };
 
   const stats = [
-    { label: 'Tổng số Tổ chức', value: organizations.length, icon: Building2, color: 'bg-blue-50' },
-    { label: 'Người dùng Tổng', value: organizations.length * 3, icon: Users, color: 'bg-green-50' },
+    {
+      label: 'Tổng số Tổ chức',
+      value: organizations.length,
+      icon: Building2,
+      color: 'bg-[#f0f4ff]',
+      iconColor: 'text-[#0066cc]'
+    },
+    {
+      label: 'Người dùng Tổng',
+      value: organizations.length * 3, // Mock calculation
+      icon: Users,
+      color: 'bg-[#f0fff0]',
+      iconColor: 'text-[#28a745]'
+    },
+    {
+      label: 'Tổ chức Hoạt động',
+      value: organizations.length, // Assume all active
+      icon: Settings,
+      color: 'bg-[#fff0f0]',
+      iconColor: 'text-[#dc3545]'
+    },
+    {
+      label: 'Cần Duyệt',
+      value: 0, // Mock pending
+      icon: AlertCircle,
+      color: 'bg-[#fff8e1]',
+      iconColor: 'text-[#ffc107]'
+    },
   ];
 
   return (
@@ -73,21 +99,25 @@ export default function OrganizationsPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, idx) => (
-            <div key={idx} className={`${stat.color} p-6 rounded-[4px] border border-[#e0e0e0]`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-[0.1px]">
-                    {stat.label}
-                  </p>
-                  <p className="text-[32px] font-bold text-[#242424] mt-2">
-                    {stat.value}
-                  </p>
+            <Card key={idx} className="border-[#e0e0e0] shadow-[0px_1px_3px_rgba(0,0,0,0.12)]">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">
+                      {stat.label}
+                    </p>
+                    <p className="text-[32px] font-bold text-[#242424] mt-1">
+                      {stat.value}
+                    </p>
+                  </div>
+                  <div className={`h-12 w-12 ${stat.color} rounded-[8px] flex items-center justify-center`}>
+                    <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
+                  </div>
                 </div>
-                <stat.icon className="w-12 h-12 text-[#0066cc] opacity-20" />
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
