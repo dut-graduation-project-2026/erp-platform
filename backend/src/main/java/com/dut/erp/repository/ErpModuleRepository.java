@@ -26,9 +26,11 @@ public interface ErpModuleRepository extends JpaRepository<ErpModule, UUID> {
 
   @Query(
       """
-          SELECT DISTINCT p.module
+          SELECT DISTINCT m
           FROM Role r
           JOIN r.permissions p
+          JOIN p.module m
+          LEFT JOIN FETCH m.allowedPermissions ap
           WHERE r.organization.id = :organizationId
       """)
   List<ErpModule> findByOrganizationIdWithPermissions(@Param("organizationId") UUID organizationId);

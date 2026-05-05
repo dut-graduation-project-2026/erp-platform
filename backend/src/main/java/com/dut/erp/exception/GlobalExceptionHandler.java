@@ -45,8 +45,6 @@ public class GlobalExceptionHandler {
     return buildResponse(ErrorCode.BAD_REQUEST, message, null);
   }
 
-  // FIX 1: Handle sai kiểu dữ liệu của @RequestParam (e.g. UUID nhận "abc")
-  // Nếu thiếu handler này, Spring sẽ fallthrough xuống handleUnexpectedException → trả về 500
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
   public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
       MethodArgumentTypeMismatchException ex) {
@@ -58,6 +56,12 @@ public class GlobalExceptionHandler {
     return buildResponse(ErrorCode.BAD_REQUEST, message, null);
   }
 
+  @ExceptionHandler(BadRequestException.class)
+  public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException ex) {
+    log.warn("Bad request: {}", ex.getMessage());
+    return buildResponse(ex.getErrorCode(), ex.getMessage(), ex.getDetails());
+  }
+
   // ============ Validation Exceptions ============
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
@@ -66,9 +70,6 @@ public class GlobalExceptionHandler {
     return handleValidationError(ex.getBindingResult());
   }
 
-  // FIX 2: BindException xảy ra khi bind @RequestParam/@ModelAttribute vào object thất bại,
-  // khác với MethodArgumentNotValidException (dành cho @RequestBody + @Valid).
-  // Nếu thiếu handler này, validation lỗi trên object param sẽ bị bắt bởi handleUnexpectedException → 500.
   @ExceptionHandler(BindException.class)
   public ResponseEntity<ErrorResponse> handleBindException(BindException ex) {
     log.warn("Bind exception: {}", ex.getMessage());

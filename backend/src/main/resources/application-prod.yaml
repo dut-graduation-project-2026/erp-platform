@@ -8,6 +8,3 @@ app:
   cookie:
     secure: true
     same-site: none
-springdoc:
-  swagger-ui:
-    enabled: false
