@@ -28,3 +28,11 @@ databaseChangeLog:
                   type: VARCHAR(2000)
                   constraints:
                     nullable: true
+        - addUniqueConstraint:
+            tableName: erp_modules
+            columnNames: code
+            constraintName: uk_erp_modules_code
+        - addUniqueConstraint:
+            tableName: erp_modules
+            columnNames: name
+            constraintName: uk_erp_modules_name

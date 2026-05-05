@@ -32,7 +32,7 @@ public class ErpModuleController {
    *
    * @param organizationId the ID of the organization to filter ERP modules by
    * @param userDetails the authenticated user's details (injected from security context)
-   * @return a ResponseEntity containing a list of ErpModuleResponse objects that the user has
+   * @return a ResponseEntity containing a list of ErpModuleBaseResponse objects that the user has
    *     access to
    */
   @GetMapping("/me")

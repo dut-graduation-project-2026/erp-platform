@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
@@ -31,11 +30,6 @@ public class GlobalExceptionHandler {
     return buildResponse(ErrorCode.UNAUTHORIZED);
   }
 
-  @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
-    return buildResponse(ErrorCode.ACCESS_DENIED);
-  }
-
   // =========== Bad Request Exceptions ============
   @ExceptionHandler(MissingServletRequestParameterException.class)
   public ResponseEntity<ErrorResponse> handleMissingRequestParameter(
@@ -54,12 +48,6 @@ public class GlobalExceptionHandler {
         "Invalid value '%s' for parameter '%s': expected type '%s'",
         ex.getValue(), ex.getName(), expectedType);
     return buildResponse(ErrorCode.BAD_REQUEST, message, null);
-  }
-
-  @ExceptionHandler(BadRequestException.class)
-  public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException ex) {
-    log.warn("Bad request: {}", ex.getMessage());
-    return buildResponse(ex.getErrorCode(), ex.getMessage(), ex.getDetails());
   }
 
   // ============ Validation Exceptions ============
