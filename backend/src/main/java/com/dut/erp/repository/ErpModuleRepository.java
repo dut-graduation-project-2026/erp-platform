@@ -12,13 +12,12 @@ import org.springframework.stereotype.Repository;
 public interface ErpModuleRepository extends JpaRepository<ErpModule, UUID> {
   @Query(
       """
-          SELECT DISTINCT p.module
+          SELECT DISTINCT m
           FROM User u
           JOIN u.roles r
-          JOIN r.permissions p
-          JOIN u.organizations o
+          JOIN r.permissions permission
+          JOIN permission.module m
           WHERE u.id = :userId
-            AND o.id = :organizationId
             AND r.organization.id = :organizationId
       """)
   List<ErpModule> findAccessibleModulesByUserAndOrganization(
@@ -28,9 +27,9 @@ public interface ErpModuleRepository extends JpaRepository<ErpModule, UUID> {
       """
           SELECT DISTINCT m
           FROM Role r
-          JOIN r.permissions p
-          JOIN p.module m
-          LEFT JOIN FETCH m.allowedPermissions ap
+          JOIN r.permissions permission
+          JOIN permission.module m
+          LEFT JOIN FETCH m.permissions modulePermission
           WHERE r.organization.id = :organizationId
       """)
   List<ErpModule> findByOrganizationIdWithPermissions(@Param("organizationId") UUID organizationId);
