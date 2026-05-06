@@ -32,9 +32,7 @@ public class SecurityConfig {
 
   private final CorsProperties corsProperties;
 
-  private static final String[] PUBLIC_ENDPOINTS = {
-    "/api/v1/auth/**", "/api/v1/public/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
-  };
+  private static final String[] PUBLIC_ENDPOINTS = {"/api/v1/auth/**", "/api/v1/public/**"};
 
   private static final String[] ALLOWED_CORS_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS"};
 
