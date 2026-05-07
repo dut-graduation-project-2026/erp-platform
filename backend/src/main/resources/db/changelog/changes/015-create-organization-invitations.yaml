@@ -1,0 +1,88 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-create-organization-invitations-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: organization_invitations
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_organization_invitations
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: invited_by
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token
+                  type: VARCHAR(255)
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: accepted_by
+                  type: UUID
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: organization_invitations
+            columnNames: token
+            constraintName: uk_organization_invitations_token
+        - addUniqueConstraint:
+            tableName: organization_invitations
+            columnNames: organization_id, email
+            constraintName: uk_organization_invitations_org_email
+        - addForeignKeyConstraint:
+            constraintName: fk_organization_invitations_organization
+            baseTableName: organization_invitations
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_organization_invitations_invited_by
+            baseTableName: organization_invitations
+            baseColumnNames: invited_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_organization_invitations_accepted_by
+            baseTableName: organization_invitations
+            baseColumnNames: accepted_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE

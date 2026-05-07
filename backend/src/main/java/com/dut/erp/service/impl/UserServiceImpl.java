@@ -5,6 +5,7 @@ import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.UserBaseResponse;
 import com.dut.erp.entity.User;
+import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.UserService;
@@ -80,5 +81,16 @@ public class UserServiceImpl implements UserService {
         userPage.getTotalElements(),
         userPage.getTotalPages());
     return PagedEntityResponse.from(userResponses);
+  }
+
+  @Override
+  public User findUserById(UUID userId) {
+    return userRepository
+        .findById(userId)
+        .orElseThrow(
+            () -> {
+              log.warn("User with ID {} not found", userId);
+              return new ResourceNotFoundException("User not found");
+            });
   }
 }

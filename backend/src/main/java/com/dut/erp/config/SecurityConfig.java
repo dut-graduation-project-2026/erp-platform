@@ -65,7 +65,7 @@ public class SecurityConfig {
     configuration.setAllowedMethods(Arrays.asList(ALLOWED_CORS_METHODS));
     configuration.setAllowedHeaders(Arrays.asList(ALLOWED_CORS_HEADERS));
     configuration.setAllowCredentials(true);
-    configuration.setMaxAge(3600L); // Cache CORS preflight response for 1 hour
+    configuration.setMaxAge(3600L);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

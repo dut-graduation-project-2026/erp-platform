@@ -3,6 +3,8 @@ package com.dut.erp.repository;
 import com.dut.erp.entity.User;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +33,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
       """)
   boolean existsByIdAndOrganizations_Id(
       @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
+
+  Page<User> findAllByOrganizations_Id(UUID organizationId, Pageable pageable);
+
+  Page<User> findAllByEmailContainingIgnoreCase(String email, Pageable pageable);
 }

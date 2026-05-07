@@ -1,3 +1,13 @@
 package com.dut.erp.service;
 
-public interface OrganizationInvitationService {}
+import com.dut.erp.entity.OrganizationInvitation;
+import com.dut.erp.security.CustomUserDetails;
+import java.util.UUID;
+
+public interface OrganizationInvitationService {
+  void inviteUserToOrganization(UUID organizationId, String email, CustomUserDetails inviter);
+
+  void updateInvitationStatus(UUID invitationId, boolean accepted, CustomUserDetails responder);
+
+  OrganizationInvitation getInvitationById(UUID invitationId);
+}

@@ -5,5 +5,5 @@ import java.util.UUID;
 
 public interface SecurityAuthService {
   boolean hasOrganizationAccess(UUID organizationId, CustomUserDetails userDetails);
-  boolean hasPermission(String permission, UUID organizationId, CustomUserDetails userDetails);
+  boolean hasPermission(String permissionCodes, UUID organizationId, CustomUserDetails userDetails);
 }

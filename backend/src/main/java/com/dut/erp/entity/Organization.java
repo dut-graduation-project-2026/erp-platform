@@ -35,7 +35,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Table(
     name = "organizations",
     uniqueConstraints = {
-      @UniqueConstraint(columnNames = "name"),
       @UniqueConstraint(columnNames = "tax_code")
     },
     indexes = {@Index(name = "idx_organizations_tax_code", columnList = "tax_code")})

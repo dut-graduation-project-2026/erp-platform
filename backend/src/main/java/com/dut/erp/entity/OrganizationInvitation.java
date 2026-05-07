@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -30,19 +31,8 @@ public class OrganizationInvitation {
   @GeneratedValue(strategy = GenerationType.UUID)
   UUID id;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "organization_id", nullable = false)
-  Organization organization;
-
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "invited_by", nullable = false)
-  User invitedBy;
-
   @Column(nullable = false)
   String email;
-
-  @Column(nullable = false, unique = true)
-  String token;
 
   @Column(nullable = false)
   Instant expiresAt;
@@ -55,6 +45,15 @@ public class OrganizationInvitation {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "accepted_by")
   User acceptedBy;
+
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "organization_id", nullable = false)
+  Organization organization;
+
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "invited_by", nullable = false)
+  @CreatedBy
+  User invitedBy;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
