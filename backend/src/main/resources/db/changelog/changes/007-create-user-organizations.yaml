@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 007-create-user-organizations-table
-      author: copilot
+      author: halwins
       changes:
         - createTable:
             tableName: user_organizations

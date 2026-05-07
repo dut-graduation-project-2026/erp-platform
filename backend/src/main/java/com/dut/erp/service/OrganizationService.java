@@ -6,4 +6,6 @@ import java.util.UUID;
 
 public interface OrganizationService {
   List<OrganizationResponse> getOrganizationsByUserId(UUID userId);
+
+  OrganizationResponse getOrganizationById(UUID organizationId);
 }

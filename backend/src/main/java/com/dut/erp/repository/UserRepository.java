@@ -10,14 +10,25 @@ import org.springframework.data.repository.query.Param;
 public interface UserRepository extends JpaRepository<User, UUID> {
   @Query(
       """
-          SELECT DISTINCT u
-          FROM User u
-          LEFT JOIN FETCH u.roles r
-          WHERE u.id = :id
+        SELECT DISTINCT u
+        FROM User u
+        LEFT JOIN FETCH u.roles r
+        LEFT JOIN FETCH u.organizations o
+        WHERE u.id = :id
       """)
-  Optional<User> findByIdWithRoles(@Param("id") UUID userId);
+  Optional<User> findByIdWithRolesAndOrganizations(@Param("id") UUID userId);
 
   Optional<User> findByEmail(String email);
 
   boolean existsByEmail(String email);
+
+  @Query(
+      """
+        SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END
+        FROM User u
+        JOIN u.organizations o
+        WHERE u.id = :userId AND o.id = :organizationId
+      """)
+  boolean existsByIdAndOrganizations_Id(
+      @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
 }

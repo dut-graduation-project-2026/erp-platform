@@ -1,6 +1,7 @@
 package com.dut.erp.service.impl;
 
 import com.dut.erp.dto.response.OrganizationResponse;
+import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrganizationMapper;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.service.OrganizationService;
@@ -14,15 +15,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrganizationServiceImpl implements OrganizationService {
   private final OrganizationMapper organizationMapper;
   private final OrganizationRepository organizationRepository;
 
   @Override
-  @Transactional(readOnly = true)
   public List<OrganizationResponse> getOrganizationsByUserId(UUID userId) {
     return organizationRepository.findAllWithUserId(userId).stream()
         .map(organizationMapper::toOrganizationResponse)
         .toList();
+  }
+
+  @Override
+  public OrganizationResponse getOrganizationById(UUID organizationId) {
+    return organizationRepository
+        .findById(organizationId)
+        .map(organizationMapper::toOrganizationResponse)
+        .orElseThrow(
+            () -> {
+              log.warn("Organization with ID {} not found", organizationId);
+              return new ResourceNotFoundException("Organization not found");
+            });
   }
 }

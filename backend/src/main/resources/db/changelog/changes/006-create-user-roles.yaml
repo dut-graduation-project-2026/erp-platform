@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 006-create-user-roles-table
-      author: copilot
+      author: halwins
       changes:
         - createTable:
             tableName: user_roles

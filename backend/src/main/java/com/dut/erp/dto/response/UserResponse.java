@@ -12,5 +12,4 @@ public record UserResponse(
     String firstName,
     String lastName,
     String email,
-    String avatarUrl,
     Set<OrganizationBaseResponse> organizations) {}
