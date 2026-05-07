@@ -29,5 +29,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         JOIN u.organizations o
         WHERE u.id = :userId AND o.id = :organizationId
       """)
-  boolean existsByIdAndOrganizations_Id(UUID userId, UUID organizationId);
+  boolean existsByIdAndOrganizations_Id(
+      @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
 }
