@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 013-init-erp-module-and-permissions
+      id: 012-init-erp-module-and-permissions
       author: halwins
       changes:
         - insert:
@@ -39,11 +39,39 @@ databaseChangeLog:
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
 
         - insert:
-            tableName: erp_module_permissions
+            tableName: permissions
             columns:
               - column:
-                  name: erp_module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
+                  name: id
+                  valueComputed: gen_random_uuid()
               - column:
-                  name: permission_id
-                  valueComputed: (SELECT id FROM permissions WHERE code = 'erp_module:read')
+                  name: name
+                  value: erp_module:modify
+              - column:
+                  name: code
+                  value: erp_module:modify
+              - column:
+                  name: description
+                  value: Allow modifying ERP module configurations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: erp_module:manage
+              - column:
+                  name: code
+                  value: erp_module:manage
+              - column:
+                  name: description
+                  value: Allow full management of ERP modules including creation and deletion.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')

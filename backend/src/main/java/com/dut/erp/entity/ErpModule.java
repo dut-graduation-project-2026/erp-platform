@@ -1,15 +1,13 @@
 package com.dut.erp.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,17 +38,13 @@ public class ErpModule {
   @Column(name = "name", nullable = false, length = 255)
   String name;
 
-  @Column(name = "code", nullable = false, length = 255)
+  @Column(name = "code", nullable = false, length = 255, unique = true)
   String code;
 
   @Column(name = "description", length = 2000)
   String description;
 
-  @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "erp_module_permissions",
-      joinColumns = @JoinColumn(name = "erp_module_id"),
-      inverseJoinColumns = @JoinColumn(name = "permission_id"))
+  @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
-  Set<Permission> allowedPermissions = new HashSet<>();
+  Set<Permission> permissions = new HashSet<>();
 }
