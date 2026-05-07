@@ -7,10 +7,13 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,7 +32,13 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "organizations")
+@Table(
+    name = "organizations",
+    uniqueConstraints = {
+      @UniqueConstraint(columnNames = "name"),
+      @UniqueConstraint(columnNames = "tax_code")
+    },
+    indexes = {@Index(name = "idx_organizations_tax_code", columnList = "tax_code")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -54,8 +63,8 @@ public class Organization {
   @Column(name = "hotline", nullable = false)
   String hotline;
 
-  @Column(name = "avatar_url")
-  String avatarUrl;
+  @Column(name = "tax_code", nullable = false, unique = true)
+  String taxCode;
 
   @ManyToMany(mappedBy = "organizations", fetch = FetchType.LAZY)
   @Builder.Default

@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -22,7 +23,12 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "erp_modules")
+@Table(
+    name = "erp_modules",
+    uniqueConstraints = {
+      @UniqueConstraint(columnNames = "name"),
+      @UniqueConstraint(columnNames = "code")
+    })
 @Getter
 @Setter
 @NoArgsConstructor

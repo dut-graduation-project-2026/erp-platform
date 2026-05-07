@@ -19,6 +19,12 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
+                  name: tax_code
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
                   name: description
                   type: VARCHAR(255)
               - column:
@@ -31,9 +37,6 @@ databaseChangeLog:
                   type: VARCHAR(255)
                   constraints:
                     nullable: false
-              - column:
-                  name: avatar_url
-                  type: VARCHAR(255)
               - column:
                   name: created_at
                   type: TIMESTAMP
@@ -62,3 +65,9 @@ databaseChangeLog:
             referencedColumnNames: id
             onDelete: SET NULL
             onUpdate: CASCADE
+        - createIndex:
+            indexName: idx_organizations_tax_code
+            tableName: organizations
+            columns:
+              - column:
+                  name: tax_code
