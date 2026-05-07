@@ -25,9 +25,21 @@ public class MailTemplateServiceImpl implements MailTemplateService {
             .append(invitation.getId())
             .append("?accept=");
 
+    StringBuilder inviterName = new StringBuilder();
+    if (invitation.getInvitedBy().getFirstName() != null
+        && invitation.getInvitedBy().getLastName() != null
+        && !invitation.getInvitedBy().getFirstName().isEmpty()
+        && !invitation.getInvitedBy().getLastName().isEmpty()) {
+      inviterName.append(invitation.getInvitedBy().getFirstName());
+      inviterName.append(" ");
+      inviterName.append(invitation.getInvitedBy().getLastName());
+    } else {
+      inviterName.append(invitation.getInvitedBy().getEmail());
+    }
+
     var context = new Context();
     context.setVariable("organizationName", invitation.getOrganization().getName());
-    context.setVariable("inviterName", invitation.getInvitedBy().getEmail());
+    context.setVariable("inviterName", inviterName.toString());
     context.setVariable("recipientEmail", invitation.getEmail());
     context.setVariable("acceptUrl", invitationLink + "true");
     context.setVariable("declineUrl", invitationLink + "false");

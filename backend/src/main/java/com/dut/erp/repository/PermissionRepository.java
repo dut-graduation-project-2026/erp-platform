@@ -11,23 +11,16 @@ import org.springframework.stereotype.Repository;
 public interface PermissionRepository extends JpaRepository<Permission, UUID> {
   @Query(
       """
-        SELECT
-          CASE
-              WHEN EXISTS (
-                  SELECT 1
-                  FROM User u
-                  JOIN u.roles r
-                  JOIN r.permissions p
-                  WHERE u.id = :userId
-                    AND r.organization.id = :organizationId
-                    AND p.code = :permissionCode
-              )
-              THEN true
-              ELSE false
-          END
+        SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
+        FROM User u
+        JOIN u.roles r
+        JOIN r.permissions p
+        WHERE u.id = :userId
+          AND r.organization.id = :organizationId
+          AND p.code = :permissionCode
       """)
-  boolean existsByCodeAndUserIdAndOrganizationId(
-      @Param("permissionCode") String permissionCode,
+  boolean existsByUserIdAndOrganizationIdAndPermissionCode(
       @Param("userId") UUID userId,
-      @Param("organizationId") UUID organizationId);
+      @Param("organizationId") UUID organizationId,
+      @Param("permissionCode") String permissionCode);
 }

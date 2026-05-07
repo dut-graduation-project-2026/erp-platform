@@ -8,7 +8,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
   @Query(
       """
@@ -16,9 +18,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         FROM User u
         LEFT JOIN FETCH u.roles r
         LEFT JOIN FETCH u.organizations o
-        WHERE u.id = :id
+        WHERE u.id = :userId
       """)
-  Optional<User> findByIdWithRolesAndOrganizations(@Param("id") UUID userId);
+  Optional<User> findByIdWithRolesAndOrganizations(@Param("userId") UUID userId);
 
   Optional<User> findByEmail(String email);
 
@@ -31,10 +33,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         JOIN u.organizations o
         WHERE u.id = :userId AND o.id = :organizationId
       """)
-  boolean existsByIdAndOrganizations_Id(
+  boolean existsByIdAndOrganizationsId(
       @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
 
-  Page<User> findAllByOrganizations_Id(UUID organizationId, Pageable pageable);
+  Page<User> findAllByOrganizationsId(UUID organizationId, Pageable pageable);
 
   Page<User> findAllByEmailContainingIgnoreCase(String email, Pageable pageable);
 }

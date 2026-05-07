@@ -7,7 +7,9 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface OrganizationInvitationRepository
     extends JpaRepository<OrganizationInvitation, UUID> {
 
@@ -17,9 +19,11 @@ public interface OrganizationInvitationRepository
       FROM OrganizationInvitation oi
       JOIN FETCH oi.organization
       JOIN FETCH oi.invitedBy
-      WHERE oi.id = :invitationId
+      LEFT JOIN FETCH oi.role
+      LEFT JOIN FETCH oi.acceptedBy
+      WHERE oi.id = :id
       """)
-  Optional<OrganizationInvitation> findByIdWithMailContext(@Param("invitationId") UUID invitationId);
+  Optional<OrganizationInvitation> findByIdWithContext(@Param("id") UUID id);
 
   boolean existsByEmailAndOrganizationIdAndStatus(
       String email, UUID organizationId, OrganizationInvitationStatus status);

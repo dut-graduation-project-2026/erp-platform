@@ -43,6 +43,10 @@ public class OrganizationInvitation {
   OrganizationInvitationStatus status = OrganizationInvitationStatus.PENDING;
 
   @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "role_id")
+  Role role;
+
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "accepted_by")
   User acceptedBy;
 

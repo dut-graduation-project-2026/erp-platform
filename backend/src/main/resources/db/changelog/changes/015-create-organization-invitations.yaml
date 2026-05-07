@@ -42,6 +42,9 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
+                  name: role_id
+                  type: UUID
+              - column:
                   name: accepted_by
                   type: UUID
               - column:
@@ -77,6 +80,14 @@ databaseChangeLog:
             referencedTableName: users
             referencedColumnNames: id
             onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_organization_invitations_role
+            baseTableName: organization_invitations
+            baseColumnNames: role_id
+            referencedTableName: roles
+            referencedColumnNames: id
+            onDelete: SET NULL
             onUpdate: CASCADE
         - addForeignKeyConstraint:
             constraintName: fk_organization_invitations_accepted_by

@@ -4,13 +4,17 @@ import com.dut.erp.constant.ExpirationDurationDefault;
 import com.dut.erp.dto.event.OrganizationInvitationCreatedEvent;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.OrganizationInvitation;
+import com.dut.erp.entity.Role;
+import com.dut.erp.entity.User;
 import com.dut.erp.enums.OrganizationInvitationStatus;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.repository.OrganizationInvitationRepository;
+import com.dut.erp.repository.OrganizationRepository;
+import com.dut.erp.repository.RoleRepository;
+import com.dut.erp.repository.UserRepository;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.OrganizationInvitationService;
-import com.dut.erp.service.OrganizationService;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,25 +31,33 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrganizationInvitationServiceImpl implements OrganizationInvitationService {
 
   private final OrganizationInvitationRepository organizationInvitationRepository;
-  private final OrganizationService organizationService;
+  private final OrganizationRepository organizationRepository;
+  private final RoleRepository roleRepository;
+  private final UserRepository userRepository;
   private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   @Transactional
   public void inviteUserToOrganization(
-      UUID organizationId, String email, CustomUserDetails inviter) {
+      UUID organizationId, UUID roleId, String email, CustomUserDetails inviter) {
 
-    Organization organization = organizationService.findOrganizationById(organizationId);
+    Organization organization = findOrganizationById(organizationId);
+    Role role = findRoleByIdWithOrganization(roleId);
+
+    if (!organizationId.equals(role.getOrganization().getId())) {
+      log.warn("Role with ID {} does not belong to organization {}", roleId, organizationId);
+      throw new BadRequestException("Role does not belong to the specified organization.");
+    }
 
     if (isUserAlreadyInvited(email, organizationId)) {
       log.warn("Email {} is already invited to organization {}", email, organizationId);
-
-      throw new BadRequestException("User already has a pending invitation to this organization");
+      throw new BadRequestException("User already has a pending invitation to this organization.");
     }
 
     OrganizationInvitation invitation =
         OrganizationInvitation.builder()
             .organization(organization)
+            .role(role)
             .email(email)
             .expiresAt(
                 Instant.now()
@@ -71,43 +83,100 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
       throw new AccessDeniedException("You are not authorized to respond to this invitation");
     }
 
-    if (!invitation.isPending()) {
+    if (invitation.isExpired()) {
+      log.warn("Invitation with ID {} has expired", invitationId);
+      throw new BadRequestException("Invitation has expired.");
+    }
+
+    if (invitation.getStatus() != OrganizationInvitationStatus.PENDING) {
       log.warn(
           "Invitation with ID {} is not pending. Current status: {}",
           invitationId,
           invitation.getStatus());
-
       throw new BadRequestException(
-          "Invitation is no longer pending. Current status: " + invitation.getStatus());
+          "Invitation is no longer pending. Current status: " + invitation.getStatus() + ".");
     }
 
-    if (invitation.isExpired()) {
-      log.warn("Invitation with ID {} has expired", invitationId);
-
-      throw new BadRequestException("Invitation has expired");
-    }
+    User responderUser = findUserByIdWithRolesAndOrganizations(responder.getId());
 
     invitation.setStatus(
         accepted ? OrganizationInvitationStatus.ACCEPTED : OrganizationInvitationStatus.DECLINED);
 
     if (accepted) {
-      organizationService.addMemberToOrganization(
-          invitation.getOrganization().getId(), responder.getId());
+      addUserToOrganization(invitation, responderUser);
     }
 
+    invitation.setAcceptedBy(responderUser);
     organizationInvitationRepository.save(invitation);
   }
 
   @Override
   public OrganizationInvitation getInvitationById(UUID invitationId) {
     return organizationInvitationRepository
-        .findById(invitationId)
+        .findByIdWithContext(invitationId)
         .orElseThrow(
             () -> {
               log.warn("Invitation with ID {} not found", invitationId);
 
-              return new ResourceNotFoundException("Invitation not found");
+              return new ResourceNotFoundException("Invitation not found with id: " + invitationId);
             });
+  }
+
+  private Organization findOrganizationById(UUID organizationId) {
+    return organizationRepository
+        .findById(organizationId)
+        .orElseThrow(
+            () -> {
+              log.warn("Organization with ID {} not found", organizationId);
+              return new ResourceNotFoundException(
+                  "Organization not found with id: " + organizationId);
+            });
+  }
+
+  private Role findRoleByIdWithOrganization(UUID roleId) {
+    return roleRepository
+        .findByIdWithOrganization(roleId)
+        .orElseThrow(
+            () -> {
+              log.warn("Role with ID {} not found", roleId);
+              return new ResourceNotFoundException("Role not found with id: " + roleId);
+            });
+  }
+
+  private User findUserByIdWithRolesAndOrganizations(UUID userId) {
+    return userRepository
+        .findByIdWithRolesAndOrganizations(userId)
+        .orElseThrow(
+            () -> {
+              log.warn("User with ID {} not found", userId);
+              return new ResourceNotFoundException("User not found with id: " + userId);
+            });
+  }
+
+  private void addUserToOrganization(OrganizationInvitation invitation, User user) {
+    Role role = invitation.getRole();
+
+    if (role == null) {
+      log.warn("Invitation {} has no role assigned", invitation.getId());
+      throw new BadRequestException("Invitation does not have a role assigned.");
+    }
+
+    UUID organizationId = invitation.getOrganization().getId();
+    if (!organizationId.equals(role.getOrganization().getId())) {
+      log.warn("Role {} does not belong to organization {}", role.getId(), organizationId);
+      throw new BadRequestException("Invitation role does not belong to the organization.");
+    }
+
+    boolean alreadyMember =
+        user.getOrganizations().stream().anyMatch(org -> org.getId().equals(organizationId));
+    if (alreadyMember) {
+      log.warn("User {} is already a member of organization {}", user.getId(), organizationId);
+      throw new BadRequestException("User is already a member of this organization.");
+    }
+
+    user.getOrganizations().add(invitation.getOrganization());
+    user.getRoles().add(role);
+    userRepository.save(user);
   }
 
   private boolean isUserAlreadyInvited(String email, UUID organizationId) {

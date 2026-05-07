@@ -50,7 +50,7 @@ public class MailSenderServiceImpl implements MailSenderService {
 
     OrganizationInvitation invitation =
         organizationInvitationRepository
-            .findByIdWithMailContext(event.organizationInvitationId())
+            .findByIdWithContext(event.organizationInvitationId())
             .orElseThrow(
                 () ->
                     new ResourceNotFoundException(

@@ -5,7 +5,8 @@ import com.dut.erp.security.CustomUserDetails;
 import java.util.UUID;
 
 public interface OrganizationInvitationService {
-  void inviteUserToOrganization(UUID organizationId, String email, CustomUserDetails inviter);
+  void inviteUserToOrganization(
+      UUID organizationId, UUID roleId, String email, CustomUserDetails inviter);
 
   void updateInvitationStatus(UUID invitationId, boolean accepted, CustomUserDetails responder);
 

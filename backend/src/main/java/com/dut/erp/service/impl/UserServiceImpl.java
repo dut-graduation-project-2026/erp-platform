@@ -39,7 +39,7 @@ public class UserServiceImpl implements UserService {
         organizationId,
         paginationRequest.page(),
         paginationRequest.limit());
-    Page<User> userPage = userRepository.findAllByOrganizations_Id(organizationId, pageable);
+    Page<User> userPage = userRepository.findAllByOrganizationsId(organizationId, pageable);
     Page<UserBaseResponse> userResponses = userPage.map(userMapper::toUserBaseResponse);
     log.info(
         "Fetched {} users for organization {} (total elements: {}, total pages: {})",
@@ -84,13 +84,13 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public User findUserById(UUID userId) {
+  public User findUserByIdFetchRolesAndOrganizations(UUID userId) {
     return userRepository
-        .findById(userId)
+        .findByIdWithRolesAndOrganizations(userId)
         .orElseThrow(
             () -> {
               log.warn("User with ID {} not found", userId);
-              return new ResourceNotFoundException("User not found");
+              return new ResourceNotFoundException("User not found with id: " + userId);
             });
   }
 }

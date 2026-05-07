@@ -24,7 +24,7 @@ public class ErpModuleServiceImpl implements ErpModuleService {
   public List<ErpModuleBaseResponse> getErpModulesByUserAndOrganization(
       UUID userId, UUID organizationId) {
     List<ErpModule> modules =
-        erpModuleRepository.findAccessibleModulesByUserAndOrganization(userId, organizationId);
+        erpModuleRepository.findAllAccessibleByUserIdAndOrganizationId(userId, organizationId);
     return modules.stream()
         .map(erpModuleMapper::toErpModuleBaseResponse)
         .collect(Collectors.toList());
@@ -33,7 +33,7 @@ public class ErpModuleServiceImpl implements ErpModuleService {
   @Override
   public List<ErpModuleResponse> getErpModulesByOrganization(UUID organizationId) {
     List<ErpModule> modules =
-        erpModuleRepository.findByOrganizationIdWithPermissions(organizationId);
+        erpModuleRepository.findAllByOrganizationIdWithPermissions(organizationId);
     return modules.stream().map(erpModuleMapper::toErpModuleResponse).collect(Collectors.toList());
   }
 }

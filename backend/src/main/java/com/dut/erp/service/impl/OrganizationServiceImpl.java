@@ -2,12 +2,15 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.dto.response.OrganizationResponse;
 import com.dut.erp.entity.Organization;
+import com.dut.erp.entity.Role;
 import com.dut.erp.entity.User;
+import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrganizationMapper;
 import com.dut.erp.repository.OrganizationRepository;
+import com.dut.erp.repository.RoleRepository;
+import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.OrganizationService;
-import com.dut.erp.service.UserService;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -22,12 +25,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrganizationServiceImpl implements OrganizationService {
   private final OrganizationMapper organizationMapper;
   private final OrganizationRepository organizationRepository;
-
-  private final UserService userService;
+  private final UserRepository userRepository;
+  private final RoleRepository roleRepository;
 
   @Override
   public List<OrganizationResponse> getOrganizationsByUserId(UUID userId) {
-    return organizationRepository.findAllWithUserId(userId).stream()
+    return organizationRepository.findAllByUserId(userId).stream()
         .map(organizationMapper::toOrganizationResponse)
         .toList();
   }
@@ -44,32 +47,50 @@ public class OrganizationServiceImpl implements OrganizationService {
         .orElseThrow(
             () -> {
               log.warn("Organization with ID {} not found", organizationId);
-              return new ResourceNotFoundException("Organization not found");
+              return new ResourceNotFoundException(
+                  "Organization not found with id: " + organizationId);
             });
   }
 
   @Override
   @Transactional
-  public Organization addMemberToOrganization(UUID organizationId, UUID userId) {
-    Organization organization =
-        organizationRepository
-            .findByIdWithUsers(organizationId)
+  public Organization addMemberToOrganization(UUID organizationId, UUID userId, UUID roleId) {
+    Organization organization = findOrganizationById(organizationId);
+
+    User user =
+        userRepository
+            .findByIdWithRolesAndOrganizations(userId)
             .orElseThrow(
                 () -> {
-                  log.warn("Organization with ID {} not found", organizationId);
-                  return new ResourceNotFoundException("Organization not found");
+                  log.warn("User with ID {} not found", userId);
+                  return new ResourceNotFoundException("User not found with id: " + userId);
+                });
+    Role role =
+        roleRepository
+            .findByIdWithOrganization(roleId)
+            .orElseThrow(
+                () -> {
+                  log.warn("Role with ID {} not found", roleId);
+                  return new ResourceNotFoundException("Role not found with id: " + roleId);
                 });
 
-    User user = userService.findUserById(userId);
-
-    boolean alreadyMember =
-        organization.getUsers().stream().anyMatch(u -> u.getId().equals(user.getId()));
-    if (alreadyMember) {
-      log.warn("User {} is already a member of organization {}", userId, organizationId);
-      throw new IllegalStateException("User is already a member of this organization");
+    if (!organizationId.equals(role.getOrganization().getId())) {
+      log.warn("Role {} does not belong to organization {}", roleId, organizationId);
+      throw new BadRequestException("Role does not belong to the specified organization.");
     }
 
+    boolean alreadyMember =
+        user.getOrganizations().stream().anyMatch(org -> org.getId().equals(organizationId));
+    if (alreadyMember) {
+      log.warn("User {} is already a member of organization {}", userId, organizationId);
+      throw new BadRequestException("User is already a member of this organization.");
+    }
+
+    user.getOrganizations().add(organization);
     organization.getUsers().add(user);
-    return organizationRepository.save(organization);
+    user.getRoles().add(role);
+
+    userRepository.save(user);
+    return organization;
   }
 }

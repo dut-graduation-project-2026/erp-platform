@@ -13,5 +13,5 @@ public interface UserService {
   PagedEntityResponse<UserBaseResponse> searchUsersByEmailContaining(
       String email, PaginationRequest paginationRequest);
 
-  User findUserById(UUID userId);
+  User findUserByIdFetchRolesAndOrganizations(UUID userId);
 }

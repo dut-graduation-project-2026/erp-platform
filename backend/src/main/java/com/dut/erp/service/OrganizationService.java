@@ -13,5 +13,5 @@ public interface OrganizationService {
 
   Organization findOrganizationById(UUID organizationId);
 
-  Organization addMemberToOrganization(UUID organizationId, UUID userId);
+  Organization addMemberToOrganization(UUID organizationId, UUID userId, UUID roleId);
 }

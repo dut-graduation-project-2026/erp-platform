@@ -18,7 +18,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, UUID
       JOIN o.users u
       WHERE u.id = :userId
       """)
-  List<Organization> findAllWithUserId(@Param("userId") UUID userId);
+  List<Organization> findAllByUserId(@Param("userId") UUID userId);
 
   @Query(
       """
