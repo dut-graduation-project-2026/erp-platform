@@ -4,5 +4,6 @@ public enum OrganizationInvitationStatus {
   PENDING,
   ACCEPTED,
   DECLINED,
+  EXPIRED,
   REVOKED
 }
