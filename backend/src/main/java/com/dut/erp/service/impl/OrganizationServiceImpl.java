@@ -1,6 +1,7 @@
 package com.dut.erp.service.impl;
 
 import com.dut.erp.dto.request.CreateOrganizationRequest;
+import com.dut.erp.dto.request.UpdateOrganizationRequest;
 import com.dut.erp.dto.response.OrganizationResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Permission;
@@ -14,8 +15,8 @@ import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.PermissionRepository;
 import com.dut.erp.repository.RoleRepository;
 import com.dut.erp.repository.UserRepository;
-import java.util.HashSet;
 import com.dut.erp.service.OrganizationService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -92,7 +93,6 @@ public class OrganizationServiceImpl implements OrganizationService {
     return organizationMapper.toOrganizationResponse(findOrganizationById(organizationId));
   }
 
-  @Override
   public Organization findOrganizationById(UUID organizationId) {
     return organizationRepository
         .findById(organizationId)
@@ -104,7 +104,6 @@ public class OrganizationServiceImpl implements OrganizationService {
             });
   }
 
-  @Override
   @Transactional
   public Organization addMemberToOrganization(UUID organizationId, UUID userId, UUID roleId) {
     Organization organization = findOrganizationById(organizationId);
@@ -144,5 +143,29 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     userRepository.save(user);
     return organization;
+  }
+
+  @Override
+  @Transactional
+  public OrganizationResponse updateOrganization(
+      UUID organizationId, UpdateOrganizationRequest request) {
+    Organization organization = findOrganizationById(organizationId);
+
+    // Check if new tax code already exists (if different from current)
+    if (!organization.getTaxCode().equals(request.taxCode())
+        && organizationRepository.existsByTaxCode(request.taxCode())) {
+      log.warn("Organization update failed: tax code {} already exists", request.taxCode());
+      throw new ResourceAlreadyExistsException("Organization with this tax code already exists.");
+    }
+
+    organization.setName(request.name());
+    organization.setDescription(request.description());
+    organization.setAddress(request.address());
+    organization.setHotline(request.hotline());
+    organization.setTaxCode(request.taxCode());
+
+    organization = organizationRepository.save(organization);
+    log.info("Organization {} updated", organizationId);
+    return organizationMapper.toOrganizationResponse(organization);
   }
 }

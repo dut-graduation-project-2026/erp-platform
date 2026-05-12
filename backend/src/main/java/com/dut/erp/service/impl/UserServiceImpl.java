@@ -2,9 +2,11 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.constant.SortingConstants;
 import com.dut.erp.dto.request.PaginationRequest;
+import com.dut.erp.dto.request.UpdateUserRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.UserBaseResponse;
 import com.dut.erp.entity.User;
+import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.UserService;
@@ -48,5 +50,25 @@ public class UserServiceImpl implements UserService {
         userPage.getTotalPages());
 
     return PagedEntityResponse.from(userResponses);
+  }
+
+  @Override
+  @Transactional
+  public UserBaseResponse updateUser(UUID userId, UpdateUserRequest request) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(
+                () -> {
+                  log.warn("User with ID {} not found", userId);
+                  return new ResourceNotFoundException("User not found with id: " + userId);
+                });
+
+    user.setFirstName(request.firstName());
+    user.setLastName(request.lastName());
+
+    user = userRepository.save(user);
+    log.info("User {} updated successfully", userId);
+    return userMapper.toUserBaseResponse(user);
   }
 }
