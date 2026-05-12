@@ -8,6 +8,9 @@ public interface OrganizationInvitationService {
   void inviteUserToOrganization(
       UUID organizationId, UUID roleId, String email, CustomUserDetails inviter);
 
+  void resendInvitationToOrganization(
+      UUID invitationId, CustomUserDetails inviter);
+
   void updateInvitationStatus(UUID invitationId, boolean accepted, CustomUserDetails responder);
 
   OrganizationInvitation getInvitationById(UUID invitationId);

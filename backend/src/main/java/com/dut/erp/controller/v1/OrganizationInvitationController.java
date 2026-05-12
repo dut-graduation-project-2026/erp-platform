@@ -39,6 +39,21 @@ public class OrganizationInvitationController {
     return ResponseEntity.ok().build();
   }
 
+  @PostMapping("/{invitationId}/resend")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('organizations:manage', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<Void> resendInvitationUserToOrganization(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID invitationId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    organizationInvitationService.resendInvitationToOrganization(invitationId, userDetails);
+    return ResponseEntity.ok().build();
+  }
+
   @GetMapping("/{invitationId}")
   public ResponseEntity<Void> respondToOrganizationInvitation(
       @PathVariable UUID organizationId,

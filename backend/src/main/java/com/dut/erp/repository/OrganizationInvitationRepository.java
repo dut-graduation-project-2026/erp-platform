@@ -30,7 +30,7 @@ public interface OrganizationInvitationRepository
       """
       UPDATE OrganizationInvitation oi
       SET oi.status = 'EXPIRED'
-      WHERE oi.expirationTime <= :now
+      WHERE oi.expiresAt <= :now
           AND oi.status = 'PENDING'
       """)
   int updateExpiredInvitations(@Param("now") Instant now);
@@ -38,10 +38,23 @@ public interface OrganizationInvitationRepository
   @Query(
       """
       DELETE FROM OrganizationInvitation oi
-      WHERE oi.expirationTime <= :now
+      WHERE oi.expiresAt <= :now
           AND oi.status = 'EXPIRED'
       """)
   int deleteExpiredInvitations(@Param("now") Instant now);
+
+  @Query(
+      """
+      SELECT oi
+      FROM OrganizationInvitation oi
+      JOIN FETCH oi.organization
+      JOIN FETCH oi.invitedBy
+      LEFT JOIN FETCH oi.role
+      LEFT JOIN FETCH oi.acceptedBy
+      WHERE oi.email = :email AND oi.organization.id = :organizationId
+      """)
+  Optional<OrganizationInvitation> findByEmailAndOrganizationId(
+      @Param("email") String email, @Param("organizationId") UUID organizationId);
 
   boolean existsByEmailAndOrganizationIdAndStatus(
       String email, UUID organizationId, OrganizationInvitationStatus status);

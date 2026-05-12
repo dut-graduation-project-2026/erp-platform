@@ -55,7 +55,7 @@ public class RoleServiceImpl implements RoleService {
   }
 
   @Override
-  public RoleResponse getRoleById(UUID roleId) {
+  public RoleResponse getRoleByIdWithOrganizationAndPermissionAndModule(UUID roleId) {
     log.info("Fetching role with ID {}", roleId);
     Role role =
         roleRepository
@@ -77,6 +77,7 @@ public class RoleServiceImpl implements RoleService {
           pageable.getPageSize());
       return PagedEntityResponse.from(Page.empty(pageable));
     }
+
     log.debug(
         "Mapping {} role IDs to RoleBaseResponse for pagination: page={}, limit={}",
         roleIdsPage.getNumberOfElements(),
@@ -85,6 +86,7 @@ public class RoleServiceImpl implements RoleService {
     Map<UUID, Role> roleMap =
         roleRepository.findAllByIdIn(roleIdsPage.getContent()).stream()
             .collect(Collectors.toMap(Role::getId, Function.identity()));
+
     List<RoleBaseResponse> roleBaseResponses =
         roleIdsPage.getContent().stream()
             .map(roleMap::get)
@@ -97,6 +99,7 @@ public class RoleServiceImpl implements RoleService {
         roleBaseResponses.size(),
         pageable.getPageNumber() + 1,
         pageable.getPageSize());
+
     return PagedEntityResponse.from(
         new PageImpl<>(roleBaseResponses, pageable, roleIdsPage.getTotalElements()));
   }

@@ -29,9 +29,6 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: token
-                  type: VARCHAR(255)
-              - column:
                   name: expires_at
                   type: TIMESTAMP
                   constraints:
@@ -57,14 +54,6 @@ databaseChangeLog:
                   type: TIMESTAMP
                   constraints:
                     nullable: false
-        - addUniqueConstraint:
-            tableName: organization_invitations
-            columnNames: token
-            constraintName: uk_organization_invitations_token
-        - addUniqueConstraint:
-            tableName: organization_invitations
-            columnNames: organization_id, email
-            constraintName: uk_organization_invitations_org_email
         - addForeignKeyConstraint:
             constraintName: fk_organization_invitations_organization
             baseTableName: organization_invitations

@@ -10,5 +10,5 @@ public interface RoleService {
   PagedEntityResponse<RoleBaseResponse> getRolesByOrganizationId(
       UUID organizationId, PaginationRequest paginationRequest);
 
-  RoleResponse getRoleById(UUID roleId);
+  RoleResponse getRoleByIdWithOrganizationAndPermissionAndModule(UUID roleId);
 }

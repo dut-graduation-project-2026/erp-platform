@@ -26,17 +26,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   boolean existsByEmail(String email);
 
-  @Query(
-      """
-        SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END
-        FROM User u
-        JOIN u.organizations o
-        WHERE u.id = :userId AND o.id = :organizationId
-      """)
-  boolean existsByIdAndOrganizationsId(
-      @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
-
   Page<User> findAllByOrganizationsId(UUID organizationId, Pageable pageable);
-
-  Page<User> findAllByEmailContainingIgnoreCase(String email, Pageable pageable);
 }
