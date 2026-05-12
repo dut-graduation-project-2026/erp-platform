@@ -4,6 +4,8 @@ import com.dut.erp.entity.Role;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,14 +17,38 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
 
   @Query(
       """
-      SELECT DISTINCT r
-      FROM User u
-      JOIN u.roles r
-      WHERE u.id = :userId AND r.organization.id = :organizationId
+      SELECT r.id
+      FROM Role r
+      WHERE r.organization.id = :organizationId
       """)
-  List<Role> findRolesByUserIdAndOrganizationId(
-      @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
+  Page<UUID> findRoleIdsByOrganizationId(
+      @Param("organizationId") UUID organizationId, Pageable pageable);
 
-  @Query("SELECT r FROM Role r WHERE r.organization.id = :organizationId")
-  List<Role> findAllByOrganizationId(@Param("organizationId") UUID organizationId);
+  @Query(
+      """
+      SELECT DISTINCT r FROM Role r
+      LEFT JOIN FETCH r.organization o
+      WHERE r.id IN :roleIds
+      """)
+  List<Role> findAllByIdIn(@Param("roleIds") List<UUID> roleIds);
+
+  @Query(
+      """
+      SELECT r
+      FROM Role r
+      LEFT JOIN FETCH r.organization
+      WHERE r.id = :roleId
+      """)
+  Optional<Role> findByIdWithOrganization(@Param("roleId") UUID roleId);
+
+  @Query(
+      """
+      SELECT r
+      FROM Role r
+      LEFT JOIN FETCH r.organization
+      LEFT JOIN FETCH r.permissions p
+      LEFT JOIN FETCH p.module
+      WHERE r.id = :roleId
+      """)
+  Optional<Role> findByIdWithOrganizationAndPermissionAndModule(@Param("roleId") UUID roleId);
 }

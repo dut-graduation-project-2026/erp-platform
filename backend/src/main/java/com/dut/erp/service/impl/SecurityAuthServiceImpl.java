@@ -34,8 +34,8 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
   public boolean hasPermission(
       String permissionCode, UUID organizationId, CustomUserDetails userDetails) {
     boolean hasPermission =
-        permissionRepository.existsByCodeAndUserIdAndOrganizationId(
-            permissionCode, userDetails.getId(), organizationId);
+        permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+            userDetails.getId(), organizationId, permissionCode);
 
     if (!hasPermission) {
       log.warn(

@@ -35,6 +35,9 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
     log.warn("Access denied: {}", ex.getMessage());
+    if (ex.getMessage() != null) {
+      return buildResponse(ErrorCode.ACCESS_DENIED, ex.getMessage());
+    }
     return buildResponse(ErrorCode.ACCESS_DENIED);
   }
 
@@ -124,6 +127,10 @@ public class GlobalExceptionHandler {
 
   private ResponseEntity<ErrorResponse> buildResponse(ErrorCode errorCode) {
     return buildResponse(errorCode, null, null);
+  }
+
+  private ResponseEntity<ErrorResponse> buildResponse(ErrorCode errorCode, String customMessage) {
+    return buildResponse(errorCode, customMessage, null);
   }
 
   private ResponseEntity<ErrorResponse> buildResponse(

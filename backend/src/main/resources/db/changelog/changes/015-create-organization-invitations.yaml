@@ -1,0 +1,106 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-create-organization-invitations-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: organization_invitations
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_organization_invitations
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: invited_by
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: UUID
+              - column:
+                  name: responded_by
+                  type: UUID
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_organization_invitations_organization
+            baseTableName: organization_invitations
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_organization_invitations_invited_by
+            baseTableName: organization_invitations
+            baseColumnNames: invited_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_organization_invitations_role
+            baseTableName: organization_invitations
+            baseColumnNames: role_id
+            referencedTableName: roles
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_organization_invitations_responded_by
+            baseTableName: organization_invitations
+            baseColumnNames: responded_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - createIndex:
+            tableName: organization_invitations
+            indexName: idx_organization_invitations_org_email_status
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: email
+              - column:
+                  name: status
+        - createIndex:
+            tableName: organization_invitations
+            indexName: idx_organization_invitations_status_expires_at
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: expires_at

@@ -4,10 +4,13 @@ import com.dut.erp.dto.response.OrganizationResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.OrganizationService;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,5 +35,27 @@ public class OrganizationController {
     List<OrganizationResponse> organizationResponses =
         organizationService.getOrganizationsByUserId(userDetails.getId());
     return ResponseEntity.ok(organizationResponses);
+  }
+
+  /**
+   * Retrieves the details of a specific organization by its ID.
+   *
+   * <p>The user is resolved from the security context. The authenticated user must have access to
+   * the organization to retrieve its details.
+   *
+   * @param organizationId the UUID of the organization to retrieve
+   * @param userDetails the authenticated user's details (injected from security context)
+   * @return a ResponseEntity containing the OrganizationResponse object for the specified
+   *     organization ID
+   * @throws AccessDeniedException if the authenticated user does not have access to the
+   *     organization
+   */
+  @GetMapping("/{organizationId}")
+  @PreAuthorize("@securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)")
+  public ResponseEntity<OrganizationResponse> getOrganizationById(
+      @PathVariable UUID organizationId, @AuthenticationPrincipal CustomUserDetails userDetails) {
+    OrganizationResponse organizationResponse =
+        organizationService.getOrganizationById(organizationId);
+    return ResponseEntity.ok(organizationResponse);
   }
 }
