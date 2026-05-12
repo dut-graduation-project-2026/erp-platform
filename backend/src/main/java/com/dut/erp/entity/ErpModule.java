@@ -9,27 +9,19 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(
-    name = "erp_modules",
-    uniqueConstraints = {
-      @UniqueConstraint(columnNames = "name"),
-      @UniqueConstraint(columnNames = "code")
-    })
-@Getter
+@Table(name = "erp_modules")
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor

@@ -7,13 +7,10 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,12 +29,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(
-    name = "organizations",
-    uniqueConstraints = {
-      @UniqueConstraint(columnNames = "tax_code")
-    },
-    indexes = {@Index(name = "idx_organizations_tax_code", columnList = "tax_code")})
+@Table(name = "organizations")
 @Getter
 @Setter
 @NoArgsConstructor
