@@ -65,9 +65,3 @@ databaseChangeLog:
             referencedColumnNames: id
             onDelete: SET NULL
             onUpdate: CASCADE
-        - createIndex:
-            indexName: idx_organizations_tax_code
-            tableName: organizations
-            columns:
-              - column:
-                  name: tax_code

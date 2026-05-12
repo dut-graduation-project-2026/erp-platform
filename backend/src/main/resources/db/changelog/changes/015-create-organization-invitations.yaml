@@ -86,3 +86,21 @@ databaseChangeLog:
             referencedColumnNames: id
             onDelete: SET NULL
             onUpdate: CASCADE
+        - createIndex:
+            tableName: organization_invitations
+            indexName: idx_organization_invitations_org_email_status
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: email
+              - column:
+                  name: status
+        - createIndex:
+            tableName: organization_invitations
+            indexName: idx_organization_invitations_status_expires_at
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: expires_at

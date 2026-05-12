@@ -1,6 +1,7 @@
 package com.dut.erp.controller.v1;
 
 import com.dut.erp.dto.request.OrganizationInvitationUserRequest;
+import com.dut.erp.dto.request.UpdateOrganizationInvitationStatusRequest;
 import com.dut.erp.dto.response.OrganizationInvitationResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.OrganizationInvitationService;
@@ -61,11 +62,11 @@ public class OrganizationInvitationController {
   public ResponseEntity<OrganizationInvitationResponse> respondToOrganizationInvitation(
       @PathVariable UUID organizationId,
       @PathVariable UUID invitationId,
-      @RequestBody boolean accept,
+      @RequestBody @Valid UpdateOrganizationInvitationStatusRequest request,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     OrganizationInvitationResponse response =
         organizationInvitationService.updateInvitationStatus(
-            organizationId, invitationId, accept, userDetails);
+            organizationId, invitationId, request.accepted(), userDetails);
     return ResponseEntity.ok(response);
   }
 }
