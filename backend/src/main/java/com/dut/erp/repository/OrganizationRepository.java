@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface OrganizationRepository extends JpaRepository<Organization, UUID> {
+  boolean existsByTaxCode(String taxCode);
+
   @Query(
       """
       SELECT DISTINCT o

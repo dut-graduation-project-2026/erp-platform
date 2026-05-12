@@ -1,5 +1,6 @@
 package com.dut.erp.service.impl;
 
+import com.dut.erp.dto.request.CreateOrganizationRequest;
 import com.dut.erp.dto.response.OrganizationResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Role;
@@ -23,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OrganizationServiceImpl implements OrganizationService {
+  private static final String DEFAULT_ADMIN_ROLE_NAME = "ADMIN";
+
   private final OrganizationMapper organizationMapper;
   private final OrganizationRepository organizationRepository;
   private final UserRepository userRepository;
