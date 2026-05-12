@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -26,22 +27,28 @@ public interface OrganizationInvitationRepository
       """)
   Optional<OrganizationInvitation> findByIdWithContext(@Param("id") UUID id);
 
+  @Modifying
   @Query(
       """
       UPDATE OrganizationInvitation oi
-      SET oi.status = 'EXPIRED'
+      SET oi.status = :expiredStatus
       WHERE oi.expiresAt <= :now
-          AND oi.status = 'PENDING'
+          AND oi.status = :pendingStatus
       """)
-  int updateExpiredInvitations(@Param("now") Instant now);
+  int updateExpiredInvitations(
+      @Param("now") Instant now,
+      @Param("expiredStatus") OrganizationInvitationStatus expiredStatus,
+      @Param("pendingStatus") OrganizationInvitationStatus pendingStatus);
 
+  @Modifying
   @Query(
       """
       DELETE FROM OrganizationInvitation oi
       WHERE oi.expiresAt <= :now
-          AND oi.status = 'EXPIRED'
+          AND oi.status = :status
       """)
-  int deleteExpiredInvitations(@Param("now") Instant now);
+  int deleteExpiredInvitations(
+      @Param("now") Instant now, @Param("status") OrganizationInvitationStatus status);
 
   @Query(
       """

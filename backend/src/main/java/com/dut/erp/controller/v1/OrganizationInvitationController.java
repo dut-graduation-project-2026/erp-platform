@@ -50,7 +50,8 @@ public class OrganizationInvitationController {
       @PathVariable UUID organizationId,
       @PathVariable UUID invitationId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    organizationInvitationService.resendInvitationToOrganization(invitationId, userDetails);
+    organizationInvitationService.resendInvitationToOrganization(
+        organizationId, invitationId, userDetails);
     return ResponseEntity.ok().build();
   }
 
@@ -60,7 +61,8 @@ public class OrganizationInvitationController {
       @PathVariable UUID invitationId,
       @RequestParam boolean accept,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    organizationInvitationService.updateInvitationStatus(invitationId, accept, userDetails);
+    organizationInvitationService.updateInvitationStatus(
+        organizationId, invitationId, accept, userDetails);
     return ResponseEntity.ok().build();
   }
 }

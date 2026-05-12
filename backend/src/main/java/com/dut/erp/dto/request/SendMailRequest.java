@@ -7,10 +7,4 @@ public record SendMailRequest(
     @NotBlank(message = "To email is required") @Email(message = "Email should be valid") String to,
     @NotBlank(message = "Subject is required") String subject,
     @NotBlank(message = "Content is required") String content,
-    boolean isHtml) {
-  public SendMailRequest {
-    if (!isHtml) {
-      isHtml = true;
-    }
-  }
-}
+    boolean isHtml) {}

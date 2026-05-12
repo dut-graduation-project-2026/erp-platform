@@ -92,9 +92,19 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
 
   @Override
   @Transactional
-  public void resendInvitationToOrganization(UUID invitationId, CustomUserDetails inviter) {
+  public void resendInvitationToOrganization(
+      UUID organizationId, UUID invitationId, CustomUserDetails inviter) {
 
     OrganizationInvitation invitation = getInvitationById(invitationId);
+
+    if (!organizationId.equals(invitation.getOrganization().getId())) {
+      log.warn(
+          "User {} attempted to resend invitation {} using unauthorized organization {}",
+          inviter.getId(),
+          invitationId,
+          organizationId);
+      throw new AccessDeniedException("You are not authorized to resend this invitation.");
+    }
 
     if (invitation.getStatus() != OrganizationInvitationStatus.PENDING) {
       log.warn("Cannot resend invitation {} with status {}", invitationId, invitation.getStatus());
@@ -127,9 +137,18 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
   @Override
   @Transactional
   public void updateInvitationStatus(
-      UUID invitationId, boolean accepted, CustomUserDetails responder) {
+      UUID organizationId, UUID invitationId, boolean accepted, CustomUserDetails responder) {
 
     OrganizationInvitation invitation = getInvitationById(invitationId);
+
+    if (!organizationId.equals(invitation.getOrganization().getId())) {
+      log.warn(
+          "User {} attempted to respond invitation {} using unauthorized organization {}",
+          responder.getId(),
+          invitationId,
+          organizationId);
+      throw new AccessDeniedException("You are not authorized to respond to this invitation.");
+    }
 
     if (!invitation.getEmail().equalsIgnoreCase(responder.getEmail())) {
       throw new AccessDeniedException("You are not authorized to respond to this invitation");

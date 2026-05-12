@@ -17,8 +17,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.example.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:admin}
-    password: ${MAIL_PASSWORD:admin}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
 server:
   port: ${SERVER_PORT:8080}
 app:

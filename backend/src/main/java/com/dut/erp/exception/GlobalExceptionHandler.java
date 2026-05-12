@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
     log.warn("Access denied: {}", ex.getMessage());
     if (ex.getMessage() != null) {
-      return buildResponse(ErrorCode.UNAUTHORIZED, ex.getMessage());
+      return buildResponse(ErrorCode.ACCESS_DENIED, ex.getMessage());
     }
     return buildResponse(ErrorCode.ACCESS_DENIED);
   }

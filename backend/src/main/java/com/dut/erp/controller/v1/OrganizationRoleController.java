@@ -16,13 +16,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/roles")
-public class RoleController {
+@RequestMapping("/api/v1/organizations/{organizationId}/roles")
+public class OrganizationRoleController {
   private final RoleService roleService;
 
   @GetMapping
@@ -33,7 +32,7 @@ public class RoleController {
         @securityAuthService.hasPermission('roles:read', #organizationId, #userDetails)
       """)
   public ResponseEntity<PagedEntityResponse<RoleBaseResponse>> getRolesOfOrganization(
-      @RequestParam UUID organizationId,
+      @PathVariable UUID organizationId,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
@@ -48,7 +47,9 @@ public class RoleController {
         @securityAuthService.hasPermission('roles:select', #organizationId, #userDetails)
       """)
   public ResponseEntity<RoleResponse> getRoleById(
-      @PathVariable UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) {
+      @PathVariable UUID id,
+      @PathVariable UUID organizationId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(roleService.getRoleByIdWithOrganizationAndPermissionAndModule(id));
   }
 }
