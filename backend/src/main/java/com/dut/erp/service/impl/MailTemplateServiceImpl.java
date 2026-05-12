@@ -18,7 +18,7 @@ public class MailTemplateServiceImpl implements MailTemplateService {
   @Override
   public String generateOrganizationInvitationEmailContent(OrganizationInvitation invitation) {
     StringBuilder invitationLink =
-        new StringBuilder(systemDomainProperties.backend())
+        new StringBuilder(systemDomainProperties.frontend())
             .append("/organizations/")
             .append(invitation.getOrganization().getId())
             .append("/invitations/")

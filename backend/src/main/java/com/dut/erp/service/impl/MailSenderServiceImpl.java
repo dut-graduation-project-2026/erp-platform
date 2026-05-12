@@ -11,6 +11,7 @@ import com.dut.erp.service.MailTemplateService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.MailException;
@@ -33,14 +34,16 @@ public class MailSenderServiceImpl implements MailSenderService {
 
   @Async("mailTaskExecutor")
   @Override
-  public void sendMail(SendMailRequest request) {
+  public CompletableFuture<Void> sendMail(SendMailRequest request) {
     try {
       MimeMessage message = buildMessage(request);
       mailSender.send(message);
       log.info("Email sent successfully to {}", request.to());
+      return CompletableFuture.completedFuture(null);
     } catch (MessagingException | MailException e) {
       log.error("Failed to send email to {}", request.to(), e);
-      throw new RuntimeException("Failed to send email to " + request.to(), e);
+      return CompletableFuture.failedFuture(
+          new RuntimeException("Failed to send email to " + request.to(), e));
     }
   }
 

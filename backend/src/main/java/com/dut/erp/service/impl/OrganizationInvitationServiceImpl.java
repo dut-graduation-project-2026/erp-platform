@@ -2,6 +2,7 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.constant.ExpirationDurationDefault;
 import com.dut.erp.dto.event.OrganizationInvitationCreatedEvent;
+import com.dut.erp.dto.response.OrganizationInvitationResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.OrganizationInvitation;
 import com.dut.erp.entity.Role;
@@ -9,6 +10,7 @@ import com.dut.erp.entity.User;
 import com.dut.erp.enums.OrganizationInvitationStatus;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
+import com.dut.erp.mapper.InvitationMapper;
 import com.dut.erp.repository.OrganizationInvitationRepository;
 import com.dut.erp.repository.RoleRepository;
 import com.dut.erp.repository.UserRepository;
@@ -32,11 +34,12 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
   private final OrganizationInvitationRepository organizationInvitationRepository;
   private final RoleRepository roleRepository;
   private final UserRepository userRepository;
+  private final InvitationMapper invitationMapper;
   private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   @Transactional
-  public void inviteUserToOrganization(
+  public OrganizationInvitationResponse inviteUserToOrganization(
       UUID organizationId, UUID roleId, String email, CustomUserDetails inviter) {
 
     Role role = findRoleByIdWithOrganization(roleId);
@@ -87,12 +90,15 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
     applicationEventPublisher.publishEvent(
         new OrganizationInvitationCreatedEvent(invitation.getId()));
 
+    OrganizationInvitationResponse response =
+        invitationMapper.toOrganizationInvitationResponse(invitation);
     log.info("User {} invited to organization {} by {}", email, organizationId, inviter.getEmail());
+    return response;
   }
 
   @Override
   @Transactional
-  public void resendInvitationToOrganization(
+  public OrganizationInvitationResponse resendInvitationToOrganization(
       UUID organizationId, UUID invitationId, CustomUserDetails inviter) {
 
     OrganizationInvitation invitation = getInvitationById(invitationId);
@@ -117,7 +123,7 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
     if (Instant.now().toEpochMilli() - invitation.getUpdatedAt().toEpochMilli()
         < ExpirationDurationDefault.RESEND_INVITATION_INTERVAL_MS) {
       log.warn("Invitation {} was resent too recently", invitationId);
-      throw new BadRequestException("You can only resend an invitation every 2 minutes.");
+      throw new BadRequestException("Only resend an invitation every 2 minutes.");
     }
 
     invitation.setExpiresAt(
@@ -132,11 +138,12 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
         invitationId,
         invitation.getEmail(),
         inviter.getEmail());
+    return invitationMapper.toOrganizationInvitationResponse(invitation);
   }
 
   @Override
   @Transactional
-  public void updateInvitationStatus(
+  public OrganizationInvitationResponse updateInvitationStatus(
       UUID organizationId, UUID invitationId, boolean accepted, CustomUserDetails responder) {
 
     OrganizationInvitation invitation = getInvitationById(invitationId);
@@ -176,9 +183,10 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
     if (accepted) {
       addUserToOrganization(invitation, responderUser);
     }
+    invitation.setRespondedBy(responderUser);
 
-    invitation.setAcceptedBy(responderUser);
     organizationInvitationRepository.save(invitation);
+    return invitationMapper.toOrganizationInvitationResponse(invitation);
   }
 
   @Override

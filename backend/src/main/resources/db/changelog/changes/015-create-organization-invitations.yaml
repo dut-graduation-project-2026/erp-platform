@@ -42,7 +42,7 @@ databaseChangeLog:
                   name: role_id
                   type: UUID
               - column:
-                  name: accepted_by
+                  name: responded_by
                   type: UUID
               - column:
                   name: created_at
@@ -79,9 +79,9 @@ databaseChangeLog:
             onDelete: SET NULL
             onUpdate: CASCADE
         - addForeignKeyConstraint:
-            constraintName: fk_organization_invitations_accepted_by
+            constraintName: fk_organization_invitations_responded_by
             baseTableName: organization_invitations
-            baseColumnNames: accepted_by
+            baseColumnNames: responded_by
             referencedTableName: users
             referencedColumnNames: id
             onDelete: SET NULL

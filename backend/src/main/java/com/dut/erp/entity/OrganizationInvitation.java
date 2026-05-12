@@ -42,8 +42,8 @@ public class OrganizationInvitation {
   Role role;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "accepted_by")
-  User acceptedBy;
+  @JoinColumn(name = "responded_by")
+  User respondedBy;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "organization_id", nullable = false)

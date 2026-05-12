@@ -22,7 +22,7 @@ public interface OrganizationInvitationRepository
       JOIN FETCH oi.organization
       JOIN FETCH oi.invitedBy
       LEFT JOIN FETCH oi.role
-      LEFT JOIN FETCH oi.acceptedBy
+      LEFT JOIN FETCH oi.respondedBy
       WHERE oi.id = :id
       """)
   Optional<OrganizationInvitation> findByIdWithContext(@Param("id") UUID id);
@@ -57,7 +57,7 @@ public interface OrganizationInvitationRepository
       JOIN FETCH oi.organization
       JOIN FETCH oi.invitedBy
       LEFT JOIN FETCH oi.role
-      LEFT JOIN FETCH oi.acceptedBy
+      LEFT JOIN FETCH oi.respondedBy
       WHERE oi.email = :email AND oi.organization.id = :organizationId
       """)
   Optional<OrganizationInvitation> findByEmailAndOrganizationId(
