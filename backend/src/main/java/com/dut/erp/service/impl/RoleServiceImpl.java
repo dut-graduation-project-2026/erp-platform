@@ -19,7 +19,6 @@ import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.PermissionRepository;
 import com.dut.erp.repository.RoleRepository;
 import com.dut.erp.service.RoleService;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -103,11 +102,20 @@ public class RoleServiceImpl implements RoleService {
   }
 
   @Override
+  public void verifyRoleBelongsToOrganization(UUID roleId, UUID organizationId) {
+    Role role = findRoleById(roleId);
+    if (!role.getOrganization().getId().equals(organizationId)) {
+      log.warn("Role {} does not belong to organization {}", roleId, organizationId);
+      throw new BadRequestException("Role does not belong to the specified organization.");
+    }
+  }
+
+  @Override
   @Transactional
   public RoleResponse updateRole(UUID roleId, UUID organizationId, UpdateRoleRequest request) {
     findOrganizationById(organizationId);
     Role role = findRoleById(roleId);
-    verifyRoleBelongsToOrganization(role, organizationId);
+    verifyRoleBelongsToOrganization(roleId, organizationId);
 
     if (!role.getName().equals(request.name())) {
       assertRoleNameAvailable(request.name(), organizationId);
@@ -126,7 +134,7 @@ public class RoleServiceImpl implements RoleService {
   public void deleteRole(UUID roleId, UUID organizationId) {
     findOrganizationById(organizationId);
     Role role = findRoleById(roleId);
-    verifyRoleBelongsToOrganization(role, organizationId);
+    verifyRoleBelongsToOrganization(roleId, organizationId);
 
     roleRepository.delete(role);
     log.info("Deleted role {} from organization {}", roleId, organizationId);
@@ -142,7 +150,7 @@ public class RoleServiceImpl implements RoleService {
 
   private Set<Permission> resolvePermissions(Set<UUID> permissionIds, UUID organizationId) {
     if (permissionIds == null || permissionIds.isEmpty()) {
-      return Collections.emptySet();
+      return new HashSet<>();
     }
 
     List<Permission> permissions = permissionRepository.findAllById(permissionIds);
@@ -194,12 +202,5 @@ public class RoleServiceImpl implements RoleService {
               log.warn("Role with ID {} not found", roleId);
               return new ResourceNotFoundException("Role not found with id: " + roleId);
             });
-  }
-
-  private void verifyRoleBelongsToOrganization(Role role, UUID organizationId) {
-    if (!role.getOrganization().getId().equals(organizationId)) {
-      log.warn("Role {} does not belong to organization {}", role.getId(), organizationId);
-      throw new BadRequestException("Role does not belong to the specified organization.");
-    }
   }
 }

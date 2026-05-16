@@ -1,9 +1,9 @@
 package com.dut.erp.dto.request;
 
-import java.util.Set;
-import java.util.UUID;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.Set;
+import java.util.UUID;
 
 public record CreateRoleRequest(
     @NotBlank(message = "Role name cannot be blank")

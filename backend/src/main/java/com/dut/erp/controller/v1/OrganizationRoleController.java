@@ -1,8 +1,8 @@
 package com.dut.erp.controller.v1;
 
 import com.dut.erp.dto.request.CreateRoleRequest;
-import com.dut.erp.dto.request.UpdateRoleRequest;
 import com.dut.erp.dto.request.PaginationRequest;
+import com.dut.erp.dto.request.UpdateRoleRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.RoleBaseResponse;
 import com.dut.erp.dto.response.RoleResponse;
@@ -67,6 +67,8 @@ public class OrganizationRoleController {
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
         @securityAuthService.hasPermission('roles:select', #organizationId, #userDetails)
+        and
+        @roleService.verifyRoleBelongsToOrganization(#id, #organizationId)
       """)
   public ResponseEntity<RoleResponse> getRoleById(
       @PathVariable UUID id,
@@ -79,7 +81,7 @@ public class OrganizationRoleController {
    * Updates a specific role in the organization.
    *
    * <p>The user is resolved from the security context. The authenticated user must have
-   * organization access and roles:manage permission to update the role.
+   * organization access and roles:modify permission to update the role.
    *
    * @param organizationId the UUID of the organization
    * @param id the UUID of the role to update
@@ -96,6 +98,8 @@ public class OrganizationRoleController {
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
         @securityAuthService.hasPermission('roles:modify', #organizationId, #userDetails)
+        and
+        @roleService.verifyRoleBelongsToOrganization(#id, #organizationId)
       """)
   public ResponseEntity<RoleResponse> updateRole(
       @PathVariable UUID organizationId,
@@ -134,4 +138,3 @@ public class OrganizationRoleController {
     return ResponseEntity.noContent().build();
   }
 }
-
