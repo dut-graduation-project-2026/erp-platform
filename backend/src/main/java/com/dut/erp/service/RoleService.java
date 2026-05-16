@@ -20,5 +20,5 @@ public interface RoleService {
 
   void deleteRole(UUID roleId, UUID organizationId);
 
-  void verifyRoleBelongsToOrganization(UUID roleId, UUID organizationId);
+  boolean isRoleBelongsToOrganization(UUID roleId, UUID organizationId);
 }

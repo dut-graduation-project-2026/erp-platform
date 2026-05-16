@@ -93,19 +93,32 @@ public class OrganizationServiceImpl implements OrganizationService {
     return organizationMapper.toOrganizationResponse(findOrganizationById(organizationId));
   }
 
-  public Organization findOrganizationById(UUID organizationId) {
-    return organizationRepository
-        .findById(organizationId)
-        .orElseThrow(
-            () -> {
-              log.warn("Organization with ID {} not found", organizationId);
-              return new ResourceNotFoundException(
-                  "Organization not found with id: " + organizationId);
-            });
+  @Override
+  @Transactional
+  public OrganizationResponse updateOrganization(
+      UUID organizationId, UpdateOrganizationRequest request) {
+    Organization organization = findOrganizationById(organizationId);
+
+    // Check if new tax code already exists (if different from current)
+    if (!organization.getTaxCode().equals(request.taxCode())
+        && organizationRepository.existsByTaxCode(request.taxCode())) {
+      log.warn("Organization update failed: tax code {} already exists", request.taxCode());
+      throw new ResourceAlreadyExistsException("Organization with this tax code already exists.");
+    }
+
+    organization.setName(request.name());
+    organization.setDescription(request.description());
+    organization.setAddress(request.address());
+    organization.setHotline(request.hotline());
+    organization.setTaxCode(request.taxCode());
+
+    organization = organizationRepository.save(organization);
+    log.info("Organization {} updated", organizationId);
+    return organizationMapper.toOrganizationResponse(organization);
   }
 
   @Transactional
-  public Organization addMemberToOrganization(UUID organizationId, UUID userId, UUID roleId) {
+  private Organization addMemberToOrganization(UUID organizationId, UUID userId, UUID roleId) {
     Organization organization = findOrganizationById(organizationId);
 
     User user =
@@ -145,27 +158,14 @@ public class OrganizationServiceImpl implements OrganizationService {
     return organization;
   }
 
-  @Override
-  @Transactional
-  public OrganizationResponse updateOrganization(
-      UUID organizationId, UpdateOrganizationRequest request) {
-    Organization organization = findOrganizationById(organizationId);
-
-    // Check if new tax code already exists (if different from current)
-    if (!organization.getTaxCode().equals(request.taxCode())
-        && organizationRepository.existsByTaxCode(request.taxCode())) {
-      log.warn("Organization update failed: tax code {} already exists", request.taxCode());
-      throw new ResourceAlreadyExistsException("Organization with this tax code already exists.");
-    }
-
-    organization.setName(request.name());
-    organization.setDescription(request.description());
-    organization.setAddress(request.address());
-    organization.setHotline(request.hotline());
-    organization.setTaxCode(request.taxCode());
-
-    organization = organizationRepository.save(organization);
-    log.info("Organization {} updated", organizationId);
-    return organizationMapper.toOrganizationResponse(organization);
+  private Organization findOrganizationById(UUID organizationId) {
+    return organizationRepository
+        .findById(organizationId)
+        .orElseThrow(
+            () -> {
+              log.warn("Organization with ID {} not found", organizationId);
+              return new ResourceNotFoundException(
+                  "Organization not found with id: " + organizationId);
+            });
   }
 }

@@ -68,7 +68,7 @@ public class OrganizationRoleController {
         and
         @securityAuthService.hasPermission('roles:select', #organizationId, #userDetails)
         and
-        @roleService.verifyRoleBelongsToOrganization(#id, #organizationId)
+        @roleService.isRoleBelongsToOrganization(#id, #organizationId)
       """)
   public ResponseEntity<RoleResponse> getRoleById(
       @PathVariable UUID id,

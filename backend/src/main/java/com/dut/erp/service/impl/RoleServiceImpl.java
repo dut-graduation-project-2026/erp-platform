@@ -102,12 +102,9 @@ public class RoleServiceImpl implements RoleService {
   }
 
   @Override
-  public void verifyRoleBelongsToOrganization(UUID roleId, UUID organizationId) {
+  public boolean isRoleBelongsToOrganization(UUID roleId, UUID organizationId) {
     Role role = findRoleById(roleId);
-    if (!role.getOrganization().getId().equals(organizationId)) {
-      log.warn("Role {} does not belong to organization {}", roleId, organizationId);
-      throw new BadRequestException("Role does not belong to the specified organization.");
-    }
+    return role.getOrganization().getId().equals(organizationId);
   }
 
   @Override
@@ -202,5 +199,12 @@ public class RoleServiceImpl implements RoleService {
               log.warn("Role with ID {} not found", roleId);
               return new ResourceNotFoundException("Role not found with id: " + roleId);
             });
+  }
+
+  private void verifyRoleBelongsToOrganization(UUID roleId, UUID organizationId) {
+    if (!isRoleBelongsToOrganization(roleId, organizationId)) {
+      log.warn("Role with ID {} does not belong to organization {}", roleId, organizationId);
+      throw new BadRequestException("Role does not belong to the specified organization.");
+    }
   }
 }
