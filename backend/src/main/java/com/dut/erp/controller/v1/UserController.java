@@ -4,7 +4,6 @@ import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.request.UpdateUserRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.UserBaseResponse;
-import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.UserService;
 import jakarta.validation.Valid;
@@ -34,20 +33,14 @@ public class UserController {
       @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
       and
       @securityAuthService.hasPermission('users:read', #organizationId, #userDetails)
-      and
-      (
-        #moduleCode == null or
-        @securityAuthService.hasModuleAccess(#moduleCode, #organizationId, #userDetails)
-      )
       """)
   public ResponseEntity<PagedEntityResponse<UserBaseResponse>> getUsersOfOrganization(
       @RequestParam UUID organizationId,
       @RequestParam(required = false) String query,
-      @RequestParam(required = false) String moduleCode,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     PagedEntityResponse<UserBaseResponse> response =
-        userService.searchUsersByOrganizationId(organizationId, query, moduleCode, paginationRequest);
+        userService.searchUsersByOrganizationId(organizationId, query, paginationRequest);
     return ResponseEntity.ok(response);
   }
 

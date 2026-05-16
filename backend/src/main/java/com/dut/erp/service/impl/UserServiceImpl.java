@@ -10,7 +10,7 @@ import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.UserService;
-import java.util.Locale;
+
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,13 +30,8 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public PagedEntityResponse<UserBaseResponse> searchUsersByOrganizationId(
-      UUID organizationId, String query, String moduleCode, PaginationRequest paginationRequest) {
+      UUID organizationId, String query, PaginationRequest paginationRequest) {
     String normalizedQuery = normalizeOptionalFilter(query);
-    String normalizedModuleCode = normalizeOptionalFilter(moduleCode);
-
-    if (normalizedModuleCode != null) {
-      normalizedModuleCode = normalizedModuleCode.toLowerCase(Locale.ROOT);
-    }
 
     Pageable pageable =
         PageRequest.of(
@@ -45,30 +40,18 @@ public class UserServiceImpl implements UserService {
             SortingConstants.DEFAULT_ENTITIES_SORT);
     Page<User> userPage;
     if (normalizedQuery == null) {
-      if (normalizedModuleCode == null) {
-        userPage = userRepository.findAllByOrganizationsId(organizationId, pageable);
-      } else {
-        userPage =
-            userRepository.searchByOrganizationsIdAndModuleCode(
-                organizationId, normalizedModuleCode, pageable);
-      }
-    } else if (normalizedModuleCode == null) {
-      userPage =
-          userRepository.searchByOrganizationsIdAndQuery(organizationId, normalizedQuery, pageable);
+      userPage = userRepository.findAllByOrganizationsId(organizationId, pageable);
     } else {
       userPage =
-          userRepository.searchByOrganizationsIdAndQueryAndModuleCode(
-              organizationId, normalizedQuery, normalizedModuleCode, pageable);
+          userRepository.searchByOrganizationsIdAndQuery(organizationId, normalizedQuery, pageable);
     }
 
     Page<UserBaseResponse> userResponses = userPage.map(userMapper::toUserBaseResponse);
     log.info(
-        "Fetched {} users for organization {} (hasQuery={}, hasModuleFilter={}, total elements: {},"
-            + " total pages: {})",
+        "Fetched {} users for organization {} (hasQuery={}, total elements: {}, total pages: {})",
         userResponses.getNumberOfElements(),
         organizationId,
         normalizedQuery != null,
-        normalizedModuleCode != null,
         userPage.getTotalElements(),
         userPage.getTotalPages());
 
