@@ -1,5 +1,6 @@
 package com.dut.erp.service.impl;
 
+import com.dut.erp.repository.ErpModuleRepository;
 import com.dut.erp.repository.PermissionRepository;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.SecurityAuthService;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SecurityAuthServiceImpl implements SecurityAuthService {
 
   private final PermissionRepository permissionRepository;
+  private final ErpModuleRepository erpModuleRepository;
 
   @Override
   public boolean hasOrganizationAccess(UUID organizationId, CustomUserDetails userDetails) {
@@ -27,6 +29,19 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
       throw new AccessDeniedException("Access denied");
     }
 
+    return true;
+  }
+
+  @Override
+  public boolean hasModuleAccess(
+      String moduleCode, UUID organizationId, CustomUserDetails userDetails) {
+    boolean hasAccess =
+        erpModuleRepository.existsByCodeAndOrganizationIdAndUserId(
+            moduleCode, organizationId, userDetails.getId());
+    if (!hasAccess) {
+      log.warn("User {} denied access to module {}", userDetails.getId(), moduleCode);
+      throw new AccessDeniedException("Access denied");
+    }
     return true;
   }
 

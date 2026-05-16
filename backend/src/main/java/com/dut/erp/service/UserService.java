@@ -7,7 +7,7 @@ import com.dut.erp.dto.response.UserBaseResponse;
 import java.util.UUID;
 
 public interface UserService {
-  PagedEntityResponse<UserBaseResponse> getUsersByOrganizationId(
+  PagedEntityResponse<UserBaseResponse> searchUsersByOrganizationId(
       UUID organizationId, String query, String moduleCode, PaginationRequest paginationRequest);
 
   UserBaseResponse updateUser(UUID userId, UpdateUserRequest request);

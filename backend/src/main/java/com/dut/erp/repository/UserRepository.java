@@ -64,34 +64,24 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             SELECT DISTINCT u
             FROM User u
             JOIN u.organizations o
+            JOIN u.roles r
+            JOIN r.permissions p
+            JOIN p.module m
             WHERE o.id = :organizationId
-              AND EXISTS (
-                SELECT 1
-                FROM User ru
-                JOIN ru.roles r
-                JOIN r.permissions p
-                JOIN p.module m
-                WHERE ru.id = u.id
-                  AND r.organization.id = :organizationId
-                  AND LOWER(m.code) = LOWER(:moduleCode)
-              )
+              AND r.organization.id = :organizationId
+              AND LOWER(m.code) = LOWER(:moduleCode)
           """,
       countQuery =
           """
             SELECT COUNT(DISTINCT u.id)
             FROM User u
             JOIN u.organizations o
+            JOIN u.roles r
+            JOIN r.permissions p
+            JOIN p.module m
             WHERE o.id = :organizationId
-              AND EXISTS (
-                SELECT 1
-                FROM User ru
-                JOIN ru.roles r
-                JOIN r.permissions p
-                JOIN p.module m
-                WHERE ru.id = u.id
-                  AND r.organization.id = :organizationId
-                  AND LOWER(m.code) = LOWER(:moduleCode)
-              )
+              AND r.organization.id = :organizationId
+              AND LOWER(m.code) = LOWER(:moduleCode)
           """)
   Page<User> searchByOrganizationsIdAndModuleCode(
       @Param("organizationId") UUID organizationId,
@@ -104,44 +94,34 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             SELECT DISTINCT u
             FROM User u
             JOIN u.organizations o
+            JOIN u.roles r
+            JOIN r.permissions p
+            JOIN p.module m
             WHERE o.id = :organizationId
               AND (
                 LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
               )
-              AND EXISTS (
-                SELECT 1
-                FROM User ru
-                JOIN ru.roles r
-                JOIN r.permissions p
-                JOIN p.module m
-                WHERE ru.id = u.id
-                  AND r.organization.id = :organizationId
-                  AND LOWER(m.code) = LOWER(:moduleCode)
-              )
+              AND r.organization.id = :organizationId
+              AND LOWER(m.code) = LOWER(:moduleCode)
           """,
       countQuery =
           """
             SELECT COUNT(DISTINCT u.id)
             FROM User u
             JOIN u.organizations o
+            JOIN u.roles r
+            JOIN r.permissions p
+            JOIN p.module m
             WHERE o.id = :organizationId
               AND (
                 LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
               )
-              AND EXISTS (
-                SELECT 1
-                FROM User ru
-                JOIN ru.roles r
-                JOIN r.permissions p
-                JOIN p.module m
-                WHERE ru.id = u.id
-                  AND r.organization.id = :organizationId
-                  AND LOWER(m.code) = LOWER(:moduleCode)
-              )
+              AND r.organization.id = :organizationId
+              AND LOWER(m.code) = LOWER(:moduleCode)
           """)
   Page<User> searchByOrganizationsIdAndQueryAndModuleCode(
       @Param("organizationId") UUID organizationId,

@@ -29,11 +29,8 @@ public class UserServiceImpl implements UserService {
   private final UserMapper userMapper;
 
   @Override
-  public PagedEntityResponse<UserBaseResponse> getUsersByOrganizationId(
-      UUID organizationId,
-      String query,
-      String moduleCode,
-      PaginationRequest paginationRequest) {
+  public PagedEntityResponse<UserBaseResponse> searchUsersByOrganizationId(
+      UUID organizationId, String query, String moduleCode, PaginationRequest paginationRequest) {
     String normalizedQuery = normalizeOptionalFilter(query);
     String normalizedModuleCode = normalizeOptionalFilter(moduleCode);
 
@@ -66,11 +63,12 @@ public class UserServiceImpl implements UserService {
 
     Page<UserBaseResponse> userResponses = userPage.map(userMapper::toUserBaseResponse);
     log.info(
-        "Fetched {} users for organization {} with query='{}', moduleCode='{}' (total elements: {}, total pages: {})",
+        "Fetched {} users for organization {} (hasQuery={}, hasModuleFilter={}, total elements: {},"
+            + " total pages: {})",
         userResponses.getNumberOfElements(),
         organizationId,
-        normalizedQuery,
-        normalizedModuleCode,
+        normalizedQuery != null,
+        normalizedModuleCode != null,
         userPage.getTotalElements(),
         userPage.getTotalPages());
 

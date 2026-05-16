@@ -4,6 +4,7 @@ import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.request.UpdateUserRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.UserBaseResponse;
+import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.UserService;
 import jakarta.validation.Valid;
@@ -28,7 +29,17 @@ public class UserController {
   private final UserService userService;
 
   @GetMapping
-  @PreAuthorize("@securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)")
+  @PreAuthorize(
+      """
+      @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+      and
+      @securityAuthService.hasPermission('users:read', #organizationId, #userDetails)
+      and
+      (
+        #moduleCode == null or
+        @securityAuthService.hasModuleAccess(#moduleCode, #organizationId, #userDetails)
+      )
+      """)
   public ResponseEntity<PagedEntityResponse<UserBaseResponse>> getUsersOfOrganization(
       @RequestParam UUID organizationId,
       @RequestParam(required = false) String query,
@@ -36,15 +47,15 @@ public class UserController {
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     PagedEntityResponse<UserBaseResponse> response =
-        userService.getUsersByOrganizationId(organizationId, query, moduleCode, paginationRequest);
+        userService.searchUsersByOrganizationId(organizationId, query, moduleCode, paginationRequest);
     return ResponseEntity.ok(response);
   }
 
   /**
    * Updates the user information.
    *
-   * <p>The user is resolved from the security context. The authenticated user can only update
-   * their own profile information.
+   * <p>The user is resolved from the security context. The authenticated user can only update their
+   * own profile information.
    *
    * @param userId the UUID of the user to update
    * @param request the update request containing user details
