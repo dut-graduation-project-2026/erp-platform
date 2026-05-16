@@ -28,18 +28,15 @@ public class UserController {
   private final UserService userService;
 
   @GetMapping
-  @PreAuthorize(
-      """
-        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
-        and
-        @securityAuthService.hasPermission('organizations:manage', #organizationId, #userDetails)
-      """)
+  @PreAuthorize("@securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)")
   public ResponseEntity<PagedEntityResponse<UserBaseResponse>> getUsersOfOrganization(
       @RequestParam UUID organizationId,
+      @RequestParam(required = false) String query,
+      @RequestParam(required = false) String moduleCode,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     PagedEntityResponse<UserBaseResponse> response =
-        userService.getUsersByOrganizationId(organizationId, paginationRequest);
+        userService.getUsersByOrganizationId(organizationId, query, moduleCode, paginationRequest);
     return ResponseEntity.ok(response);
   }
 
@@ -66,4 +63,3 @@ public class UserController {
     return ResponseEntity.ok(userResponse);
   }
 }
-

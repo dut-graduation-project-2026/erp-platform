@@ -27,4 +27,125 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   boolean existsByEmail(String email);
 
   Page<User> findAllByOrganizationsId(UUID organizationId, Pageable pageable);
+
+  @Query(
+      value =
+          """
+            SELECT DISTINCT u
+            FROM User u
+            JOIN u.organizations o
+            WHERE o.id = :organizationId
+              AND (
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+              )
+          """,
+      countQuery =
+          """
+            SELECT COUNT(DISTINCT u.id)
+            FROM User u
+            JOIN u.organizations o
+            WHERE o.id = :organizationId
+              AND (
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+              )
+          """)
+  Page<User> searchByOrganizationsIdAndQuery(
+      @Param("organizationId") UUID organizationId,
+      @Param("query") String query,
+      Pageable pageable);
+
+  @Query(
+      value =
+          """
+            SELECT DISTINCT u
+            FROM User u
+            JOIN u.organizations o
+            WHERE o.id = :organizationId
+              AND EXISTS (
+                SELECT 1
+                FROM User ru
+                JOIN ru.roles r
+                JOIN r.permissions p
+                JOIN p.module m
+                WHERE ru.id = u.id
+                  AND r.organization.id = :organizationId
+                  AND LOWER(m.code) = LOWER(:moduleCode)
+              )
+          """,
+      countQuery =
+          """
+            SELECT COUNT(DISTINCT u.id)
+            FROM User u
+            JOIN u.organizations o
+            WHERE o.id = :organizationId
+              AND EXISTS (
+                SELECT 1
+                FROM User ru
+                JOIN ru.roles r
+                JOIN r.permissions p
+                JOIN p.module m
+                WHERE ru.id = u.id
+                  AND r.organization.id = :organizationId
+                  AND LOWER(m.code) = LOWER(:moduleCode)
+              )
+          """)
+  Page<User> searchByOrganizationsIdAndModuleCode(
+      @Param("organizationId") UUID organizationId,
+      @Param("moduleCode") String moduleCode,
+      Pageable pageable);
+
+  @Query(
+      value =
+          """
+            SELECT DISTINCT u
+            FROM User u
+            JOIN u.organizations o
+            WHERE o.id = :organizationId
+              AND (
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+              )
+              AND EXISTS (
+                SELECT 1
+                FROM User ru
+                JOIN ru.roles r
+                JOIN r.permissions p
+                JOIN p.module m
+                WHERE ru.id = u.id
+                  AND r.organization.id = :organizationId
+                  AND LOWER(m.code) = LOWER(:moduleCode)
+              )
+          """,
+      countQuery =
+          """
+            SELECT COUNT(DISTINCT u.id)
+            FROM User u
+            JOIN u.organizations o
+            WHERE o.id = :organizationId
+              AND (
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+              )
+              AND EXISTS (
+                SELECT 1
+                FROM User ru
+                JOIN ru.roles r
+                JOIN r.permissions p
+                JOIN p.module m
+                WHERE ru.id = u.id
+                  AND r.organization.id = :organizationId
+                  AND LOWER(m.code) = LOWER(:moduleCode)
+              )
+          """)
+  Page<User> searchByOrganizationsIdAndQueryAndModuleCode(
+      @Param("organizationId") UUID organizationId,
+      @Param("query") String query,
+      @Param("moduleCode") String moduleCode,
+      Pageable pageable);
 }

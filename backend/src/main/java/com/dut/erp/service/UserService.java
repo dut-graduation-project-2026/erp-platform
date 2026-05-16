@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface UserService {
   PagedEntityResponse<UserBaseResponse> getUsersByOrganizationId(
-      UUID organizationId, PaginationRequest paginationRequest);
+      UUID organizationId, String query, String moduleCode, PaginationRequest paginationRequest);
 
   UserBaseResponse updateUser(UUID userId, UpdateUserRequest request);
 }
