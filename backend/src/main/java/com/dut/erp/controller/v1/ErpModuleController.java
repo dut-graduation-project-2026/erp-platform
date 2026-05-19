@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller handling ERP module management and retrieval API endpoints.
+ * Provides endpoints for retrieving accessible modules for a user and organization.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/erp-modules")

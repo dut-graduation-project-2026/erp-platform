@@ -27,4 +27,38 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   boolean existsByEmail(String email);
 
   Page<User> findAllByOrganizationsId(UUID organizationId, Pageable pageable);
+
+  @Query(
+      value =
+          """
+            SELECT DISTINCT u
+            FROM User u
+            JOIN u.organizations o
+            WHERE o.id = :organizationId
+              AND (
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(CONCAT(u.lastName, ' ', u.firstName)) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+              )
+          """,
+      countQuery =
+          """
+            SELECT COUNT(DISTINCT u.id)
+            FROM User u
+            JOIN u.organizations o
+            WHERE o.id = :organizationId
+              AND (
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(CONCAT(u.lastName, ' ', u.firstName)) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+              )
+          """)
+  Page<User> searchByOrganizationsIdAndQuery(
+      @Param("organizationId") UUID organizationId,
+      @Param("query") String query,
+      Pageable pageable);
 }

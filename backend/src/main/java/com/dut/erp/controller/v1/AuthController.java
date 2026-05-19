@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller handling authentication-related API endpoints.
+ * Provides endpoints for user login, registration, token refresh, and logout.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -97,6 +101,12 @@ public class AuthController {
     return ResponseEntity.status(HttpStatus.CREATED).body(authResponse.user());
   }
 
+  /**
+   * Utility helper to set access and refresh tokens as cookies in the HTTP response.
+   *
+   * @param response the HTTP response
+   * @param tokens the generated TokenPair containing access and refresh tokens
+   */
   private void setAuthCookies(HttpServletResponse response, TokenPair tokens) {
     cookieUtils.setAuthCookies(response, tokens.accessToken(), tokens.refreshToken());
   }

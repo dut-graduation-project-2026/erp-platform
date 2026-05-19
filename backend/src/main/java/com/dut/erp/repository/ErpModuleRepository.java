@@ -34,4 +34,22 @@ public interface ErpModuleRepository extends JpaRepository<ErpModule, UUID> {
       """)
   List<ErpModule> findAllByOrganizationIdWithPermissions(
       @Param("organizationId") UUID organizationId);
+
+  @Query(
+      """
+          SELECT CASE WHEN EXISTS (
+              SELECT 1
+              FROM User u
+              JOIN u.roles r
+              JOIN r.permissions p
+              JOIN p.module m
+              WHERE u.id = :userId
+              AND r.organization.id = :organizationId
+              AND m.code = :moduleCode
+          ) THEN true ELSE false END
+      """)
+  boolean existsByCodeAndOrganizationIdAndUserId(
+      @Param("moduleCode") String moduleCode,
+      @Param("organizationId") UUID organizationId,
+      @Param("userId") UUID userId);
 }

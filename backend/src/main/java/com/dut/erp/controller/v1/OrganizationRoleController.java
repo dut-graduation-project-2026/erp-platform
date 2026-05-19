@@ -25,12 +25,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller handling organization roles and permissions.
+ * Provides CRUD endpoints for managing user roles within a specific organization.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/organizations/{organizationId}/roles")
 public class OrganizationRoleController {
   private final RoleService roleService;
 
+  /**
+   * Creates a new role within the specified organization.
+   *
+   * @param organizationId the UUID of the organization
+   * @param request the create role request containing the name, description, and permissions
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing the created RoleResponse object
+   */
   @PostMapping
   @PreAuthorize(
       """
@@ -46,6 +58,14 @@ public class OrganizationRoleController {
         .body(roleService.createRole(organizationId, request));
   }
 
+  /**
+   * Retrieves a paginated list of roles belonging to the specified organization.
+   *
+   * @param organizationId the UUID of the organization
+   * @param paginationRequest the pagination parameters (page and limit)
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing a paged response of RoleBaseResponse objects
+   */
   @GetMapping
   @PreAuthorize(
       """
@@ -61,6 +81,14 @@ public class OrganizationRoleController {
         roleService.getRolesByOrganizationId(organizationId, paginationRequest));
   }
 
+  /**
+   * Retrieves details of a specific role by its ID within the specified organization.
+   *
+   * @param id the UUID of the role
+   * @param organizationId the UUID of the organization
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing the RoleResponse object
+   */
   @GetMapping("/{id}")
   @PreAuthorize(
       """

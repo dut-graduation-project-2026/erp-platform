@@ -10,6 +10,8 @@ import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.UserService;
+import com.dut.erp.util.SearchUtils;
+
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,24 +30,30 @@ public class UserServiceImpl implements UserService {
   private final UserMapper userMapper;
 
   @Override
-  public PagedEntityResponse<UserBaseResponse> getUsersByOrganizationId(
-      UUID organizationId, PaginationRequest paginationRequest) {
+  public PagedEntityResponse<UserBaseResponse> searchUsersByOrganizationId(
+      UUID organizationId, String query, PaginationRequest paginationRequest) {
+    String normalizedQuery = SearchUtils.normalizeOptionalFilter(query);
+
     Pageable pageable =
         PageRequest.of(
             paginationRequest.page() - 1,
             paginationRequest.limit(),
             SortingConstants.DEFAULT_ENTITIES_SORT);
-    log.info(
-        "Fetching users for organization {} with pagination: page={}, limit={}",
-        organizationId,
-        paginationRequest.page(),
-        paginationRequest.limit());
-    Page<User> userPage = userRepository.findAllByOrganizationsId(organizationId, pageable);
+    Page<User> userPage;
+    if (normalizedQuery == null) {
+      userPage = userRepository.findAllByOrganizationsId(organizationId, pageable);
+    } else {
+      String escapedQuery = SearchUtils.escapeLikePattern(normalizedQuery);
+      userPage =
+          userRepository.searchByOrganizationsIdAndQuery(organizationId, escapedQuery, pageable);
+    }
+
     Page<UserBaseResponse> userResponses = userPage.map(userMapper::toUserBaseResponse);
     log.info(
-        "Fetched {} users for organization {} (total elements: {}, total pages: {})",
+        "Fetched {} users for organization {} (hasQuery={}, total elements: {}, total pages: {})",
         userResponses.getNumberOfElements(),
         organizationId,
+        normalizedQuery != null,
         userPage.getTotalElements(),
         userPage.getTotalPages());
 
