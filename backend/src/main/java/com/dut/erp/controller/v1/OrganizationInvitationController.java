@@ -18,12 +18,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller handling organization invitation endpoints.
+ * Provides endpoints to invite users, resend invitations, and respond to invitations.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/organizations/{organizationId}/invitations")
 public class OrganizationInvitationController {
   private final OrganizationInvitationService organizationInvitationService;
 
+  /**
+   * Invites a user to the specified organization.
+   *
+   * @param organizationId the UUID of the organization
+   * @param request the invitation request containing the role ID and user email
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing the created OrganizationInvitationResponse
+   */
   @PostMapping
   @PreAuthorize(
       """
@@ -41,6 +53,14 @@ public class OrganizationInvitationController {
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Resends an existing organization invitation.
+   *
+   * @param organizationId the UUID of the organization
+   * @param invitationId the UUID of the invitation to resend
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing the resent OrganizationInvitationResponse
+   */
   @PostMapping("/{invitationId}/resend")
   @PreAuthorize(
       """
@@ -58,6 +78,15 @@ public class OrganizationInvitationController {
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Responds to an organization invitation (accept or reject).
+   *
+   * @param organizationId the UUID of the organization
+   * @param invitationId the UUID of the invitation
+   * @param request the request containing the acceptance status
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing the updated OrganizationInvitationResponse
+   */
   @PatchMapping("/{invitationId}")
   public ResponseEntity<OrganizationInvitationResponse> respondToOrganizationInvitation(
       @PathVariable UUID organizationId,

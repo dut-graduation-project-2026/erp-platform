@@ -36,9 +36,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             JOIN u.organizations o
             WHERE o.id = :organizationId
               AND (
-                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(CONCAT(u.lastName, ' ', u.firstName)) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
               )
           """,
       countQuery =
@@ -48,9 +50,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             JOIN u.organizations o
             WHERE o.id = :organizationId
               AND (
-                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                OR LOWER(CONCAT(u.lastName, ' ', u.firstName)) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
               )
           """)
   Page<User> searchByOrganizationsIdAndQuery(

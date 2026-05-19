@@ -21,12 +21,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller handling user-related API endpoints.
+ * Provides endpoints for retrieving and updating user profile information.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
 public class UserController {
   private final UserService userService;
 
+  /**
+   * Retrieves a paginated list of users belonging to a specific organization,
+   * optionally filtered by email or name.
+   *
+   * @param organizationId the UUID of the organization
+   * @param query the optional search query (email or name filter)
+   * @param paginationRequest the pagination parameters (page and limit)
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing a paged response of UserBaseResponse objects
+   */
   @GetMapping
   @PreAuthorize(
       """

@@ -10,6 +10,7 @@ import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.UserService;
+import com.dut.erp.util.SearchUtils;
 
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class UserServiceImpl implements UserService {
   @Override
   public PagedEntityResponse<UserBaseResponse> searchUsersByOrganizationId(
       UUID organizationId, String query, PaginationRequest paginationRequest) {
-    String normalizedQuery = normalizeOptionalFilter(query);
+    String normalizedQuery = SearchUtils.normalizeOptionalFilter(query);
 
     Pageable pageable =
         PageRequest.of(
@@ -42,8 +43,9 @@ public class UserServiceImpl implements UserService {
     if (normalizedQuery == null) {
       userPage = userRepository.findAllByOrganizationsId(organizationId, pageable);
     } else {
+      String escapedQuery = SearchUtils.escapeLikePattern(normalizedQuery);
       userPage =
-          userRepository.searchByOrganizationsIdAndQuery(organizationId, normalizedQuery, pageable);
+          userRepository.searchByOrganizationsIdAndQuery(organizationId, escapedQuery, pageable);
     }
 
     Page<UserBaseResponse> userResponses = userPage.map(userMapper::toUserBaseResponse);
@@ -56,15 +58,6 @@ public class UserServiceImpl implements UserService {
         userPage.getTotalPages());
 
     return PagedEntityResponse.from(userResponses);
-  }
-
-  private String normalizeOptionalFilter(String value) {
-    if (value == null) {
-      return null;
-    }
-
-    String trimmedValue = value.trim();
-    return trimmedValue.isEmpty() ? null : trimmedValue;
   }
 
   @Override

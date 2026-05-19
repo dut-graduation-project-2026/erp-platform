@@ -21,12 +21,23 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller handling organization management API endpoints.
+ * Provides endpoints for creating, retrieving, and updating organizations.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/organizations")
 public class OrganizationController {
   private final OrganizationService organizationService;
 
+  /**
+   * Creates a new organization and associates the authenticated creator with it.
+   *
+   * @param request the organization creation details
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing the created OrganizationResponse object
+   */
   @PostMapping
   public ResponseEntity<OrganizationResponse> createOrganization(
       @Valid @RequestBody CreateOrganizationRequest request,
