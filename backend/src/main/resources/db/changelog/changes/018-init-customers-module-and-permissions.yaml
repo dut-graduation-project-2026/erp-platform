@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-init-customers-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Customers Module
+              - column:
+                  name: code
+                  value: customers
+              - column:
+                  name: description
+                  value: Module for managing customer profiles and contacts.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: customers:read
+              - column:
+                  name: code
+                  value: customers:read
+              - column:
+                  name: description
+                  value: Allow reading customers list.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'customers')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: customers:select
+              - column:
+                  name: code
+                  value: customers:select
+              - column:
+                  name: description
+                  value: Allow retrieving details of a specific customer.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'customers')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: customers:create
+              - column:
+                  name: code
+                  value: customers:create
+              - column:
+                  name: description
+                  value: Allow creating new customers and contacts.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'customers')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: customers:modify
+              - column:
+                  name: code
+                  value: customers:modify
+              - column:
+                  name: description
+                  value: Allow modifying customer and contact information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'customers')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: customers:delete
+              - column:
+                  name: code
+                  value: customers:delete
+              - column:
+                  name: description
+                  value: Allow deleting customers and contacts.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'customers')
