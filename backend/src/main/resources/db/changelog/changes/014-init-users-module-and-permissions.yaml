@@ -11,32 +11,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: Users Module
+                  value: Users
               - column:
                   name: code
                   value: users
               - column:
                   name: description
                   value: Module for users management and access control.
-
-        - insert:
-            tableName: permissions
-            columns:
-              - column:
-                  name: id
-                  valueComputed: gen_random_uuid()
-              - column:
-                  name: name
-                  value: users:read
-              - column:
-                  name: code
-                  value: users:read
-              - column:
-                  name: description
-                  value: Allow reading users information.
-              - column:
-                  name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
 
         - insert:
             tableName: permissions
@@ -65,13 +46,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: users:modify
+                  value: users:read
               - column:
                   name: code
-                  value: users:modify
+                  value: users:read
               - column:
                   name: description
-                  value: Allow modifying existing users data.
+                  value: Allow reading users information.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
@@ -84,13 +65,51 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: users:manage
+                  value: users:write
               - column:
                   name: code
-                  value: users:manage
+                  value: users:write
               - column:
                   name: description
-                  value: Allow managing users settings and access.
+                  value: Allow writing/updating existing users data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: users:create
+              - column:
+                  name: code
+                  value: users:create
+              - column:
+                  name: description
+                  value: Allow creating new users.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: users:delete
+              - column:
+                  name: code
+                  value: users:delete
+              - column:
+                  name: description
+                  value: Allow deleting users.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')

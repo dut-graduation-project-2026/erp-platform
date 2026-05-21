@@ -104,7 +104,7 @@ public class OrganizationController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('organizations:modify', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('organizations:write', #organizationId, #userDetails)
       """)
   public ResponseEntity<OrganizationResponse> updateOrganization(
       @PathVariable UUID organizationId,

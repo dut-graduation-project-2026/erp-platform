@@ -41,7 +41,7 @@ public class OrganizationInvitationController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('organizations:manage', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('organizations:write', #organizationId, #userDetails)
       """)
   public ResponseEntity<OrganizationInvitationResponse> inviteUserToOrganization(
       @PathVariable UUID organizationId,
@@ -66,7 +66,7 @@ public class OrganizationInvitationController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('organizations:manage', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('organizations:write', #organizationId, #userDetails)
       """)
   public ResponseEntity<OrganizationInvitationResponse> resendInvitationUserToOrganization(
       @PathVariable UUID organizationId,

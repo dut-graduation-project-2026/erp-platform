@@ -27,6 +27,25 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
+                  value: roles:select
+              - column:
+                  name: code
+                  value: roles:select
+              - column:
+                  name: description
+                  value: Allow selecting role information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
                   value: roles:read
               - column:
                   name: code
@@ -46,13 +65,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: roles:select
+                  value: roles:write
               - column:
                   name: code
-                  value: roles:select
+                  value: roles:write
               - column:
                   name: description
-                  value: Allow selecting and retrieving specific role information.
+                  value: Allow writing/updating role names and permissions.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')
@@ -72,25 +91,6 @@ databaseChangeLog:
               - column:
                   name: description
                   value: Allow creating new roles and assigning permissions.
-              - column:
-                  name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')
-
-        - insert:
-            tableName: permissions
-            columns:
-              - column:
-                  name: id
-                  valueComputed: gen_random_uuid()
-              - column:
-                  name: name
-                  value: roles:modify
-              - column:
-                  name: code
-                  value: roles:modify
-              - column:
-                  name: description
-                  value: Allow modifying role names and permissions.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')

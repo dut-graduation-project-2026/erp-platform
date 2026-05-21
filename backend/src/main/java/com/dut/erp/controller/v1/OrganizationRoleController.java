@@ -125,7 +125,7 @@ public class OrganizationRoleController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('roles:modify', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('roles:write', #organizationId, #userDetails)
         and
         @roleService.verifyRoleBelongsToOrganization(#id, #organizationId)
       """)
