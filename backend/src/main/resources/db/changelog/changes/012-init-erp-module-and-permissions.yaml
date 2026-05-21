@@ -27,13 +27,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: erp_module:read
+                  value: erp_module:select
               - column:
                   name: code
-                  value: erp_module:read
+                  value: erp_module:select
               - column:
                   name: description
-                  value: Allow viewing of ERP module details and configurations.
+                  value: Allow selecting ERP modules.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
@@ -46,13 +46,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: erp_module:modify
+                  value: erp_module:read
               - column:
                   name: code
-                  value: erp_module:modify
+                  value: erp_module:read
               - column:
                   name: description
-                  value: Allow modifying ERP module configurations.
+                  value: Allow reading ERP module configurations.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
@@ -65,13 +65,51 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: erp_module:manage
+                  value: erp_module:write
               - column:
                   name: code
-                  value: erp_module:manage
+                  value: erp_module:write
               - column:
                   name: description
-                  value: Allow full management of ERP modules including creation and deletion.
+                  value: Allow writing/updating ERP module configurations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: erp_module:create
+              - column:
+                  name: code
+                  value: erp_module:create
+              - column:
+                  name: description
+                  value: Allow creating new ERP modules.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: erp_module:delete
+              - column:
+                  name: code
+                  value: erp_module:delete
+              - column:
+                  name: description
+                  value: Allow deleting ERP modules.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'erp_module')

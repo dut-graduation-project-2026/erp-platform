@@ -27,6 +27,25 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
+                  value: organizations:select
+              - column:
+                  name: code
+                  value: organizations:select
+              - column:
+                  name: description
+                  value: Allow selecting organizations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
                   value: organizations:read
               - column:
                   name: code
@@ -46,13 +65,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: organizations:modify
+                  value: organizations:write
               - column:
                   name: code
-                  value: organizations:modify
+                  value: organizations:write
               - column:
                   name: description
-                  value: Allow modifying existing organization data.
+                  value: Allow writing/updating existing organization data.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')
@@ -65,13 +84,32 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: organizations:manage
+                  value: organizations:create
               - column:
                   name: code
-                  value: organizations:manage
+                  value: organizations:create
               - column:
                   name: description
-                  value: Allow full management of organizations including creation and deletion.
+                  value: Allow creating new organizations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: organizations:delete
+              - column:
+                  name: code
+                  value: organizations:delete
+              - column:
+                  name: description
+                  value: Allow deleting organizations.
               - column:
                   name: module_id
                   valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')
