@@ -19,7 +19,7 @@ export const getCurrentUser = async (): Promise<User> => {
 };
 
 export const getUserOrganizations = async (): Promise<UserOrganization[]> => {
-  const response = await apiClient.get(API_ENDPOINTS.AUTH.ORGANIZATIONS);
+  const response = await apiClient.get(API_ENDPOINTS.ORGANIZATIONS.ME);
   return response.data;
 };
 

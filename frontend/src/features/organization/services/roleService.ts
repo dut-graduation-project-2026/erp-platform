@@ -25,6 +25,10 @@ export interface RoleResponse {
   id: string;
   name: string;
   permissions: PermissionResponse[];
+  organization?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface CreateRoleRequest {

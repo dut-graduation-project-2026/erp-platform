@@ -37,6 +37,22 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Flag to track if a refresh is currently in progress
+let isRefreshing = false;
+// Queue of failed requests waiting for the token to be refreshed
+let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: any) => void }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 /**
  * Response Interceptor: Handle 401 (token expired) và 403 (access denied)
  */
@@ -51,38 +67,48 @@ apiClient.interceptors.response.use(
       const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register');
       
       if (!isAuthEndpoint) {
+        if (isRefreshing) {
+          // If refresh is already in progress, queue the request
+          return new Promise(function (resolve, reject) {
+            failedQueue.push({ resolve, reject });
+          })
+            .then(() => {
+              return apiClient(originalRequest);
+            })
+            .catch((err) => {
+              return Promise.reject(err);
+            });
+        }
+
         originalRequest._retry = true;
-        
-        // Check if refresh token cookie exists before attempting refresh
-        const hasRefreshToken = document.cookie.includes('refresh_token');
-        
-        if (!hasRefreshToken) {
-          // No refresh token, logout immediately
+        isRefreshing = true;
+
+        try {
+          console.log("ATTEMPTING TO REFRESH TOKEN...");
+          // Attempt to refresh token (HttpOnly cookie will be automatically sent)
+          const refreshRes = await axios.post(
+            `${env.API_BASE_URL}/auth/refresh`,
+            {},
+            { withCredentials: true }
+          );
+          console.log("REFRESH TOKEN SUCCESS!", refreshRes.data);
+          
+          processQueue(null, 'Success');
+          // Retry the original request with new token
+          return apiClient(originalRequest);
+        } catch (refreshError: any) {
+          console.error("REFRESH TOKEN FAILED:", refreshError);
+          processQueue(refreshError, null);
+          // Refresh failed, logout and redirect to login
           useAuthStore.getState().clearAuth();
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
             toast.error('Session expired. Please login again.');
           }
-          return Promise.reject(error);
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
         }
-      
-      try {
-        // Attempt to refresh token using refresh token cookie
-        await axios.post(
-          `${env.API_BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
-        
-        // Retry the original request with new token
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        // Refresh failed, logout and redirect to login
-        useAuthStore.getState().clearAuth();
-        window.location.href = '/login';
-        toast.error('Session expired. Please login again.');
-        return Promise.reject(refreshError);
-      }
       }
     }
 
