@@ -27,20 +27,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 🟠 BƯỚC 4.2: System Admin routes - /administration/...
-  if (pathname.startsWith('/administration')) {
-    const userRole = request.cookies.get('userRole');
-    
-    // Check nếu user là system_admin
-    if (userRole?.value !== 'system_admin') {
-      return NextResponse.redirect(new URL('/onboarding/select-org', request.url));
-    }
-    
-    return NextResponse.next();
-  }
-
-  // 🟠 BƯỚC 4.3: Onboarding routes - /onboarding/select-org
-  if (pathname.startsWith('/onboarding')) {
+  // 🟠 BƯỚC 4.3: Onboarding routes - /select-org
+  if (pathname.startsWith('/select-org')) {
     return NextResponse.next();
   }
 
@@ -54,13 +42,13 @@ export function middleware(request: NextRequest) {
       // Check nếu currentOrgId cookie match với route param
       const currentOrgId = request.cookies.get('currentOrgId');
       if (!currentOrgId || currentOrgId.value !== orgId) {
-        return NextResponse.redirect(new URL('/onboarding/select-org', request.url));
+        return NextResponse.redirect(new URL('/select-org', request.url));
       }
 
       // Check nếu orgId nằm trong userOrgIds của user
       const userOrgIds = request.cookies.get('userOrgIds')?.value?.split(',') || [];
       if (!userOrgIds.includes(orgId)) {
-        return NextResponse.redirect(new URL('/onboarding/select-org', request.url));
+        return NextResponse.redirect(new URL('/select-org', request.url));
       }
       
       return NextResponse.next();

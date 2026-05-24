@@ -1,144 +1,99 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/useToast';
-import { useAuthStore } from '@/store/use-auth-store';
-import { login } from '../services/authService';
-import { getUserPermissions } from '@/services/mockPermissions';
-import { mockUserOrganizations } from '@/services/mockOrganizations';
-import { getRedirectPath } from '@/services/authFlow';
-import { toast } from 'sonner';
-import type { User } from '@/types/user';
-
-interface UseLoginReturn {
-  loading: boolean;
-  error: string | null;
-  handleLogin: (email: string, password: string) => Promise<void>;
-}
-
 /**
- * useLogin Hook
- * 🟢 BƯỚC 1: XÁC THỰC (AUTHENTICATION)
- * 
- * Hành động:
- * 1. Người dùng nhập Email/Password tại /login
- * 2. Backend xác thực thông tin (hoặc mock)
- * 3. Backend gắn access_token và refresh_token vào HttpOnly Cookie
- * 4. Trả về JSON chứa thông tin User cơ bản (bao gồm flag isSystemAdmin: boolean)
- * 
- * Frontend xử lý:
- * - Lưu thông tin User vào Zustand Auth Store
- * - Load danh sách Organization
- * - Load danh sách Permission tương ứng
- * - 🟡 BƯỚC 2 thực hiện tại đây: Phân luồng điều hướng
+ * @file useLogin.ts
+ * @description Custom Hook xử lý toàn bộ nghiệp vụ đăng nhập.
+ * Áp dụng Single Responsibility Principle: Hook chỉ xử lý logic,
+ * KHÔNG chứa bất kỳ JSX nào.
+ *
+ * Luồng xử lý:
+ * 1. Gọi API xác thực (loginApi)
+ * 2. Backend set HttpOnly Cookie (access_token, refresh_token)
+ * 3. Lưu thông tin User vào Zustand Store
+ * 4. Load danh sách Organization & Permissions
+ * 5. Phân luồng điều hướng
  */
+
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+
+import { useAuthStore } from '@/store/use-auth-store';
+import { getRedirectPath } from '@/services/authFlow';
+
+// TODO: Thay bằng API get permissions thật từ backend khi backend hỗ trợ
+import { getUserPermissions } from '@/services/mockPermissions';
+
+import { loginApi } from '@/features/auth/services/authService';
+import type { LoginFormValues, UseLoginReturn } from '@/features/auth/types/auth.types';
+
 export const useLogin = (): UseLoginReturn => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+
   const { setUser, setOrganizations, setPermissions } = useAuthStore();
-  const { toastError } = useToast();
   const router = useRouter();
 
-  const handleLogin = async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
+  const handleLogin = useCallback(
+    async (values: LoginFormValues) => {
+      setLoading(true);
+      setServerError(null);
 
-    try {
-      // 🟢 BƯỚC 1.1: Gọi API xác thực
-      // Backend xác thực và gắn cookies: access_token, refresh_token (HttpOnly)
-      // await login({ email, password });
+      try {
+        // ═══════════════════════════════════════════════════════════
+        // 🟢 BƯỚC 1: XÁC THỰC (AUTHENTICATION) QUA API THẬT
+        // ═══════════════════════════════════════════════════════════
+        // Axios interceptor đã được cấu hình gửi/nhận cookie (withCredentials: true)
+        const user = await loginApi({
+          email: values.email,
+          password: values.password,
+        });
 
-      // ⚠️ MOCK IMPLEMENTATION - Tạm thời sử dụng mock data
-      // Trong production, phần này sẽ gọi backend API thực
-      const mockUsers: Record<string, { user: User; password: string }> = {
-        'admin@erp.com': {
-          user: {
-            id: 'user-3',
-            firstName: 'System',
-            lastName: 'Admin',
-            email: 'admin@erp.com',
-            role: 'system_admin',
-            isSystemAdmin: true, // Flag quan trọng để phân luồng
-            avatarUrl: '',
-          },
-          password: 'admin123',
-        },
-        'user@erp.com': {
-          user: {
-            id: 'user-1',
-            firstName: 'John',
-            lastName: 'Doe',
-            email: 'user@erp.com',
-            role: 'org_user',
-            isSystemAdmin: false,
-            avatarUrl: '',
-          },
-          password: 'user123',
-        },
-        'manager@erp.com': {
-          user: {
-            id: 'user-2',
-            firstName: 'Jane',
-            lastName: 'Manager',
-            email: 'manager@erp.com',
-            role: 'org_user',
-            isSystemAdmin: false,
-            avatarUrl: '',
-          },
-          password: 'manager123',
-        },
-      };
+        // ═══════════════════════════════════════════════════════════
+        // 🟢 BƯỚC 2: LƯU STATE VÀO ZUSTAND STORE
+        // ═══════════════════════════════════════════════════════════
 
-      const userData = mockUsers[email];
-      if (!userData || userData.password !== password) {
-        throw new Error('Invalid email or password');
+        // Lưu thông tin user cơ bản
+        setUser(user);
+
+        // Lưu danh sách Organization trả về từ backend
+        const userOrgs = user.organizations || [];
+        setOrganizations(userOrgs);
+
+        // Load & lưu danh sách Permission (RBAC)
+        // TODO: Đọc permissions từ object user nếu backend trả về, hoặc gọi API
+        const permissions = await getUserPermissions(user.id);
+        setPermissions(permissions);
+
+        // ═══════════════════════════════════════════════════════════
+        // 🔵 BƯỚC 3: SET COOKIES CHO MIDDLEWARE 
+        // ═══════════════════════════════════════════════════════════
+        // access_token và refresh_token đã được BE set qua HttpOnly.
+        // Frontend chỉ cần set userOrgIds để middleware Next.js validate định tuyến.
+        const orgIds = userOrgs.map((org) => org.id).join(',');
+        document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; samesite=strict`;
+
+        // ═══════════════════════════════════════════════════════════
+        // 🟡 BƯỚC 4: PHÂN LUỒNG ĐIỀU HƯỚNG
+        // ═══════════════════════════════════════════════════════════
+
+        const redirectPath = getRedirectPath(user as any);
+
+        toast.success(`Chào mừng, ${user.firstName}! Đang chuyển hướng...`, {
+          duration: 2000,
+        });
+
+        router.push(redirectPath);
+      } catch (err: unknown) {
+        // Lỗi đã được Global Axios Interceptor xử lý và show Toast!
+        // Ở đây chỉ setServerError để form có thể hiển thị inline (nếu muốn)
+        setServerError('Đăng nhập thất bại. Vui lòng kiểm tra lại.');
+      } finally {
+        setLoading(false);
       }
+    },
+    [setUser, setOrganizations, setPermissions, router]
+  );
 
-      const user = userData.user;
-
-      // 🟢 BƯỚC 1.2: Lưu thông tin User vào Zustand Store
-      setUser(user);
-
-      // 🟢 BƯỚC 1.3: Load danh sách Organization mà User này tham gia
-      // Thông thường backend sẽ trả về danh sách org, tạm dùng mock
-      setOrganizations(mockUserOrganizations);
-
-      // 🟢 BƯỚC 1.4: Load danh sách Permission của User
-      const permissions = await getUserPermissions(user.id);
-      setPermissions(permissions);
-
-      // 🔵 BƯỚC 1.5: Set Cookies cho Middleware Server-side đọc
-      // (Normally set by backend, nhưng ở đây mock cho frontend)
-      
-      // Set orgIds cookie - danh sách các org mà user tham gia
-      const orgIds = mockUserOrganizations.map(org => org.id).join(',');
-      document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; secure; samesite=strict`;
-
-      // Set user role cookie - để middleware có thể check
-      document.cookie = `userRole=${user.role}; path=/; max-age=86400; secure; samesite=strict`;
-
-      // Mock access token cookie (normally set by backend via Set-Cookie header)
-      document.cookie = `access_token=mock-jwt-token-${user.id}; path=/; max-age=86400; secure; samesite=strict; httponly`;
-
-      // System admin flag (tạm thời, thường không cần vì dùng role)
-      document.cookie = `isSystemAdmin=${user.isSystemAdmin}; path=/; max-age=86400; secure; samesite=strict`;
-
-      // 🟡 BƯỚC 2: PHÂN LUỒNG ĐIỀU HƯỚNG (ROUTING DECISION)
-      const redirectPath = getRedirectPath(user);
-      
-      toast.success(`Welcome ${user.firstName}! Redirecting...`);
-      
-      // Redirect dựa trên vai trò
-      router.push(redirectPath);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      setError(errorMessage);
-      toastError(err, 'Sign in failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { loading, error, handleLogin };
+  return { loading, serverError, handleLogin };
 };

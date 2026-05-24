@@ -47,18 +47,24 @@ apiClient.interceptors.response.use(
 
     // 🟠 BƯỚC 4: Handle 401 - Token expired, attempt refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+      // Do not try to refresh or redirect if the request was to the login or register endpoint
+      const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register');
       
-      // Check if refresh token cookie exists before attempting refresh
-      const hasRefreshToken = document.cookie.includes('refresh_token');
-      
-      if (!hasRefreshToken) {
-        // No refresh token, logout immediately
-        useAuthStore.getState().clearAuth();
-        window.location.href = '/login';
-        toast.error('Session expired. Please login again.');
-        return Promise.reject(error);
-      }
+      if (!isAuthEndpoint) {
+        originalRequest._retry = true;
+        
+        // Check if refresh token cookie exists before attempting refresh
+        const hasRefreshToken = document.cookie.includes('refresh_token');
+        
+        if (!hasRefreshToken) {
+          // No refresh token, logout immediately
+          useAuthStore.getState().clearAuth();
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+            toast.error('Session expired. Please login again.');
+          }
+          return Promise.reject(error);
+        }
       
       try {
         // Attempt to refresh token using refresh token cookie
@@ -76,6 +82,7 @@ apiClient.interceptors.response.use(
         window.location.href = '/login';
         toast.error('Session expired. Please login again.');
         return Promise.reject(refreshError);
+      }
       }
     }
 

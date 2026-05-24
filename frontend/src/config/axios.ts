@@ -1,6 +1,7 @@
 'use client';
 
 import axios, { HttpStatusCode, type AxiosRequestConfig } from 'axios';
+import { toast } from 'sonner';
 import { env } from '@/config/env';
 
 export interface AppRequestConfig extends AxiosRequestConfig {
@@ -41,21 +42,42 @@ const triggerAuthFailure = async () => {
   }
 };
 
+const showErrorToast = (error: any) => {
+  if (!error.response) {
+    toast.error('Lỗi mạng', { description: 'Không thể kết nối đến máy chủ.' });
+    return;
+  }
+
+  const data = error.response.data;
+  // Backend returns: { code, message, details }
+  if (data && data.message) {
+    // If there are validation details, we could format them, but simple message is good for global
+    toast.error(data.message);
+  } else {
+    toast.error(`Lỗi hệ thống (${error.response.status})`, { 
+      description: 'Đã có lỗi xảy ra. Vui lòng thử lại sau.' 
+    });
+  }
+};
+
 instance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config as AppRequestConfig | undefined;
 
     if (!error.response) {
+      showErrorToast(error);
       await triggerAuthFailure();
       return Promise.reject(error);
     }
 
     if (!originalRequest) {
+      showErrorToast(error);
       return Promise.reject(error);
     }
 
     if (originalRequest.skipAuth) {
+      showErrorToast(error);
       return Promise.reject(error);
     }
 
@@ -63,6 +85,7 @@ instance.interceptors.response.use(
     const isUnauthorized = status === HttpStatusCode.Unauthorized;
 
     if (isUnauthorized && originalRequest._retry) {
+      showErrorToast(error);
       await triggerAuthFailure();
       return Promise.reject(error);
     }
@@ -91,10 +114,12 @@ instance.interceptors.response.use(
 
         return instance(originalRequest);
       } catch (err) {
+        showErrorToast(err);
         return Promise.reject(err);
       }
     }
 
+    showErrorToast(error);
     return Promise.reject(error);
   }
 );

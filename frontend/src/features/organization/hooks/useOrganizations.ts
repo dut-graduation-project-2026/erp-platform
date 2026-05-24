@@ -1,46 +1,52 @@
-import { useState, useEffect } from 'react';
-import { apiClient } from '@/services/api-client';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/useToast';
+import { fetchMyOrganizationsApi, createOrganizationApi, CreateOrganizationRequest, OrganizationResponse } from '../services/organizationService';
 
-export interface Organization {
-  id: string;
-  name: string;
-  description?: string;
-  hotline?: string;
-  address?: string;
-  role: string; // Will be fetched from permissions API
+export interface Organization extends OrganizationResponse {
+  role: string; // Mocked for now until backend provides role in the response
 }
 
 export function useOrganizations() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toastError } = useToast();
+  const { toastError, toastSuccess } = useToast();
 
-  useEffect(() => {
-    fetchOrganizations();
-  }, []);
-
-  const fetchOrganizations = async () => {
+  const fetchOrganizations = useCallback(async () => {
     try {
       setLoading(true);
-
-      // Fetch organizations
-      const orgResponse = await apiClient.get('/api/v1/organizations/me');
-      const orgs = orgResponse.data;
-
-      // Fetch permissions to get roles for each org
-      // Note: Current API requires organizationId, so we'll mock roles for now
-      // TODO: Create API to get all user permissions across organizations
+      setError(null);
+      const orgs = await fetchMyOrganizationsApi();
+      
+      // Mock roles until backend provides actual user roles per org
       const orgsWithRoles = orgs.map((org: any, index: number) => ({
         ...org,
-        role: index === 0 ? 'Admin' : index === 1 ? 'Manager' : 'Member', // Mock roles
+        role: index === 0 ? 'Admin' : 'Member',
       }));
 
       setOrganizations(orgsWithRoles);
     } catch (err) {
       setError('Failed to load organizations');
       toastError(err, 'Failed to load organizations. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrganizations();
+  }, [fetchOrganizations]);
+
+  const createOrganization = async (payload: CreateOrganizationRequest) => {
+    try {
+      setLoading(true);
+      await createOrganizationApi(payload);
+      toastSuccess('Tạo tổ chức thành công!');
+      await fetchOrganizations(); // Reload the list
+      return true;
+    } catch (err) {
+      // Global axios interceptor will show the toast for validation/business errors
+      return false;
     } finally {
       setLoading(false);
     }
@@ -51,5 +57,6 @@ export function useOrganizations() {
     loading,
     error,
     refetch: fetchOrganizations,
+    createOrganization
   };
 }

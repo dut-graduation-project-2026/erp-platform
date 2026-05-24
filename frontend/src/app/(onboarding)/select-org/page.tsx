@@ -1,10 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { useOrganizations } from '@/features/organization/hooks/useOrganizations';
 import OrgCard from '@/features/organization/components/OrgCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, Mail, ArrowRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Building2, Mail, ArrowRight, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
 
@@ -21,13 +33,51 @@ import { useAuthStore } from '@/store/use-auth-store';
  * - Footer with company values
  */
 export default function SelectOrgPage() {
-  const { organizations, loading, error } = useOrganizations();
-  const { setCurrentOrgId } = useAuthStore();
+  const { organizations, loading, error, createOrganization } = useOrganizations();
+  const { setCurrentOrgId, setPermissions } = useAuthStore();
   const router = useRouter();
+  
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    taxCode: '',
+    address: '',
+    hotline: '',
+    description: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSelectOrg = async (orgId: string) => {
-    setCurrentOrgId(orgId);
-    router.push(`/dashboard/${orgId}`);
+    try {
+      // Gọi API lấy danh sách quyền chi tiết cho user trong tổ chức này
+      const { fetchMyPermissionsApi } = await import('@/features/auth/services/authService');
+      const permissions = await fetchMyPermissionsApi(orgId);
+      
+      // Lưu vào store
+      setPermissions(permissions);
+      setCurrentOrgId(orgId);
+      
+      // Đồng bộ cookies để Next.js Middleware có thể đọc được (Middleware không đọc được localStorage của Zustand)
+      const orgIds = organizations.map(org => org.id).join(',');
+      document.cookie = `currentOrgId=${orgId}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; SameSite=Lax`;
+      
+      router.push(`/dashboard/${orgId}`);
+    } catch (err) {
+      console.error("Failed to fetch permissions:", err);
+      // Bạn có thể show toast lỗi ở đây nếu cần
+    }
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const success = await createOrganization(formData);
+    setIsSubmitting(false);
+    if (success) {
+      setIsDialogOpen(false);
+      setFormData({ name: '', taxCode: '', address: '', hotline: '', description: '' });
+    }
   };
 
   if (loading) {
@@ -81,7 +131,7 @@ export default function SelectOrgPage() {
       </div>
 
       {/* Notification Banner */}
-      <div className="absolute left-8 bottom-64 z-10 max-w-sm">
+      {/* <div className="absolute left-8 bottom-64 z-10 max-w-sm">
         <Card className="border-l-4 border-[#af4900] bg-[#af4900] text-[#ffe3d6] shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
@@ -97,11 +147,12 @@ export default function SelectOrgPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-24 py-24 relative z-0">
-        <div className="max-w-6xl w-full">
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <div className="max-w-6xl w-full">
           {/* Title Section */}
           <div className="text-center mb-16">
             <h1 className="text-[48px] font-black text-[#1b1c1c] mb-4">
@@ -110,9 +161,18 @@ export default function SelectOrgPage() {
                 Organization
               </span>
             </h1>
-            <p className="text-[18px] font-medium text-[#414753] max-w-2xl mx-auto leading-relaxed">
+            <p className="text-[18px] font-medium text-[#414753] max-w-2xl mx-auto leading-relaxed mb-6">
               Welcome back. Access your designated operational workspace to continue managing your enterprise architecture and supply chain logistics.
             </p>
+
+            {organizations.length > 0 && (
+              <DialogTrigger asChild>
+                <Button className="bg-[#004e9f] hover:bg-[#003d7a] text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Organization
+                </Button>
+              </DialogTrigger>
+            )}
           </div>
 
           {/* Organizations Grid */}
@@ -124,7 +184,6 @@ export default function SelectOrgPage() {
                   id={org.id}
                   name={org.name}
                   description={org.description}
-                  hotline={org.hotline}
                   address={org.address}
                   role={org.role}
                   onSelect={handleSelectOrg}
@@ -137,17 +196,93 @@ export default function SelectOrgPage() {
                 <div className="max-w-md mx-auto">
                   <Building2 className="h-12 w-12 text-[#414753] mx-auto mb-4" />
                   <p className="text-[16px] font-medium text-[#414753] mb-6">
-                    Don't see your organization listed? New memberships may take up to 24 hours to propagate.
+                    You haven't joined any organization yet. Please create a new one to get started.
                   </p>
-                  <Button className="bg-[#e4e2e1] hover:bg-[#d0d0d0] text-[#004e9f] border-0">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Contact System Admin
-                  </Button>
+                  
+                  <DialogTrigger asChild>
+                    <Button className="bg-[#004e9f] hover:bg-[#003d7a] text-white">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Organization
+                    </Button>
+                  </DialogTrigger>
                 </div>
               </Card>
             </div>
           )}
+
+          {/* Shared Dialog Content for Create Organization */}
+          <DialogContent className="sm:max-w-[500px]">
+            <form onSubmit={handleCreateSubmit}>
+              <DialogHeader>
+                <DialogTitle>Create New Organization</DialogTitle>
+                <DialogDescription>
+                  Set up a new operational workspace. You will automatically become the System Admin.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Organization Name <span className="text-red-500">*</span></Label>
+                  <Input 
+                    id="name" 
+                    placeholder="Enter organization name" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="taxCode">Tax Code <span className="text-red-500">*</span></Label>
+                  <Input 
+                    id="taxCode" 
+                    placeholder="Enter tax code (must be unique)" 
+                    value={formData.taxCode}
+                    onChange={(e) => setFormData({...formData, taxCode: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hotline">Hotline</Label>
+                    <Input 
+                      id="hotline" 
+                      placeholder="e.g. 1900 1234" 
+                      value={formData.hotline}
+                      onChange={(e) => setFormData({...formData, hotline: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input 
+                      id="address" 
+                      placeholder="City, Country" 
+                      value={formData.address}
+                      onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea 
+                    id="description" 
+                    placeholder="Brief description about your organization" 
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting} className="bg-[#004e9f] hover:bg-[#003d7a] text-white">
+                  {isSubmitting ? 'Creating...' : 'Create Organization'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
         </div>
+        </Dialog>
       </div>
 
       {/* Footer */}

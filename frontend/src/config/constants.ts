@@ -5,7 +5,20 @@ export const API_ENDPOINTS = {
     LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh",
     PROFILE: "/auth/profile",
-    ORGANIZATIONS: "/auth/organizations",
+  },
+  ORGANIZATIONS: {
+    BASE: "/organizations",
+    ME: "/organizations/me",
+    INVITATIONS: (orgId: string) => `/organizations/${orgId}/invitations`,
+    ROLES: (orgId: string) => `/organizations/${orgId}/roles`,
+  },
+  USERS: {
+    BASE: "/users",
+    ME_PERMISSIONS: "/users/me/permissions",
+  },
+  ERP_MODULES: {
+    BASE: "/erp-modules",
+    ME: "/erp-modules/me",
   },
   SALES: {
     ORDERS: "/sales/orders",

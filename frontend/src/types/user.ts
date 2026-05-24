@@ -1,12 +1,11 @@
 import { BaseMetadataEntity } from "@/types/base";
+import type { UserOrganization } from "@/types/organization";
 
-export interface User extends BaseMetadataEntity{
+export interface User extends BaseMetadataEntity {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
     avatarUrl?: string;
-    role: string; // e.g., 'system_admin', 'org_user'
-    isSystemAdmin?: boolean; // 🟡 BƯỚC 2: Flag để phân luồng đăng nhập
-    organizations?: unknown[]; // Temporarily unknown
+    organizations: UserOrganization[];
 }

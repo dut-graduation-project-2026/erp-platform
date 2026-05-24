@@ -1,5 +1,7 @@
 'use client';
 
+import { logoutApi } from '@/features/auth/services/authService';
+
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -22,9 +24,12 @@ import {
   LogOut,
   User,
   Building2,
-  ChevronDown
+  ChevronDown,
+  LayoutGrid
 } from 'lucide-react';
 import { useAuthStore } from '@/store/use-auth-store';
+import { APP_MODULES } from '@/config/modules';
+import Link from 'next/link';
 
 interface HeaderProps {
   className?: string;
@@ -35,32 +40,33 @@ export function Header({ className }: HeaderProps) {
   const { user, organizations, currentOrgId, logout } = useAuthStore();
   const currentOrg = organizations.find(org => org.id === currentOrgId);
 
-  // Generate breadcrumbs from pathname
-  const generateBreadcrumbs = () => {
-    const segments = pathname.split('/').filter(Boolean);
-    const breadcrumbs = [{ label: 'Home', href: '/dashboard' }];
+  // Determine if we are on the App Launcher or inside a module
+  const segments = pathname.split('/').filter(Boolean);
+  const isAppLauncher = segments.length === 2 && segments[0] === 'dashboard'; // e.g. /dashboard/orgId
+  const currentModuleRoute = segments.length > 2 ? '/' + segments[2] : null; // e.g. /attendance-machine
+  
+  const currentModule = currentModuleRoute 
+    ? APP_MODULES.find(m => m.route === currentModuleRoute) 
+    : null;
 
-    segments.forEach((segment, index) => {
-      const href = '/' + segments.slice(0, index + 1).join('/');
-      let label = segment.charAt(0).toUpperCase() + segment.slice(1);
-
-      // Custom labels for specific routes
-      if (segment === 'administration') label = 'Administration';
-      if (segment === 'organizations') label = 'Organizations';
-      if (segment === 'roles') label = 'Roles & Permissions';
-      if (segment === 'users') label = 'Users';
-
-      breadcrumbs.push({ label, href });
-    });
-
-    return breadcrumbs;
-  };
-
-  const breadcrumbs = generateBreadcrumbs();
-
-  const handleLogout = () => {
-    logout();
-    // Redirect will be handled by auth context
+  const handleLogout = async () => {
+    try {
+      // 1. Clear Zustand state
+      logout();
+      
+      // 2. Clear frontend cookies
+      document.cookie = 'currentOrgId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'userOrgIds=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      
+      // 3. Optional: Call backend to clear HttpOnly tokens
+      await logoutApi();
+      
+      // 4. Redirect to login and reload to clear any residual memory
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = '/login';
+    }
   };
 
   return (
@@ -68,26 +74,31 @@ export function Header({ className }: HeaderProps) {
       "h-16 bg-gradient-to-r from-blue-600 to-blue-800 border-b border-blue-700 flex items-center justify-between px-6 text-white",
       className
     )}>
-      {/* Left Section - Breadcrumbs */}
+      {/* Left Section - Odoo Style Navigation */}
       <div className="flex items-center space-x-4">
-        <nav className="flex items-center space-x-2 text-sm">
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={crumb.href}>
-              {index > 0 && <span className="text-blue-300">/</span>}
-              <a
-                href={crumb.href}
-                className={cn(
-                  "hover:text-blue-200 transition-colors",
-                  index === breadcrumbs.length - 1
-                    ? "text-white font-medium"
-                    : "text-blue-200"
-                )}
-              >
-                {crumb.label}
-              </a>
-            </React.Fragment>
-          ))}
-        </nav>
+        {!isAppLauncher && currentOrgId && (
+          <Link href={`/dashboard/${currentOrgId}`} className="flex items-center text-white hover:bg-white/10 p-2 rounded-md transition-colors">
+            <LayoutGrid className="h-5 w-5" />
+          </Link>
+        )}
+        
+        {currentModule ? (
+          <div className="flex items-center space-x-4">
+            <span className="text-[18px] font-semibold text-white">{currentModule.name}</span>
+            {/* Odoo Sub-navigation would go here, mapped by module */}
+            <div className="hidden md:flex space-x-1 ml-4 border-l border-white/20 pl-4">
+               {/* Placeholder for sub-tabs */}
+               <Button variant="ghost" className="text-white hover:bg-white/10 h-8 text-sm px-3">
+                 Overview
+               </Button>
+               <Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 h-8 text-sm px-3">
+                 Configuration
+               </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-[18px] font-semibold text-white">App Launcher</div>
+        )}
       </div>
 
       {/* Center Section - Search */}
