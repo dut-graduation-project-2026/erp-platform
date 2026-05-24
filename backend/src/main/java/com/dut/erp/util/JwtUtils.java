@@ -31,15 +31,20 @@ public class JwtUtils {
   }
 
   public String generateAccessToken(User user, Instant now) {
-    return generateToken(user, TOKEN_TYPE_ACCESS, now, jwtProperties.accessTokenExpiration());
+    return generateToken(
+        user,
+        TOKEN_TYPE_ACCESS,
+        now,
+        jwtProperties.accessTokenExpiration(),
+        UUID.randomUUID().toString());
   }
 
   public RefreshTokenInfo generateRefreshToken(User user, Instant now) {
     Instant expiryDate = now.plusMillis(jwtProperties.refreshTokenExpiration());
     String jti = UUID.randomUUID().toString();
 
-    String token =
-        generateToken(user, TOKEN_TYPE_REFRESH, now, jwtProperties.refreshTokenExpiration());
+    String token = generateToken(
+        user, TOKEN_TYPE_REFRESH, now, jwtProperties.refreshTokenExpiration(), jti);
 
     return new RefreshTokenInfo(token, jti, expiryDate);
   }
@@ -60,11 +65,11 @@ public class JwtUtils {
     return jti.substring(0, length) + "...";
   }
 
-  private String generateToken(User user, String tokenType, Instant issuedAt, long expirationMs) {
+  private String generateToken(
+      User user, String tokenType, Instant issuedAt, long expirationMs, String jti) {
     validateUser(user);
 
     Instant expiryDate = issuedAt.plusMillis(expirationMs);
-    String jti = UUID.randomUUID().toString();
 
     return Jwts.builder()
         .id(jti)
