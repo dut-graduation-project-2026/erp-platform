@@ -170,16 +170,16 @@ const LoginForm = ({
           ERP Platform
         </p>
         <CardTitle className="text-[24px] leading-[1.15] font-semibold tracking-normal text-foreground">
-          Đăng nhập
+          Login
         </CardTitle>
         <CardDescription className="text-[14px] leading-[1.5] font-normal text-muted-foreground">
-          Nhập thông tin đăng nhập để truy cập workspace của bạn.
+          Enter your login credentials to access your workspace.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="px-6 py-6">
         {/* ── DEMO CREDENTIALS (chỉ hiển thị trong dev) ── */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* {process.env.NODE_ENV === 'development' && (
           <div className="mb-4 rounded-[4px] border border-blue-200 bg-blue-50 p-3">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-blue-600">
               Demo Accounts
@@ -199,7 +199,7 @@ const LoginForm = ({
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* ── SERVER ERROR BANNER ── */}
         {serverError && (
@@ -262,13 +262,13 @@ const LoginForm = ({
                 htmlFor="login-password"
                 className="text-[14px] leading-[1.4] font-semibold text-foreground"
               >
-                Mật khẩu
+                Password
               </Label>
               <Link
                 href="#"
                 className="text-[12px] leading-[1.4] text-[#0099ff] underline underline-offset-2 hover:text-[#004499] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
               >
-                Quên mật khẩu?
+                Forgot password?
               </Link>
             </div>
             <div className="relative">
@@ -291,7 +291,7 @@ const LoginForm = ({
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                aria-label={showPassword ? 'Hide Password' : 'Show Password'}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 tabIndex={-1} // Bỏ qua khi tab để không làm gián đoạn flow
               >
@@ -324,7 +324,7 @@ const LoginForm = ({
               htmlFor="login-remember-me"
               className="cursor-pointer text-[12px] leading-[1.4] font-normal tracking-[0.1px] text-muted-foreground"
             >
-              Ghi nhớ đăng nhập
+              Remember me
             </Label>
           </div>
 
@@ -339,7 +339,7 @@ const LoginForm = ({
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
                 <LoaderIcon />
-                Đang đăng nhập...
+                Logging in...
               </span>
             ) : (
               'Đăng nhập'
@@ -348,12 +348,12 @@ const LoginForm = ({
 
           {/* Register Link */}
           <p className="pt-1 text-center text-[12px] leading-[1.4] text-muted-foreground">
-            Chưa có tài khoản?{' '}
+            Don't have an account?{' '}
             <Link
               href="/register"
               className="text-[#0099ff] underline underline-offset-2 hover:text-[#004499] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
             >
-              Tạo tài khoản mới
+              Register now
             </Link>
           </p>
         </form>
