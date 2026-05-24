@@ -35,7 +35,7 @@ export const APP_MODULES: ModuleConfig[] = [
     name: 'ERP Modules',
     icon: AppWindow,
     route: '/erp-modules',
-    permission: 'erp_module:read', // Example permission, replace if needed
+    permission: PERMISSIONS.ERP_MODULE.READ,
     bgColor: 'bg-[#004e9f]',
   },
   {
@@ -43,7 +43,7 @@ export const APP_MODULES: ModuleConfig[] = [
     name: 'Roles & Permissions',
     icon: Shield,
     route: '/roles',
-    permission: 'role:read',
+    permission: PERMISSIONS.ROLES.READ,
     bgColor: 'bg-red-800',
   },
   {
@@ -51,7 +51,7 @@ export const APP_MODULES: ModuleConfig[] = [
     name: 'Users',
     icon: Users,
     route: '/users',
-    permission: 'user:read',
+    permission: PERMISSIONS.USERS.READ,
     bgColor: 'bg-teal-700',
   },
   {

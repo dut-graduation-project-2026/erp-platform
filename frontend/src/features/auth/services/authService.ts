@@ -80,8 +80,8 @@ export const fetchMyOrganizationsApi = async (): Promise<UserOrganization[]> => 
  * Gọi sau khi user chọn tổ chức để nạp vào Zustand store.
  */
 export const fetchMyPermissionsApi = async (organizationId: string): Promise<string[]> => {
-  const response = await apiClient.get<string[]>(API_ENDPOINTS.USERS.ME_PERMISSIONS, {
+  const response = await apiClient.get<{ permissions: { code: string }[] }>(API_ENDPOINTS.USERS.ME_PERMISSIONS, {
     params: { organizationId }
   });
-  return response.data;
+  return response.data.permissions.map(p => p.code);
 };
