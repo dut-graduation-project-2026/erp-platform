@@ -19,11 +19,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 🟠 BƯỚC 4.1: Check access token (HttpOnly cookie từ backend)
-  const accessToken = request.cookies.get('access_token');
+  // Middleware không nên chặn quá sớm khi access_token vừa hết hạn/mất,
+  // để frontend có cơ hội gọi /auth/refresh và khôi phục phiên.
+  const userOrgIdsCookie = request.cookies.get('userOrgIds')?.value;
+  const hasClientSessionContext = Boolean(userOrgIdsCookie && userOrgIdsCookie.trim());
 
-  // Protected routes - cần login
-  if (!accessToken) {
+  // Nếu không còn ngữ cảnh phiên tối thiểu từ client thì coi như chưa đăng nhập.
+  if (!hasClientSessionContext) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -46,7 +48,7 @@ export function middleware(request: NextRequest) {
       }
 
       // Check nếu orgId nằm trong userOrgIds của user
-      const userOrgIds = request.cookies.get('userOrgIds')?.value?.split(',') || [];
+      const userOrgIds = userOrgIdsCookie?.split(',') || [];
       if (!userOrgIds.includes(orgId)) {
         return NextResponse.redirect(new URL('/select-org', request.url));
       }

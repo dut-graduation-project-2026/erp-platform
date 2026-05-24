@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 
 export interface AppRequestConfig extends AxiosRequestConfig {
   skipAuth?: boolean;
+  _retry?: boolean;
+  _isRetryAttempt?: boolean;
 }
 
 export const apiClient = axios.create({
@@ -25,7 +27,15 @@ export const apiClient = axios.create({
  */
 apiClient.interceptors.request.use(
   (config) => {
+    const requestConfig = config as AppRequestConfig;
     const { currentOrgId } = useAuthStore.getState();
+
+    // Ensure stale retry state from reused config objects never leaks into a new request.
+    if (!requestConfig._isRetryAttempt) {
+      requestConfig._retry = false;
+    } else {
+      requestConfig._isRetryAttempt = false;
+    }
     
     // Gắn X-Org-Id header nếu có currentOrgId
     if (currentOrgId) {
@@ -59,12 +69,20 @@ const processQueue = (error: any, token: string | null = null) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as AppRequestConfig | undefined;
+
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
 
     // 🟠 BƯỚC 4: Handle 401 - Token expired, attempt refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Do not try to refresh or redirect if the request was to the login or register endpoint
-      const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register');
+      const isAuthEndpoint =
+        originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/register') ||
+        originalRequest.url?.includes('/auth/refresh') ||
+        originalRequest.skipAuth;
       
       if (!isAuthEndpoint) {
         if (isRefreshing) {
@@ -81,6 +99,7 @@ apiClient.interceptors.response.use(
         }
 
         originalRequest._retry = true;
+        originalRequest._isRetryAttempt = true;
         isRefreshing = true;
 
         try {

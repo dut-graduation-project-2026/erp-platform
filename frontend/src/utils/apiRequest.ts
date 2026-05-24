@@ -1,7 +1,7 @@
-import { AppRequestConfig, instance } from "@/config/axios";
+import { apiClient, type AppRequestConfig } from "@/services/api-client";
 
 async function apiRequest<T>(config: AppRequestConfig): Promise<T> {
-  const response = await instance.request<T>(config);
+  const response = await apiClient.request<T>(config);
   return response.data;
 }
 
