@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-init-roles-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Roles
+              - column:
+                  name: code
+                  value: roles
+              - column:
+                  name: description
+                  value: User role and permission management system for access control.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: roles:select
+              - column:
+                  name: code
+                  value: roles:select
+              - column:
+                  name: description
+                  value: Allow selecting role information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: roles:read
+              - column:
+                  name: code
+                  value: roles:read
+              - column:
+                  name: description
+                  value: Allow viewing of role details and configurations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: roles:write
+              - column:
+                  name: code
+                  value: roles:write
+              - column:
+                  name: description
+                  value: Allow writing/updating role names and permissions.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: roles:create
+              - column:
+                  name: code
+                  value: roles:create
+              - column:
+                  name: description
+                  value: Allow creating new roles and assigning permissions.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: roles:delete
+              - column:
+                  name: code
+                  value: roles:delete
+              - column:
+                  name: description
+                  value: Allow deleting roles from the system.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'roles')

@@ -10,17 +10,25 @@ public class PermissionActionUtils {
     return String.format(AUTHORITY_TEMPLATE, resource, action);
   }
 
-  public String extractPermissionResource(String authority) {
+  public String extractModule(String authority) {
     if (authority == null || !authority.contains(":")) {
       return null;
     }
-    return authority.split(":")[0];
+    String[] parts = authority.split(":", 2);
+    if (parts[0].isEmpty()) {
+      return null;
+    }
+    return parts[0];
   }
 
-  public String extractPermissionAction(String authority) {
+  public String extractModulePermission(String authority) {
     if (authority == null || !authority.contains(":")) {
       return null;
     }
-    return authority.split(":")[1];
+    String[] parts = authority.split(":", 2);
+    if (parts.length < 2 || parts[1].isEmpty()) {
+      return null;
+    }
+    return parts[1];
   }
 }

@@ -12,26 +12,44 @@ import org.springframework.stereotype.Repository;
 public interface ErpModuleRepository extends JpaRepository<ErpModule, UUID> {
   @Query(
       """
-          SELECT DISTINCT p.module
-          FROM User u
-          JOIN u.roles r
-          JOIN r.permissions p
-          JOIN u.organizations o
-          WHERE u.id = :userId
-            AND o.id = :organizationId
-            AND r.organization.id = :organizationId
+        SELECT DISTINCT m
+        FROM User u
+        JOIN u.roles r
+        JOIN r.permissions p
+        JOIN p.module m
+        WHERE u.id = :userId
+          AND r.organization.id = :organizationId
       """)
-  List<ErpModule> findAccessibleModulesByUserAndOrganization(
+  List<ErpModule> findAllAccessibleByUserIdAndOrganizationId(
       @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
 
   @Query(
       """
-          SELECT DISTINCT m
-          FROM Role r
-          JOIN r.permissions p
-          JOIN p.module m
-          LEFT JOIN FETCH m.allowedPermissions ap
-          WHERE r.organization.id = :organizationId
+        SELECT DISTINCT m
+        FROM Role r
+        JOIN r.permissions p
+        JOIN p.module m
+        LEFT JOIN FETCH m.permissions modulePermission
+        WHERE r.organization.id = :organizationId
       """)
-  List<ErpModule> findByOrganizationIdWithPermissions(@Param("organizationId") UUID organizationId);
+  List<ErpModule> findAllByOrganizationIdWithPermissions(
+      @Param("organizationId") UUID organizationId);
+
+  @Query(
+      """
+          SELECT CASE WHEN EXISTS (
+              SELECT 1
+              FROM User u
+              JOIN u.roles r
+              JOIN r.permissions p
+              JOIN p.module m
+              WHERE u.id = :userId
+              AND r.organization.id = :organizationId
+              AND m.code = :moduleCode
+          ) THEN true ELSE false END
+      """)
+  boolean existsByCodeAndOrganizationIdAndUserId(
+      @Param("moduleCode") String moduleCode,
+      @Param("organizationId") UUID organizationId,
+      @Param("userId") UUID userId);
 }

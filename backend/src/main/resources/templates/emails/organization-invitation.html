@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Organization Invitation</title>
+    <style>
+        /* Reset for Email Clients */
+        body,
+        table,
+        td,
+        a {
+            text-decoration: none !important;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        table,
+        td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+
+        /* Base Styles - ERP Design System */
+        body {
+            background-color: #f8f8f8;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #242424;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f8f8f8;
+            padding: 32px 16px;
+        }
+
+        /* Card */
+        .card {
+            background: #ffffff;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Header */
+        .header-section {
+            background-color: #ffffff;
+            padding: 32px 32px 24px 32px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #242424;
+            letter-spacing: -0.3px;
+            margin: 0 0 24px 0;
+        }
+
+        .logo-accent {
+            color: #0066cc;
+            font-weight: 600;
+        }
+
+        .eyebrow {
+            color: #898989;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin: 0 0 8px 0;
+        }
+
+        .title {
+            color: #242424;
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin: 0;
+        }
+
+        .title-accent {
+            color: #0066cc;
+            font-weight: 600;
+        }
+
+        /* Content */
+        .content {
+            padding: 32px;
+        }
+
+        .inviter-box {
+            background: #f8f8f8;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border-left: 3px solid #0066cc;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: #0066cc;
+            color: #ffffff;
+            border-radius: 100px;
+            text-align: center;
+            line-height: 40px;
+            font-weight: 600;
+            font-size: 16px;
+            display: inline-block;
+        }
+
+        .inviter-text {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 12px;
+            font-size: 14px;
+            color: #242424;
+            line-height: 1.5;
+        }
+
+        .inviter-name {
+            font-weight: 600;
+            color: #242424;
+        }
+
+        .org-name {
+            font-weight: 600;
+            color: #0066cc;
+        }
+
+        .description {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #242424;
+            margin: 0 0 32px 0;
+        }
+
+        .description strong {
+            font-weight: 600;
+            color: #242424;
+        }
+
+        /* Buttons */
+        .btn-container {
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none !important;
+            transition: all 0.2s;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        .btn-primary {
+            background-color: #0066cc;
+            color: #ffffff !important;
+            border: none;
+        }
+
+        .btn-secondary {
+            background-color: #ffffff;
+            color: #242424 !important;
+            border: 1px solid #d0d0d0;
+            margin-left: 8px;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #f8f8f8;
+            border-radius: 4px;
+            padding: 16px;
+            border-left: 3px solid #898989;
+        }
+
+        .info-text {
+            font-size: 13px;
+            color: #242424;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .info-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background: #898989;
+            color: #ffffff;
+            border-radius: 100px;
+            text-align: center;
+            line-height: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .info-highlight {
+            font-weight: 600;
+            color: #242424;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 24px 16px;
+            font-size: 12px;
+            color: #898989;
+            line-height: 1.5;
+        }
+
+        .footer p {
+            margin: 0 0 8px 0;
+        }
+
+        .footer a {
+            color: #0066cc;
+            text-decoration: none !important;
+        }
+
+        .footer-divider {
+            color: #d0d0d0;
+            margin: 0 8px;
+        }
+
+        /* Mobile Responsive */
+        @media only screen and (max-width: 480px) {
+            .email-container {
+                padding: 16px 8px !important;
+            }
+
+            .header-section {
+                padding: 24px 16px !important;
+            }
+
+            .content {
+                padding: 24px 16px !important;
+            }
+
+            .btn {
+                display: block !important;
+                width: 100% !important;
+                margin: 0 0 8px 0 !important;
+                text-align: center;
+                box-sizing: border-box;
+            }
+
+            .btn-secondary {
+                margin-left: 0 !important;
+            }
+
+            .title {
+                font-size: 20px !important;
+            }
+
+            .inviter-text {
+                display: block !important;
+                margin-left: 0 !important;
+                margin-top: 12px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="card">
+
+            <!-- Header -->
+            <div class="header-section">
+                <p class="logo-text">
+                    <span class="logo-accent">DUT</span> ERP
+                </p>
+
+                <p class="eyebrow">Collaboration Invitation</p>
+
+                <h1 class="title">
+                    You have been invited to join<br>
+                    <span class="title-accent" th:text="${organizationName}">Acme Corp</span>
+                </h1>
+            </div>
+
+            <!-- Body -->
+            <div class="content">
+
+                <!-- Inviter Info -->
+                <div class="inviter-box">
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td width="56" valign="top">
+                                <div class="avatar" th:text="${#strings.substring(inviterName, 0, 1)}">
+                                    J
+                                </div>
+                            </td>
+
+                            <td valign="middle">
+                                <div class="inviter-text">
+                                    <span class="inviter-name" th:text="${inviterName}">
+                                        John Doe
+                                    </span>
+
+                                    invited you to collaborate at
+
+                                    <span class="org-name" th:text="${organizationName}">
+                                        Acme Corp
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Description -->
+                <p class="description">
+                    Hi <strong th:text="${recipientEmail}">there</strong>,
+                    <br><br>
+                    Your workspace is ready. You’ve been invited to join the team on <strong>DUT ERP</strong>.
+                    We believe your contributions will be a great addition to the organization.
+                    <br><br>
+                    Accept the invitation below to explore your new dashboard and start collaborating.
+                </p>
+
+                <!-- Action Buttons -->
+                <div class="btn-container">
+                    <a th:href="${acceptUrl}" class="btn btn-primary">
+                        Accept Invitation
+                    </a>
+
+                    <a th:href="${declineUrl}" class="btn btn-secondary">
+                        Decline
+                    </a>
+                </div>
+
+                <!-- Expiry Notice -->
+                <div class="info-box">
+                    <p class="info-text">
+                        <span class="info-icon">i</span>
+
+                        This invitation will expire on:
+
+                        <span class="info-highlight" th:text="${#temporals.format(expiresAt, 'HH:mm - dd/MM/yyyy')}">
+                            23:59 - 01/01/2026
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                This email was sent to
+                <strong th:text="${recipientEmail}">user</strong>
+                regarding your activity on DUT ERP.
+            </p>
+
+            <p>
+                © 2026 DUT ERP. All rights reserved.
+            </p>
+
+            <p>
+                <a href="#">Help Center</a>
+                <span class="footer-divider">•</span>
+                <a href="#">Privacy Policy</a>
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

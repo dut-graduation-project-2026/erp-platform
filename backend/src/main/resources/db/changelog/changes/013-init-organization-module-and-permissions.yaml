@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-init-organization-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Organizations Module
+              - column:
+                  name: code
+                  value: organizations
+              - column:
+                  name: description
+                  value: Module for organization management and access control.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: organizations:select
+              - column:
+                  name: code
+                  value: organizations:select
+              - column:
+                  name: description
+                  value: Allow selecting organizations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: organizations:read
+              - column:
+                  name: code
+                  value: organizations:read
+              - column:
+                  name: description
+                  value: Allow reading organization information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: organizations:write
+              - column:
+                  name: code
+                  value: organizations:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing organization data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: organizations:create
+              - column:
+                  name: code
+                  value: organizations:create
+              - column:
+                  name: description
+                  value: Allow creating new organizations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: organizations:delete
+              - column:
+                  name: code
+                  value: organizations:delete
+              - column:
+                  name: description
+                  value: Allow deleting organizations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'organizations')

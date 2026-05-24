@@ -4,7 +4,6 @@ import com.dut.erp.dto.response.ErpModuleBaseResponse;
 import com.dut.erp.dto.response.ErpModuleResponse;
 import com.dut.erp.entity.ErpModule;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
@@ -16,6 +15,5 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 public interface ErpModuleMapper {
   ErpModuleBaseResponse toErpModuleBaseResponse(ErpModule entity);
 
-  @Mapping(target = "permissions", source = "allowedPermissions")
   ErpModuleResponse toErpModuleResponse(ErpModule entity);
 }

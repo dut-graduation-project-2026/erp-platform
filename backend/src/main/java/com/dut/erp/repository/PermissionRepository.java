@@ -6,23 +6,37 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
 @Repository
 public interface PermissionRepository extends JpaRepository<Permission, UUID> {
   @Query(
       """
-      SELECT CASE WHEN COUNT(DISTINCT p.id) > 0 THEN true ELSE false END
-      FROM User u
-      JOIN u.organizations o
-      JOIN u.roles r
-      JOIN r.permissions p
-      WHERE u.id = :userId
-        AND o.id = :organizationId
-        AND r.organization.id = :organizationId
-        AND p.code = :permissionCode
+        SELECT CASE WHEN EXISTS (
+          SELECT 1
+          FROM User u
+          JOIN u.roles r
+          JOIN r.permissions p
+          WHERE u.id = :userId
+            AND r.organization.id = :organizationId
+            AND p.code = :permissionCode
+        ) THEN true ELSE false END
       """)
-  boolean existsByCodeAndUserIdAndOrganizationId(
-      @Param("permissionCode") String permissionCode,
+  boolean existsByUserIdAndOrganizationIdAndPermissionCode(
+      @Param("userId") UUID userId,
+      @Param("organizationId") UUID organizationId,
+      @Param("permissionCode") String permissionCode);
+
+  @Query(
+      """
+        SELECT DISTINCT p
+        FROM User u
+        JOIN u.roles r
+        JOIN r.permissions p
+        WHERE u.id = :userId
+          AND r.organization.id = :organizationId
+      """)
+  List<Permission> findPermissionsByUserIdAndOrganizationId(
       @Param("userId") UUID userId,
       @Param("organizationId") UUID organizationId);
 }

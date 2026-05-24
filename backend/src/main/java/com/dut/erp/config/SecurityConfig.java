@@ -32,14 +32,12 @@ public class SecurityConfig {
 
   private final CorsProperties corsProperties;
 
-  private static final String[] PUBLIC_ENDPOINTS = {
-    "/api/v1/auth/**", "/api/v1/public/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
-  };
+  private static final String[] PUBLIC_ENDPOINTS = {"/api/v1/auth/**", "/api/v1/public/**"};
 
   private static final String[] ALLOWED_CORS_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS"};
 
   private static final String[] ALLOWED_CORS_HEADERS = {
-    "Content-Type", "X-Requested-With", "Accept", "Authorization", "X-CSRF-Token"
+    "Content-Type", "X-Requested-With", "Accept", "Authorization", "X-CSRF-Token", "X-Org-Id"
   };
 
   @Bean
@@ -67,7 +65,7 @@ public class SecurityConfig {
     configuration.setAllowedMethods(Arrays.asList(ALLOWED_CORS_METHODS));
     configuration.setAllowedHeaders(Arrays.asList(ALLOWED_CORS_HEADERS));
     configuration.setAllowCredentials(true);
-    configuration.setMaxAge(3600L); // Cache CORS preflight response for 1 hour
+    configuration.setMaxAge(3600L);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

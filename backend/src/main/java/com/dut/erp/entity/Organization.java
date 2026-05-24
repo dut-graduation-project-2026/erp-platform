@@ -54,8 +54,8 @@ public class Organization {
   @Column(name = "hotline", nullable = false)
   String hotline;
 
-  @Column(name = "avatar_url")
-  String avatarUrl;
+  @Column(name = "tax_code", nullable = false, unique = true)
+  String taxCode;
 
   @ManyToMany(mappedBy = "organizations", fetch = FetchType.LAZY)
   @Builder.Default

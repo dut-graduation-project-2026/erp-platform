@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
@@ -27,7 +28,17 @@ public class GlobalExceptionHandler {
   // ============ Security Exceptions ============
   @ExceptionHandler(AuthenticationException.class)
   public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
+    log.warn("Authentication failed: {}", ex.getMessage());
     return buildResponse(ErrorCode.UNAUTHORIZED);
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+    log.warn("Access denied: {}", ex.getMessage());
+    if (ex.getMessage() != null) {
+      return buildResponse(ErrorCode.ACCESS_DENIED, ex.getMessage());
+    }
+    return buildResponse(ErrorCode.ACCESS_DENIED);
   }
 
   // =========== Bad Request Exceptions ============
@@ -43,10 +54,12 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
       MethodArgumentTypeMismatchException ex) {
     log.warn("Method argument type mismatch: {}", ex.getMessage());
-    String expectedType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
-    String message = String.format(
-        "Invalid value '%s' for parameter '%s': expected type '%s'",
-        ex.getValue(), ex.getName(), expectedType);
+    String expectedType =
+        ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
+    String message =
+        String.format(
+            "Invalid value '%s' for parameter '%s': expected type '%s'",
+            ex.getValue(), ex.getName(), expectedType);
     return buildResponse(ErrorCode.BAD_REQUEST, message, null);
   }
 
@@ -114,6 +127,10 @@ public class GlobalExceptionHandler {
 
   private ResponseEntity<ErrorResponse> buildResponse(ErrorCode errorCode) {
     return buildResponse(errorCode, null, null);
+  }
+
+  private ResponseEntity<ErrorResponse> buildResponse(ErrorCode errorCode, String customMessage) {
+    return buildResponse(errorCode, customMessage, null);
   }
 
   private ResponseEntity<ErrorResponse> buildResponse(

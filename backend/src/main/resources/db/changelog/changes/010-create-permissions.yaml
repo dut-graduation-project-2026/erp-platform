@@ -35,10 +35,6 @@ databaseChangeLog:
                     nullable: false
         - addUniqueConstraint:
             tableName: permissions
-            columnNames: name
-            constraintName: uk_permissions_name
-        - addUniqueConstraint:
-            tableName: permissions
             columnNames: code
             constraintName: uk_permissions_code
         - addForeignKeyConstraint:

@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-init-users-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Users
+              - column:
+                  name: code
+                  value: users
+              - column:
+                  name: description
+                  value: Module for users management and access control.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: users:select
+              - column:
+                  name: code
+                  value: users:select
+              - column:
+                  name: description
+                  value: Allow selecting users in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: users:read
+              - column:
+                  name: code
+                  value: users:read
+              - column:
+                  name: description
+                  value: Allow reading users information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: users:write
+              - column:
+                  name: code
+                  value: users:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing users data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: users:create
+              - column:
+                  name: code
+                  value: users:create
+              - column:
+                  name: description
+                  value: Allow creating new users.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: users:delete
+              - column:
+                  name: code
+                  value: users:delete
+              - column:
+                  name: description
+                  value: Allow deleting users.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'users')
