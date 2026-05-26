@@ -70,7 +70,7 @@ public class JwtUtils {
     Instant expiryDate = issuedAt.plusMillis(expirationMs);
 
     return Jwts.builder()
-        .id(jti)
+        .id(jti) // Sử dụng jti được truyền vào
         .subject(user.getId().toString())
         .claim(TOKEN_TYPE_CLAIM, tokenType)
         .issuedAt(Date.from(issuedAt))
