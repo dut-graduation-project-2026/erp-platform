@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 021-create-sale-orders-table
+      id: 025-create-sale-orders-table
       author: halwins
       changes:
         - createTable:
@@ -113,63 +113,3 @@ databaseChangeLog:
             referencedColumnNames: id
             onDelete: SET NULL
             onUpdate: CASCADE
-
-  - changeSet:
-      id: 021-create-sale-order-lines-table
-      author: halwins
-      changes:
-        - createTable:
-            tableName: sale_order_lines
-            columns:
-              - column:
-                  name: id
-                  type: UUID
-                  constraints:
-                    primaryKey: true
-                    primaryKeyName: pk_sale_order_lines
-                    nullable: false
-              - column:
-                  name: order_id
-                  type: UUID
-                  constraints:
-                    nullable: false
-              - column:
-                  name: product_id
-                  type: UUID
-                  constraints:
-                    nullable: false
-              - column:
-                  name: quantity
-                  type: DECIMAL(15,4)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: unit_price
-                  type: DECIMAL(15,2)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: discount_percent
-                  type: DECIMAL(5,2)
-                  defaultValueNumeric: 0.00
-                  constraints:
-                    nullable: false
-              - column:
-                  name: subtotal
-                  type: DECIMAL(15,2)
-                  constraints:
-                    nullable: false
-        - addForeignKeyConstraint:
-            constraintName: fk_sale_order_lines_order
-            baseTableName: sale_order_lines
-            baseColumnNames: order_id
-            referencedTableName: sale_orders
-            referencedColumnNames: id
-            onDelete: CASCADE
-            onUpdate: CASCADE
-        - addForeignKeyConstraint:
-            constraintName: fk_sale_order_lines_product
-            baseTableName: sale_order_lines
-            baseColumnNames: product_id
-            referencedTableName: products
-            referencedColumnNames: id

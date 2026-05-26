@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 019-init-sale-crm-modules-and-permissions
+      id: 020-init-sale-crm-modules-and-permissions
       author: halwins
       changes:
         # ---- ERP Modules ----

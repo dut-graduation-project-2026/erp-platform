@@ -1,0 +1,114 @@
+databaseChangeLog:
+  - changeSet:
+      id: 027-create-sale-invoices-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: sale_invoices
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_sale_invoices
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partner_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: invoice_number
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: invoice_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: DECIMAL(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: paid_amount
+                  type: DECIMAL(15,2)
+                  defaultValueNumeric: 0.00
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: DRAFT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addUniqueConstraint:
+            tableName: sale_invoices
+            columnNames: organization_id, invoice_number
+            constraintName: uk_sale_invoices_org_number
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_invoices_organization
+            baseTableName: sale_invoices
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_invoices_order
+            baseTableName: sale_invoices
+            baseColumnNames: order_id
+            referencedTableName: sale_orders
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_invoices_partner
+            baseTableName: sale_invoices
+            baseColumnNames: partner_id
+            referencedTableName: sale_partners
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_invoices_created_by
+            baseTableName: sale_invoices
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_invoices_updated_by
+            baseTableName: sale_invoices
+            baseColumnNames: updated_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE

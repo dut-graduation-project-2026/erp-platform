@@ -1,0 +1,75 @@
+databaseChangeLog:
+  - changeSet:
+      id: 039-create-stock-inventory-lines-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: stock_inventory_line
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_stock_inventory_line
+                    nullable: false
+              - column:
+                  name: inventory_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lot_id
+                  type: UUID
+              - column:
+                  name: theoretical_qty
+                  type: DECIMAL(15,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: checked_qty
+                  type: DECIMAL(15,4)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_inventory_line_inv
+            baseTableName: stock_inventory_line
+            baseColumnNames: inventory_id
+            referencedTableName: stock_inventory
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_inventory_line_product
+            baseTableName: stock_inventory_line
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_inventory_line_location
+            baseTableName: stock_inventory_line
+            baseColumnNames: location_id
+            referencedTableName: stock_location
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_inventory_line_lot
+            baseTableName: stock_inventory_line
+            baseColumnNames: lot_id
+            referencedTableName: stock_lot
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE

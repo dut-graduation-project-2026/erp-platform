@@ -1,0 +1,76 @@
+databaseChangeLog:
+  - changeSet:
+      id: 031-create-stock-locations-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: stock_location
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_stock_location
+                    nullable: false
+              - column:
+                  name: warehouse_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: parent_id
+                  type: UUID
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addUniqueConstraint:
+            tableName: stock_location
+            columnNames: warehouse_id, code
+            constraintName: uk_location_warehouse_code
+        - addForeignKeyConstraint:
+            constraintName: fk_location_warehouse
+            baseTableName: stock_location
+            baseColumnNames: warehouse_id
+            referencedTableName: stock_warehouse
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_location_parent
+            baseTableName: stock_location
+            baseColumnNames: parent_id
+            referencedTableName: stock_location
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE

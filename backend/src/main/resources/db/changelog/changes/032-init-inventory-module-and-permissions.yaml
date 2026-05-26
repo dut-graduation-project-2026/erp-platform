@@ -1,0 +1,444 @@
+databaseChangeLog:
+  - changeSet:
+      id: 032-init-inventory-module-and-permissions
+      author: halwins
+      changes:
+        # ---- ERP Modules ----
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Inventory
+              - column:
+                  name: code
+                  value: inventory
+              - column:
+                  name: description
+                  value: Management of warehouses, stock levels, operations, adjustments, and valuations.
+
+        # ---- Warehouse Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:select
+              - column:
+                  name: code
+                  value: warehouses:select
+              - column:
+                  name: description
+                  value: Allow listing warehouses.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:read
+              - column:
+                  name: code
+                  value: warehouses:read
+              - column:
+                  name: description
+                  value: Allow reading warehouse details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:create
+              - column:
+                  name: code
+                  value: warehouses:create
+              - column:
+                  name: description
+                  value: Allow creating warehouses.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:write
+              - column:
+                  name: code
+                  value: warehouses:write
+              - column:
+                  name: description
+                  value: Allow updating warehouses.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:delete
+              - column:
+                  name: code
+                  value: warehouses:delete
+              - column:
+                  name: description
+                  value: Allow deleting warehouses.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        # ---- Location Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: locations:select
+              - column:
+                  name: code
+                  value: locations:select
+              - column:
+                  name: description
+                  value: Allow listing stock locations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: locations:read
+              - column:
+                  name: code
+                  value: locations:read
+              - column:
+                  name: description
+                  value: Allow reading stock location details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: locations:create
+              - column:
+                  name: code
+                  value: locations:create
+              - column:
+                  name: description
+                  value: Allow creating stock locations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: locations:write
+              - column:
+                  name: code
+                  value: locations:write
+              - column:
+                  name: description
+                  value: Allow updating stock locations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: locations:delete
+              - column:
+                  name: code
+                  value: locations:delete
+              - column:
+                  name: description
+                  value: Allow deleting stock locations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        # ---- Picking Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: pickings:select
+              - column:
+                  name: code
+                  value: pickings:select
+              - column:
+                  name: description
+                  value: Allow listing stock pickings and moves.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: pickings:read
+              - column:
+                  name: code
+                  value: pickings:read
+              - column:
+                  name: description
+                  value: Allow reading stock picking details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: pickings:create
+              - column:
+                  name: code
+                  value: pickings:create
+              - column:
+                  name: description
+                  value: Allow creating stock pickings.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: pickings:write
+              - column:
+                  name: code
+                  value: pickings:write
+              - column:
+                  name: description
+                  value: Allow updating stock pickings and executing moves.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: pickings:delete
+              - column:
+                  name: code
+                  value: pickings:delete
+              - column:
+                  name: description
+                  value: Allow deleting stock pickings.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        # ---- Quant Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: quants:select
+              - column:
+                  name: code
+                  value: quants:select
+              - column:
+                  name: description
+                  value: Allow listing and querying stock levels.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: quants:read
+              - column:
+                  name: code
+                  value: quants:read
+              - column:
+                  name: description
+                  value: Allow reading specific stock level details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        # ---- Inventory / Adjustment Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory:select
+              - column:
+                  name: code
+                  value: inventory:select
+              - column:
+                  name: description
+                  value: Allow listing stocktakes.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory:read
+              - column:
+                  name: code
+                  value: inventory:read
+              - column:
+                  name: description
+                  value: Allow reading stocktake details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory:create
+              - column:
+                  name: code
+                  value: inventory:create
+              - column:
+                  name: description
+                  value: Allow creating stocktakes.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory:write
+              - column:
+                  name: code
+                  value: inventory:write
+              - column:
+                  name: description
+                  value: Allow recording counts and validating stocktakes.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory:delete
+              - column:
+                  name: code
+                  value: inventory:delete
+              - column:
+                  name: description
+                  value: Allow deleting/cancelling stocktakes.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory')

@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: 030-create-stock-warehouses-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: stock_warehouse
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_stock_warehouse
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address
+                  type: VARCHAR(255)
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addUniqueConstraint:
+            tableName: stock_warehouse
+            columnNames: organization_id, code
+            constraintName: uk_warehouse_org_code
+        - addForeignKeyConstraint:
+            constraintName: fk_warehouse_organization
+            baseTableName: stock_warehouse
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE

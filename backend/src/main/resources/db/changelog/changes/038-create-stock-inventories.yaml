@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 038-create-stock-inventories-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: stock_inventory
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_stock_inventory
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_id
+                  type: UUID
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: state
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: inventory_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_inventory_organization
+            baseTableName: stock_inventory
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_inventory_location
+            baseTableName: stock_inventory
+            baseColumnNames: location_id
+            referencedTableName: stock_location
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE

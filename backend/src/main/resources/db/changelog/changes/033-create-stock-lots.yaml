@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 033-create-stock-lots-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: stock_lot
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_stock_lot
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lot_number
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expiration_date
+                  type: TIMESTAMP
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addUniqueConstraint:
+            tableName: stock_lot
+            columnNames: organization_id, product_id, lot_number
+            constraintName: uk_stock_lot_org_prod_num
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_lot_organization
+            baseTableName: stock_lot
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_lot_product
+            baseTableName: stock_lot
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE

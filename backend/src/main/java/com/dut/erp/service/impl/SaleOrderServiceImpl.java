@@ -26,6 +26,13 @@ import com.dut.erp.repository.SaleOrderRepository;
 import com.dut.erp.repository.SalePartnerRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.SaleOrderService;
+import com.dut.erp.dto.request.CreateStockMoveRequest;
+import com.dut.erp.dto.request.CreateStockPickingRequest;
+import com.dut.erp.enums.PickingType;
+import com.dut.erp.entity.StockLocation;
+import com.dut.erp.repository.StockLocationRepository;
+import com.dut.erp.service.StockPickingService;
+import org.springframework.context.annotation.Lazy;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -47,7 +54,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SaleOrderServiceImpl implements SaleOrderService {
 
@@ -57,7 +63,30 @@ public class SaleOrderServiceImpl implements SaleOrderService {
   private final ProductRepository productRepository;
   private final CrmLeadRepository crmLeadRepository;
   private final UserRepository userRepository;
+  private final StockLocationRepository stockLocationRepository;
+  private final StockPickingService stockPickingService;
   private final SaleOrderMapper saleOrderMapper;
+
+  public SaleOrderServiceImpl(
+      OrganizationRepository organizationRepository,
+      SaleOrderRepository saleOrderRepository,
+      SalePartnerRepository salePartnerRepository,
+      ProductRepository productRepository,
+      CrmLeadRepository crmLeadRepository,
+      UserRepository userRepository,
+      StockLocationRepository stockLocationRepository,
+      @Lazy StockPickingService stockPickingService,
+      SaleOrderMapper saleOrderMapper) {
+    this.organizationRepository = organizationRepository;
+    this.saleOrderRepository = saleOrderRepository;
+    this.salePartnerRepository = salePartnerRepository;
+    this.productRepository = productRepository;
+    this.crmLeadRepository = crmLeadRepository;
+    this.userRepository = userRepository;
+    this.stockLocationRepository = stockLocationRepository;
+    this.stockPickingService = stockPickingService;
+    this.saleOrderMapper = saleOrderMapper;
+  }
 
   @Override
   public PagedEntityResponse<SaleOrderBaseResponse> getOrdersByOrganizationId(
@@ -161,6 +190,7 @@ public class SaleOrderServiceImpl implements SaleOrderService {
           throw new BadRequestException(
               "Only DRAFT or SENT orders can be confirmed. Current status: " + currentStatus);
         }
+        createDeliveryOrder(order, organizationId);
       } else if (targetStatus == SaleOrderStatus.CANCELLED) {
         if (currentStatus == SaleOrderStatus.CONFIRMED) {
           throw new BadRequestException("Confirmed orders cannot be cancelled directly.");
@@ -189,6 +219,53 @@ public class SaleOrderServiceImpl implements SaleOrderService {
     order = saleOrderRepository.save(order);
     log.info("Updated sale order {} in organization {}", orderId, organizationId);
     return saleOrderMapper.toResponse(order);
+  }
+
+  private void createDeliveryOrder(SaleOrder order, UUID organizationId) {
+    log.info("Auto-creating delivery order for sale order {}", order.getOrderNumber());
+
+    StockLocation sourceLoc = stockLocationRepository.findAll().stream()
+        .filter(l -> l.getWarehouse().getOrganization().getId().equals(organizationId)
+            && l.getLocationType() == com.dut.erp.enums.LocationType.INTERNAL)
+        .findFirst()
+        .orElseThrow(() -> new BadRequestException("No internal stock location found in organization to pick goods from."));
+
+    StockLocation destLoc = stockLocationRepository.findAll().stream()
+        .filter(l -> l.getWarehouse().getOrganization().getId().equals(organizationId)
+            && l.getLocationType() == com.dut.erp.enums.LocationType.CUSTOMER)
+        .findFirst()
+        .orElseGet(() -> {
+          StockLocation newCustLoc = StockLocation.builder()
+              .warehouse(sourceLoc.getWarehouse())
+              .name("Customer Location")
+              .code("CUSTOMER")
+              .locationType(com.dut.erp.enums.LocationType.CUSTOMER)
+              .isActive(true)
+              .build();
+          return stockLocationRepository.save(newCustLoc);
+        });
+
+    List<CreateStockMoveRequest> moves = order.getLines().stream()
+        .map(line -> new CreateStockMoveRequest(
+            line.getProduct().getId(),
+            line.getQuantity(),
+            null
+        ))
+        .collect(Collectors.toList());
+
+    CreateStockPickingRequest request = new CreateStockPickingRequest(
+        PickingType.OUTGOING,
+        sourceLoc.getId(),
+        destLoc.getId(),
+        order.getPartner().getId(),
+        order.getId(),
+        null,
+        Instant.now(),
+        moves
+    );
+
+    stockPickingService.createPicking(organizationId, request);
+    log.info("Auto-created outgoing picking for SO {}", order.getOrderNumber());
   }
 
   // ---- Private helpers ----

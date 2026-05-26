@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 029-add-template-and-barcode-to-products
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: product_tmpl_id
+                  type: UUID
+              - column:
+                  name: barcode
+                  type: VARCHAR(100)
+              - column:
+                  name: cost
+                  type: DECIMAL(15,2)
+                  defaultValueNumeric: 0.00
+              - column:
+                  name: weight
+                  type: DECIMAL(10,2)
+              - column:
+                  name: volume
+                  type: DECIMAL(10,2)
+        - addUniqueConstraint:
+            tableName: products
+            columnNames: barcode
+            constraintName: uk_products_barcode
+        - addForeignKeyConstraint:
+            constraintName: fk_products_template
+            baseTableName: products
+            baseColumnNames: product_tmpl_id
+            referencedTableName: product_template
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE

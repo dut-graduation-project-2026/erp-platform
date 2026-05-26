@@ -7,5 +7,8 @@ public record ProductBaseResponse(
     UUID id,
     String sku,
     String name,
+    String barcode,
     BigDecimal price,
+    BigDecimal cost,
+    BigDecimal minStock,
     Boolean isActive) {}

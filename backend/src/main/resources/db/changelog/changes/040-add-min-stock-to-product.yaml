@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 040-add-min-stock-to-product
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: min_stock
+                  type: DECIMAL(15,4)
+                  defaultValueNumeric: 10.0000
+                  constraints:
+                    nullable: false

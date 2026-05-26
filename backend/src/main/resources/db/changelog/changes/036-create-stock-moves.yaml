@@ -1,0 +1,94 @@
+databaseChangeLog:
+  - changeSet:
+      id: 036-create-stock-moves-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: stock_move
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_stock_move
+                    nullable: false
+              - column:
+                  name: picking_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_dest_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lot_id
+                  type: UUID
+              - column:
+                  name: product_uom_qty
+                  type: DECIMAL(15,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity_done
+                  type: DECIMAL(15,4)
+                  defaultValueNumeric: 0.0000
+                  constraints:
+                    nullable: false
+              - column:
+                  name: state
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_move_picking
+            baseTableName: stock_move
+            baseColumnNames: picking_id
+            referencedTableName: stock_picking
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_move_product
+            baseTableName: stock_move
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_move_location
+            baseTableName: stock_move
+            baseColumnNames: location_id
+            referencedTableName: stock_location
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_move_location_dest
+            baseTableName: stock_move
+            baseColumnNames: location_dest_id
+            referencedTableName: stock_location
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_move_lot
+            baseTableName: stock_move
+            baseColumnNames: lot_id
+            referencedTableName: stock_lot
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE

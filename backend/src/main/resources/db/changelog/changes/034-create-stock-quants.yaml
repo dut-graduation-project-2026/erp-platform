@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - changeSet:
+      id: 034-create-stock-quants-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: stock_quant
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_stock_quant
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lot_id
+                  type: UUID
+              - column:
+                  name: quantity
+                  type: DECIMAL(15,4)
+                  defaultValueNumeric: 0.0000
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reserved_quantity
+                  type: DECIMAL(15,4)
+                  defaultValueNumeric: 0.0000
+                  constraints:
+                    nullable: false
+              - column:
+                  name: on_order_quantity
+                  type: DECIMAL(15,4)
+                  defaultValueNumeric: 0.0000
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: stock_quant
+            columnNames: product_id, location_id, lot_id
+            constraintName: uk_stock_quant_prod_loc_lot
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_quant_product
+            baseTableName: stock_quant
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_quant_location
+            baseTableName: stock_quant
+            baseColumnNames: location_id
+            referencedTableName: stock_location
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_quant_lot
+            baseTableName: stock_quant
+            baseColumnNames: lot_id
+            referencedTableName: stock_lot
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE

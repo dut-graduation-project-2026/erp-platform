@@ -7,7 +7,13 @@ public record ProductResponse(
     UUID id,
     String sku,
     String name,
+    String barcode,
     BigDecimal price,
+    BigDecimal cost,
+    BigDecimal weight,
+    BigDecimal volume,
     String description,
+    BigDecimal minStock,
     Boolean isActive,
-    OrganizationBaseResponse organization) {}
+    OrganizationBaseResponse organization,
+    ProductTemplateBaseResponse productTemplate) {}

@@ -46,18 +46,39 @@ public class Product {
   @JoinColumn(name = "organization_id", nullable = false)
   Organization organization;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "product_tmpl_id")
+  ProductTemplate productTemplate;
+
   @Column(name = "sku", nullable = false, length = 100)
   String sku;
 
   @Column(name = "name", nullable = false, length = 255)
   String name;
 
+  @Column(name = "barcode", unique = true, length = 100)
+  String barcode;
+
   @Column(name = "price", nullable = false, precision = 15, scale = 2)
   @Builder.Default
   BigDecimal price = BigDecimal.ZERO;
 
+  @Column(name = "cost", precision = 15, scale = 2)
+  @Builder.Default
+  BigDecimal cost = BigDecimal.ZERO;
+
+  @Column(name = "weight", precision = 10, scale = 2)
+  BigDecimal weight;
+
+  @Column(name = "volume", precision = 10, scale = 2)
+  BigDecimal volume;
+
   @Column(name = "description", columnDefinition = "TEXT")
   String description;
+
+  @Column(name = "min_stock", nullable = false, precision = 15, scale = 4)
+  @Builder.Default
+  BigDecimal minStock = BigDecimal.TEN;
 
   @Column(name = "is_active", nullable = false)
   @Builder.Default

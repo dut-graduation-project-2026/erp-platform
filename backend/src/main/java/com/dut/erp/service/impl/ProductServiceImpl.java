@@ -13,10 +13,14 @@ import com.dut.erp.entity.Product;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.ResourceNotFoundException;
+import com.dut.erp.entity.ProductTemplate;
+import com.dut.erp.enums.CostMethod;
 import com.dut.erp.mapper.ProductMapper;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.ProductRepository;
+import com.dut.erp.repository.ProductTemplateRepository;
 import com.dut.erp.service.ProductService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,6 +44,7 @@ public class ProductServiceImpl implements ProductService {
 
   private final OrganizationRepository organizationRepository;
   private final ProductRepository productRepository;
+  private final ProductTemplateRepository productTemplateRepository;
   private final ProductMapper productMapper;
 
   @Override
@@ -87,13 +92,39 @@ public class ProductServiceImpl implements ProductService {
     Organization organization = findOrganizationById(organizationId);
     assertSkuAvailable(request.sku(), organizationId);
 
+    ProductTemplate template;
+    if (request.productTemplateId() != null) {
+      template = productTemplateRepository.findById(request.productTemplateId())
+          .orElseThrow(() -> new ResourceNotFoundException("Product template not found with id: " + request.productTemplateId()));
+      if (!template.getOrganization().getId().equals(organizationId)) {
+        throw new BadRequestException("Product template does not belong to the specified organization.");
+      }
+    } else {
+      // Auto-create a default product template
+      template = ProductTemplate.builder()
+          .organization(organization)
+          .name(request.name())
+          .description(request.description())
+          .valuationMethod(CostMethod.FIFO)
+          .isActive(true)
+          .build();
+      template = productTemplateRepository.save(template);
+      log.info("Auto-created product template {} for product {}", template.getId(), request.sku());
+    }
+
     Product product =
         Product.builder()
             .organization(organization)
+            .productTemplate(template)
             .sku(request.sku())
             .name(request.name())
+            .barcode(request.barcode())
             .price(request.price())
+            .cost(request.cost() != null ? request.cost() : BigDecimal.ZERO)
+            .weight(request.weight())
+            .volume(request.volume())
             .description(request.description())
+            .minStock(request.minStock() != null ? request.minStock() : BigDecimal.TEN)
             .build();
 
     product = productRepository.save(product);
@@ -108,11 +139,27 @@ public class ProductServiceImpl implements ProductService {
     findOrganizationById(organizationId);
     Product product = findProductByIdAndVerifyOrganization(productId, organizationId);
 
+    if (request.productTemplateId() != null) {
+      ProductTemplate template = productTemplateRepository.findById(request.productTemplateId())
+          .orElseThrow(() -> new ResourceNotFoundException("Product template not found with id: " + request.productTemplateId()));
+      if (!template.getOrganization().getId().equals(organizationId)) {
+        throw new BadRequestException("Product template does not belong to the specified organization.");
+      }
+      product.setProductTemplate(template);
+    }
+
     product.setName(request.name());
     product.setPrice(request.price());
+    product.setCost(request.cost() != null ? request.cost() : BigDecimal.ZERO);
+    product.setBarcode(request.barcode());
+    product.setWeight(request.weight());
+    product.setVolume(request.volume());
     product.setDescription(request.description());
     if (request.isActive() != null) {
       product.setIsActive(request.isActive());
+    }
+    if (request.minStock() != null) {
+      product.setMinStock(request.minStock());
     }
 
     product = productRepository.save(product);

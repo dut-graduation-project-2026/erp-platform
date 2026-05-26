@@ -1,17 +1,17 @@
 databaseChangeLog:
   - changeSet:
-      id: 018-create-products-table
+      id: 021-create-sales-teams-table
       author: halwins
       changes:
         - createTable:
-            tableName: products
+            tableName: sales_teams
             columns:
               - column:
                   name: id
                   type: UUID
                   constraints:
                     primaryKey: true
-                    primaryKeyName: pk_products
+                    primaryKeyName: pk_sales_teams
                     nullable: false
               - column:
                   name: organization_id
@@ -19,30 +19,13 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: sku
+                  name: name
                   type: VARCHAR(100)
                   constraints:
                     nullable: false
               - column:
-                  name: name
-                  type: VARCHAR(255)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: price
-                  type: DECIMAL(15,2)
-                  defaultValueNumeric: 0.00
-                  constraints:
-                    nullable: false
-              - column:
-                  name: description
-                  type: TEXT
-              - column:
-                  name: is_active
-                  type: BOOLEAN
-                  defaultValueBoolean: true
-                  constraints:
-                    nullable: false
+                  name: leader_id
+                  type: UUID
               - column:
                   name: created_at
                   type: TIMESTAMP
@@ -55,29 +38,33 @@ databaseChangeLog:
               - column:
                   name: updated_by
                   type: UUID
-        - addUniqueConstraint:
-            tableName: products
-            columnNames: organization_id, sku
-            constraintName: uk_products_org_sku
         - addForeignKeyConstraint:
-            constraintName: fk_products_organization
-            baseTableName: products
+            constraintName: fk_sales_teams_organization
+            baseTableName: sales_teams
             baseColumnNames: organization_id
             referencedTableName: organizations
             referencedColumnNames: id
             onDelete: CASCADE
             onUpdate: CASCADE
         - addForeignKeyConstraint:
-            constraintName: fk_products_created_by
-            baseTableName: products
+            constraintName: fk_sales_teams_leader
+            baseTableName: sales_teams
+            baseColumnNames: leader_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sales_teams_created_by
+            baseTableName: sales_teams
             baseColumnNames: created_by
             referencedTableName: users
             referencedColumnNames: id
             onDelete: SET NULL
             onUpdate: CASCADE
         - addForeignKeyConstraint:
-            constraintName: fk_products_updated_by
-            baseTableName: products
+            constraintName: fk_sales_teams_updated_by
+            baseTableName: sales_teams
             baseColumnNames: updated_by
             referencedTableName: users
             referencedColumnNames: id

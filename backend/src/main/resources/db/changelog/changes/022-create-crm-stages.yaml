@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-create-crm-stages-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: crm_stages
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_crm_stages
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sequence
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_crm_stages_organization
+            baseTableName: crm_stages
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE

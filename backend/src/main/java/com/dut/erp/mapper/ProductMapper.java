@@ -11,7 +11,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
     componentModel = "spring",
     nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
     nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-    uses = {OrganizationMapper.class})
+    uses = {OrganizationMapper.class, ProductTemplateMapper.class})
 public interface ProductMapper {
 
   ProductBaseResponse toBaseResponse(Product entity);

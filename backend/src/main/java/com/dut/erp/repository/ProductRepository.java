@@ -16,6 +16,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
   Optional<Product> findBySkuAndOrganizationId(String sku, UUID organizationId);
 
+  Optional<Product> findByBarcodeAndOrganizationId(String barcode, UUID organizationId);
+
   @Query("""
       SELECT p.id
       FROM Product p
@@ -29,4 +31,6 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
       WHERE p.id IN :ids
       """)
   List<Product> findAllByIdIn(@Param("ids") List<UUID> ids);
+
+  List<Product> findAllByOrganizationId(UUID organizationId);
 }
