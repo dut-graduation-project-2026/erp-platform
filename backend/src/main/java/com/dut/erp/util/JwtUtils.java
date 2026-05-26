@@ -39,7 +39,7 @@ public class JwtUtils {
     String jti = UUID.randomUUID().toString();
 
     String token =
-        generateToken(user, TOKEN_TYPE_REFRESH, now, jwtProperties.refreshTokenExpiration());
+        generateToken(user, TOKEN_TYPE_REFRESH, now, jwtProperties.refreshTokenExpiration(), jti);
 
     return new RefreshTokenInfo(token, jti, expiryDate);
   }
@@ -61,10 +61,13 @@ public class JwtUtils {
   }
 
   private String generateToken(User user, String tokenType, Instant issuedAt, long expirationMs) {
-    validateUser(user);
+    return generateToken(user, tokenType, issuedAt, expirationMs, UUID.randomUUID().toString());
+  }
 
+  private String generateToken(
+      User user, String tokenType, Instant issuedAt, long expirationMs, String jti) {
+    validateUser(user);
     Instant expiryDate = issuedAt.plusMillis(expirationMs);
-    String jti = UUID.randomUUID().toString();
 
     return Jwts.builder()
         .id(jti)
