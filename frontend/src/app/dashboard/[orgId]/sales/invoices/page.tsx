@@ -6,6 +6,7 @@ import { SaleInvoice } from '@/features/sales/types';
 import { Button } from '@/components/ui/button';
 import { Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { usePermissions } from '@/hooks/use-permissions';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 
@@ -16,6 +17,7 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
   const [filteredInvoices, setFilteredInvoices] = useState<SaleInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     getSaleInvoices(orgId)
@@ -56,12 +58,14 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
                 className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
               />
             </div>
-            <Button 
-              onClick={() => alert("Invoice creation modal/page would open here.")}
-              className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
-            >
-              <Plus className="w-4 h-4 mr-2" /> New Invoice
-            </Button>
+            {hasPermission('sales:create') && (
+              <Button 
+                onClick={() => alert("Invoice creation modal/page would open here.")}
+                className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
+              >
+                <Plus className="w-4 h-4 mr-2" /> New Invoice
+              </Button>
+            )}
          </div>
       </div>
 

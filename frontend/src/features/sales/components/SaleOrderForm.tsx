@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { getProducts, getPartners, createSaleOrder } from '../services/salesService';
 import { useRouter } from 'next/navigation';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface Props {
   order: SaleOrder | null;
@@ -20,6 +21,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [partners, setPartners] = useState<SalePartner[]>([]);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
+  const { hasPermission } = usePermissions();
   
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState(order?.status || 'DRAFT');
@@ -164,10 +166,12 @@ export function SaleOrderForm({ order, orgId }: Props) {
             <h1 className="text-[24px] font-[700] text-[#242424] mb-1">{order?.code || 'New Quotation'}</h1>
          </div>
          <div className="flex space-x-2">
-            <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={handleSave} disabled={isSaving}>
-              <Save className="w-4 h-4 mr-2" /> {isSaving ? 'Saving...' : 'Save'}
-            </Button>
-            {status !== 'CONFIRMED' && (
+            {(order?.id ? hasPermission('sales:write') : hasPermission('sales:create')) && (
+              <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={handleSave} disabled={isSaving}>
+                <Save className="w-4 h-4 mr-2" /> {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            )}
+            {status !== 'CONFIRMED' && hasPermission('sales:write') && (
               <Button className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]" onClick={handleConfirm}>
                 <CheckCircle className="w-4 h-4 mr-2" /> Confirm Order
               </Button>

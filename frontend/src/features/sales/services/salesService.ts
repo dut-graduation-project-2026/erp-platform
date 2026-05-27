@@ -43,6 +43,16 @@ export const getPartners = async (orgId: string, params?: any): Promise<PagedEnt
   return response.data;
 };
 
+export const createPartner = async (orgId: string, data: any): Promise<SalePartner> => {
+  const response = await apiClient.post<SalePartner>(API_ENDPOINTS.SALES.PARTNERS(orgId), data);
+  return response.data;
+};
+
+export const updatePartner = async (orgId: string, id: string, data: any): Promise<SalePartner> => {
+  const response = await apiClient.put<SalePartner>(`${API_ENDPOINTS.SALES.PARTNERS(orgId)}/${id}`, data);
+  return response.data;
+};
+
 // Products
 export const getProducts = async (orgId: string, params?: any): Promise<PagedEntityResponse<Product>> => {
   const response = await apiClient.get<PagedEntityResponse<Product>>(API_ENDPOINTS.SALES.PRODUCTS(orgId), { params });

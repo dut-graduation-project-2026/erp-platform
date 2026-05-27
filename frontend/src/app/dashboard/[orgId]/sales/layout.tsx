@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { FileText, BarChart2, Package, Users, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
+import { PermissionGuard } from '@/components/rbac/PermissionGuard';
+import { PERMISSIONS } from '@/config/permissions';
 
 export default function SalesLayout({
   children,
@@ -53,9 +55,14 @@ export default function SalesLayout({
       </div>
       
       {/* Main Module Content */}
-      <div className="flex-1 overflow-auto">
-        {children}
-      </div>
+      <PermissionGuard 
+        permission={PERMISSIONS.SALES.READ}
+        fallback={<div className="flex-1 flex items-center justify-center text-red-500 font-medium">Access Denied. You do not have permission to access Sales.</div>}
+      >
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
+      </PermissionGuard>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { apiClient } from '@/services/api-client';
 import { API_ENDPOINTS } from '@/config/constants';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export default function ProductsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -17,6 +18,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { hasPermission } = usePermissions();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -113,12 +115,14 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
             <Button variant="outline" className="border-[#d0d0d0] text-[#242424] h-10 px-3 bg-white rounded-[4px] font-[500] text-[13px]">
               <Filter className="w-4 h-4" />
             </Button>
-            <Button 
-              onClick={() => handleOpenModal()}
-              className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
-            >
-              <Plus className="w-4 h-4 mr-2" /> New Product
-            </Button>
+            {hasPermission('sales:create') && (
+              <Button 
+                onClick={() => handleOpenModal()}
+                className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
+              >
+                <Plus className="w-4 h-4 mr-2" /> New Product
+              </Button>
+            )}
          </div>
       </div>
 
@@ -238,14 +242,16 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                 >
                   Discard
                 </Button>
-                <Button 
-                  onClick={handleSaveProduct}
-                  disabled={isSaving}
-                  className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isSaving ? 'Saving...' : 'Save Product'}
-                </Button>
+                {(selectedProduct.id ? hasPermission('sales:write') : hasPermission('sales:create')) && (
+                  <Button 
+                    onClick={handleSaveProduct}
+                    disabled={isSaving}
+                    className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSaving ? 'Saving...' : 'Save Product'}
+                  </Button>
+                )}
              </div>
           </div>
         </div>

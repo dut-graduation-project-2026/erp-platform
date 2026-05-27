@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export default function CrmPipelinePage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -16,6 +17,7 @@ export default function CrmPipelinePage({ params }: { params: Promise<{ orgId: s
   const [filteredLeads, setFilteredLeads] = useState<CrmLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     getLeads(orgId, { limit: 100 })
@@ -56,12 +58,14 @@ export default function CrmPipelinePage({ params }: { params: Promise<{ orgId: s
             />
           </div>
 
-          <Button 
-            onClick={() => router.push(`/dashboard/${orgId}/crm/leads/new`)}
-            className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
-          >
-            <Plus className="w-4 h-4 mr-2" /> New Lead
-          </Button>
+          {hasPermission('crm:create') && (
+            <Button 
+              onClick={() => router.push(`/dashboard/${orgId}/crm/leads/new`)}
+              className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
+            >
+              <Plus className="w-4 h-4 mr-2" /> New Lead
+            </Button>
+          )}
 
           {/* Metric Ribbon */}
           <div className="flex space-x-4 text-[14px] bg-white px-4 py-2 shadow-[0px_1px_3px_rgba(0,0,0,0.12)] rounded-[4px] border border-[#e0e0e0]">

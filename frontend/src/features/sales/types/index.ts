@@ -1,9 +1,11 @@
 export interface SalePartner {
   id: string;
+  code: string;
   name: string;
   email: string;
   phone: string;
   address: string;
+  taxCode?: string;
   type: 'CUSTOMER' | 'VENDOR';
 }
 

@@ -7,6 +7,7 @@ import { Calendar, Clock, MessageSquare, Mail, Phone, Building } from 'lucide-re
 import { cn } from '@/lib/utils';
 import { updateLead, createLead } from '../services/crmService';
 import { useRouter } from 'next/navigation';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface Props {
   lead: CrmLead | null;
@@ -16,6 +17,7 @@ interface Props {
 
 export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   
   const [formData, setFormData] = useState<Partial<CreateCrmLeadRequest>>({
     name: lead?.name || '',
@@ -105,17 +107,19 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
            >
              Convert to Order
            </Button>
-          <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={() => router.push(`/dashboard/${orgId}/crm`)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSave} 
-            disabled={isSaving}
-            className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
-          >
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
+           <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={() => router.push(`/dashboard/${orgId}/crm`)}>
+             Cancel
+           </Button>
+           {(isNew ? hasPermission('crm:create') : hasPermission('crm:write')) && (
+             <Button 
+               onClick={handleSave} 
+               disabled={isSaving}
+               className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
+             >
+               {isSaving ? 'Saving...' : 'Save'}
+             </Button>
+           )}
+         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
