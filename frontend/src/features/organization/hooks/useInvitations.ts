@@ -18,6 +18,7 @@ export const useInvitations = (orgId: string) => {
       const res = await inviteUserApi(orgId, data);
       toast.success('User invited successfully!');
       return res;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || 'Failed to invite user';
       setError(msg);
@@ -35,6 +36,7 @@ export const useInvitations = (orgId: string) => {
       await resendInvitationApi(orgId, invitationId);
       toast.success('Invitation resent successfully!');
       return true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || 'Failed to resend invitation';
       setError(msg);

@@ -4,7 +4,7 @@ import { AxiosError } from "axios";
 import { toast } from "sonner";
 
 import type { HttpAxiosResponse } from "@/types/auth";
-import { useRef } from "react";
+import { useRef, useCallback } from "react";
 
 const getAxiosMessage = (error: AxiosError<HttpAxiosResponse>) => {
   const message = error.response?.data?.message;
@@ -37,22 +37,22 @@ export const useToast = () => {
     }
   };
 
-  const toastSuccess = (message: string) => {
+  const toastSuccess = useCallback((message: string) => {
     dismissCurrent();
     currentToastId.current = toast.success(message);
-  };
+  }, []);
 
-  const toastError = (error: unknown, fallback = "Request failed") => {
+  const toastError = useCallback((error: unknown, fallback = "Request failed") => {
     dismissCurrent();
     const message = getMessage(error, fallback);
     currentToastId.current = toast.error(message);
     return message;
-  };
+  }, []);
 
-  const toastInfo = (message: string) => {
+  const toastInfo = useCallback((message: string) => {
     dismissCurrent();
     currentToastId.current = toast.info(message);
-  };
+  }, []);
 
   return {
     toastSuccess,

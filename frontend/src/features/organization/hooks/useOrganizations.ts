@@ -19,6 +19,7 @@ export function useOrganizations() {
       const orgs = await fetchMyOrganizationsApi();
       
       // Mock roles until backend provides actual user roles per org
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const orgsWithRoles = orgs.map((org: any, index: number) => ({
         ...org,
         role: index === 0 ? 'Admin' : 'Member',
@@ -31,7 +32,7 @@ export function useOrganizations() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toastError]);
 
   useEffect(() => {
     fetchOrganizations();
@@ -44,7 +45,7 @@ export function useOrganizations() {
       toastSuccess('Tạo tổ chức thành công!');
       await fetchOrganizations(); // Reload the list
       return true;
-    } catch (err) {
+    } catch {
       // Global axios interceptor will show the toast for validation/business errors
       return false;
     } finally {

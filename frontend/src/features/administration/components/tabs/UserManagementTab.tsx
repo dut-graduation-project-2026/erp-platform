@@ -5,18 +5,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, AlertCircle, ChevronDown, Users, UserCheck, UserX, Shield } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, AlertCircle, Users, UserCheck, UserX, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useUsers } from '../../hooks/useUsers';
 import { UserFormDialog } from '../dialogs/UserFormDialog';
 import type { User } from '../../types';

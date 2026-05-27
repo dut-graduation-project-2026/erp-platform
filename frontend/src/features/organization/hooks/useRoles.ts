@@ -15,8 +15,13 @@ export const useRoles = (orgId: string) => {
         const res = await fetchRolesApi(orgId);
         setRoles(res.data || []);
         setError(null);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch roles');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to fetch roles');
+        }
       } finally {
         setLoading(false);
       }
@@ -45,8 +50,13 @@ export const useRoleDetail = (orgId: string, roleId: string) => {
         const res = await fetchRoleDetailApi(orgId, roleId);
         setRole(res);
         setError(null);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch role details');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to fetch role details');
+        }
       } finally {
         setLoading(false);
       }

@@ -58,6 +58,7 @@ export const OrganizationList: React.FC<OrganizationListProps> = ({
                 <TableCell className="font-medium text-charcoal">
                   <div className="flex items-center gap-3">
                     {org.logo && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={org.logo}
                         alt={`${org.name} logo`}

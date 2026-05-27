@@ -2,7 +2,7 @@
 // Organization Form Component - Add/Edit organization
 // Follows DESIGN.md: Form pattern, Segoe UI, proper spacing
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

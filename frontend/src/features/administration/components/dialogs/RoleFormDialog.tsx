@@ -38,6 +38,7 @@ const ACTIONS = ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT'];
 
 export const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
   role,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   organizationId,
   onClose,
   onSubmit,

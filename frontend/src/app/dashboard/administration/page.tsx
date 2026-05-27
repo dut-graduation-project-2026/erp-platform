@@ -25,7 +25,7 @@ export default function AdministrationPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-            <p className="text-gray-600">You don't have permission to access the administration panel.</p>
+            <p className="text-gray-600">You don&apos;t have permission to access the administration panel.</p>
           </div>
         </div>
       }
@@ -118,7 +118,7 @@ function AdministrationContent() {
     }
   };
 
-  const handleRoleCreated = (role: Role) => {
+  const handleRoleCreated = () => {
     // Add the new role to the roles list
     // This would normally be handled by the hook refetching data
     // For now, we'll just close the modal
@@ -278,7 +278,7 @@ function AdministrationContent() {
         isOpen={userFormOpen}
         onClose={() => setUserFormOpen(false)}
         onSubmit={handleSubmitUser}
-        onQuickCreateRole={handleQuickCreateRole}
+        //onQuickCreateRole={handleQuickCreateRole}
         onRoleCreated={handleRoleCreated}
         user={editingUser}
         roles={roles}

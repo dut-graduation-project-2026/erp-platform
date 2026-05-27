@@ -30,7 +30,7 @@ interface UseSelectOrgReturn {
 export const useSelectOrg = (): UseSelectOrgReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { currentOrgId, user, setCurrentOrgId, setPermissions } = useAuthStore();
+  const { user, setCurrentOrgId, setPermissions } = useAuthStore();
   const { toastError } = useToast();
   const router = useRouter();
 

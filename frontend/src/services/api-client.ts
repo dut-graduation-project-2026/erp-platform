@@ -50,8 +50,10 @@ apiClient.interceptors.request.use(
 // Flag to track if a refresh is currently in progress
 let isRefreshing = false;
 // Queue of failed requests waiting for the token to be refreshed
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: any) => void }> = [];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -115,6 +117,7 @@ apiClient.interceptors.response.use(
           processQueue(null, 'Success');
           // Retry the original request with new token
           return apiClient(originalRequest);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (refreshError: any) {
           console.error("REFRESH TOKEN FAILED:", refreshError);
           processQueue(refreshError, null);

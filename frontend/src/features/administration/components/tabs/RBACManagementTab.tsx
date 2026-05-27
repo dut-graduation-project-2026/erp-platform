@@ -9,7 +9,7 @@ import { Plus, Search, Edit2, Trash2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRoles } from '../../hooks/useRoles';
 import { RolePermissionMatrix } from '../RolePermissionMatrix';
@@ -20,8 +20,6 @@ interface RBACManagementTabProps {
   organizationId: string;
 }
 
-const RESOURCES = ['Sales', 'Inventory', 'Finance', 'HR', 'Blockchain Audit'];
-const ACTIONS = ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT'];
 
 export const RBACManagementTab: React.FC<RBACManagementTabProps> = ({ organizationId }) => {
   const { roles, createRole, updateRole, deleteRole } = useRoles();

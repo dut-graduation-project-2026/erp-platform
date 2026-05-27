@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
+import { organizationMemberService } from '../services/organizationMemberService';
 
 interface RemoveUserModalProps {
   isOpen: boolean;
@@ -18,13 +19,17 @@ export const RemoveUserModal: React.FC<RemoveUserModalProps> = ({ isOpen, onClos
   if (!isOpen || !user) return null;
 
   const handleRemove = async () => {
-    // Simulate API call to remove user since endpoint might not be available yet
-    setIsRemoving(true);
-    setTimeout(() => {
-      setIsRemoving(false);
+    if (!user) return;
+    try {
+      setIsRemoving(true);
+      await organizationMemberService.removeMember(orgId, user.id);
       onSuccess();
       onClose();
-    }, 1000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   return (
@@ -43,7 +48,7 @@ export const RemoveUserModal: React.FC<RemoveUserModalProps> = ({ isOpen, onClos
         <div className="p-6">
           <p className="text-[14px] text-[#242424] leading-[1.5]">
             Are you sure you want to remove <span className="font-semibold">{user.name}</span> from the organization? 
-            They will lose all access to this organization's resources immediately.
+            They will lose all access to this organization&apos;s resources immediately.
           </p>
           <p className="text-[13px] text-[#898989] mt-3">
             This action cannot be undone.

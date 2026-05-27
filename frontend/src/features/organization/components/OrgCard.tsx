@@ -9,13 +9,11 @@ interface OrgCardProps {
   id: string;
   name: string;
   description?: string;
-  hotline?: string;
-  address?: string;
   role: string;
   onSelect: (orgId: string) => void;
 }
 
-export default function OrgCard({ id, name, description, hotline, address, role, onSelect }: OrgCardProps) {
+export default function OrgCard({ id, name, description, role, onSelect }: OrgCardProps) {
   return (
     <Card className="bg-[#f6f3f2] border-0 shadow-none hover:shadow-lg transition-shadow duration-200">
       <CardContent className="p-8">

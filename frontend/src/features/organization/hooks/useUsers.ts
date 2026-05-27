@@ -20,6 +20,7 @@ export const useUsers = (initialParams: FetchUsersParams) => {
       setTotalElements(res.totalElements || 0);
       setTotalPages(res.totalPages || 0);
       setError(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message || 'Failed to fetch users');
     } finally {

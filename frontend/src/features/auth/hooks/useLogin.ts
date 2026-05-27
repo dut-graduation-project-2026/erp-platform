@@ -77,6 +77,7 @@ export const useLogin = (): UseLoginReturn => {
         // 🟡 BƯỚC 4: PHÂN LUỒNG ĐIỀU HƯỚNG
         // ═══════════════════════════════════════════════════════════
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const redirectPath = getRedirectPath(user as any);
 
         toast.success(`Chào mừng, ${user.firstName}! Đang chuyển hướng...`, {
@@ -84,7 +85,7 @@ export const useLogin = (): UseLoginReturn => {
         });
 
         router.push(redirectPath);
-      } catch (err: unknown) {
+      } catch {
         // Lỗi đã được Global Axios Interceptor xử lý và show Toast!
         // Ở đây chỉ setServerError để form có thể hiển thị inline (nếu muốn)
         setServerError('Đăng nhập thất bại. Vui lòng kiểm tra lại.');

@@ -17,7 +17,9 @@ interface UserActionsDropdownProps {
     roleId?: string;
   };
   orgId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChangeRole: (user: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onRemove: (user: any) => void;
 }
 
@@ -44,6 +46,7 @@ export const UserActionsDropdown: React.FC<UserActionsDropdownProps> = ({ user, 
       <DropdownMenuContent align="end" className="w-48 bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_8px_20px_rgba(0,0,0,0.25)] p-1 font-['Segoe_UI',_sans-serif]">
         {user.status === 'Pending' && (
           <DropdownMenuItem
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onClick={(e: any) => handleResendInvite(e)}
             disabled={isInviting}
             className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#242424] hover:bg-[#f8f8f8] cursor-pointer rounded-sm"
@@ -54,6 +57,7 @@ export const UserActionsDropdown: React.FC<UserActionsDropdownProps> = ({ user, 
         )}
         
         <DropdownMenuItem
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onClick={(e: any) => {
             e.stopPropagation();
             onChangeRole(user);
@@ -67,6 +71,7 @@ export const UserActionsDropdown: React.FC<UserActionsDropdownProps> = ({ user, 
         <DropdownMenuSeparator className="bg-[#e0e0e0] my-1" />
         
         <DropdownMenuItem
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onClick={(e: any) => {
             e.stopPropagation();
             onRemove(user);

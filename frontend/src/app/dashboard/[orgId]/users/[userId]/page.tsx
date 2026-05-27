@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, use } from "react";
-import { ChevronLeft, Check, Camera, X } from "lucide-react";
+import React, { useState, useEffect, use } from "react";
+import { Camera, Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PermissionGuard } from "@/components/rbac/PermissionGuard";
 import { PERMISSIONS } from "@/config/permissions";
+import { useOrganizationMember } from "@/features/organization/hooks/useOrganizationMember";
+import { useRoles } from "@/features/organization/hooks/useRoles";
 
 export default function UserDetailPage({ params }: { params: Promise<{ orgId: string; userId: string }> }) {
   const unwrappedParams = use(params);
@@ -12,38 +14,62 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
   const userId = unwrappedParams.userId;
   const router = useRouter();
 
+  const { member, loading, saving, updateRoles } = useOrganizationMember(orgId, userId);
+  const { roles: availableRoles, loading: rolesLoading } = useRoles(orgId);
+
   const [activeTab, setActiveTab] = useState("access_rights");
   const [status, setStatus] = useState("ACTIVE");
 
   const [formData, setFormData] = useState({
-    name: "Nguyen Van A",
-    email: "nguyen.vana@enterprise.com",
-    phone: "+84 90 123 4567",
+    name: "",
+    email: "",
+    phone: "",
     language: "English (US)",
     timezone: "Asia/Ho_Chi_Minh",
-    companies: ["Enterprise Global", "Enterprise APAC"]
+    companies: ["Current Organization"]
   });
 
-  const [accessRights, setAccessRights] = useState({
-    sales: "User: Own Documents Only",
-    inventory: "Administrator",
-    marketing: "None",
-    administration: "Access Rights",
-    manageAccessRights: true,
-    multiOrgAdmin: true,
-    apiAccess: false,
-    bypass2fa: false
-  });
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
 
-  const handleSave = () => {
-    // Implement save logic here
-    console.log("Saved", formData, accessRights);
-    router.push(`/dashboard/${orgId}/users`);
+  useEffect(() => {
+    if (member) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData(prev => ({
+        ...prev,
+        name: `${member.firstName || ''} ${member.lastName || ''}`.trim(),
+        email: member.email || "",
+      }));
+      setStatus(member.status || "ACTIVE");
+      setSelectedRoleIds(member.roles?.map(r => r.id) || []);
+    }
+  }, [member]);
+
+  const handleSave = async () => {
+    // Current backend API only supports updating roles through this endpoint for admins.
+    // Updating profile (name, phone) is restricted to the user themselves.
+    const success = await updateRoles(selectedRoleIds);
+    if (success) {
+      router.push(`/dashboard/${orgId}/users`);
+    }
   };
 
   const handleDiscard = () => {
     router.push(`/dashboard/${orgId}/users`);
   };
+
+  const toggleRole = (roleId: string) => {
+    setSelectedRoleIds(prev => 
+      prev.includes(roleId) ? prev.filter(id => id !== roleId) : [...prev, roleId]
+    );
+  };
+
+  if (loading || !member) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#f8f8f8]">
+        <Loader2 className="w-8 h-8 text-[#0066cc] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <PermissionGuard 
@@ -64,12 +90,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button 
-                onClick={handleSave}
-                className="bg-[#0066cc] text-white px-4 py-2 rounded-[4px] text-[14px] font-semibold hover:bg-[#004499] shadow-[0px_1px_3px_rgba(0,0,0,0.12)] hover:shadow-[0px_2px_8px_rgba(0,0,0,0.15)] transition-all"
-              >
-                Save
-              </button>
+              <PermissionGuard permission={PERMISSIONS.USERS.WRITE} fallback={<div></div>}>
+                <button 
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-[#0066cc] text-white px-4 py-2 rounded-[4px] text-[14px] font-semibold hover:bg-[#004499] shadow-[0px_1px_3px_rgba(0,0,0,0.12)] disabled:opacity-50 transition-all flex items-center gap-2"
+                >
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save
+                </button>
+              </PermissionGuard>
               <button 
                 onClick={handleDiscard}
                 className="bg-white border border-[#d0d0d0] text-[#242424] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-[#f8f8f8] shadow-[0px_1px_3px_rgba(0,0,0,0.12)] transition-colors"
@@ -80,24 +110,15 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
 
             {/* Status Badges */}
             <div className="flex items-center gap-2 font-bold text-[11px] uppercase tracking-wider">
-              <button 
-                onClick={() => setStatus('DRAFT')}
-                className={`px-3 py-1.5 rounded-[4px] ${status === 'DRAFT' ? 'bg-[#6c757d] text-white' : 'text-[#898989] hover:bg-[#f0f4ff]'}`}
-              >
+              <div className={`px-3 py-1.5 rounded-[4px] ${status === 'DRAFT' ? 'bg-[#6c757d] text-white' : 'text-[#898989]'}`}>
                 Draft
-              </button>
-              <button 
-                onClick={() => setStatus('ACTIVE')}
-                className={`px-3 py-1.5 rounded-[4px] ${status === 'ACTIVE' ? 'bg-[#28a745] text-white' : 'text-[#898989] hover:bg-[#f0f4ff]'}`}
-              >
+              </div>
+              <div className={`px-3 py-1.5 rounded-[4px] ${status === 'Active' || status === 'ACTIVE' ? 'bg-[#28a745] text-white' : 'text-[#898989]'}`}>
                 Active
-              </button>
-              <button 
-                onClick={() => setStatus('INACTIVE')}
-                className={`px-3 py-1.5 rounded-[4px] ${status === 'INACTIVE' ? 'bg-[#dc3545] text-white' : 'text-[#898989] hover:bg-[#f0f4ff]'}`}
-              >
+              </div>
+              <div className={`px-3 py-1.5 rounded-[4px] ${status === 'INACTIVE' || status === 'Suspended' ? 'bg-[#dc3545] text-white' : 'text-[#898989]'}`}>
                 Inactive
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -109,8 +130,9 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
             {/* Header Section */}
             <div className="flex gap-6 items-start border-b border-[#e0e0e0] pb-8 mb-8">
               <div className="relative group cursor-pointer w-[100px] h-[100px] border border-[#d0d0d0] rounded bg-[#f8f8f8] overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
-                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=e2e8f0" 
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${formData.name}&backgroundColor=e2e8f0&textColor=0066cc`} 
                   alt="Avatar" 
                   className="w-full h-full object-cover"
                 />
@@ -123,11 +145,10 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
                 <input 
                   type="text" 
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="text-[32px] font-bold text-[#242424] w-full border-b border-transparent hover:border-[#d0d0d0] focus:border-[#0066cc] focus:outline-none mb-1 bg-transparent px-0 py-1"
-                  placeholder="e.g. John Doe"
+                  readOnly
+                  className="text-[32px] font-bold text-[#242424] w-full border-b border-transparent focus:outline-none mb-1 bg-transparent px-0 py-1"
                 />
-                <p className="text-[14px] text-[#898989] font-medium">Edit User</p>
+                <p className="text-[14px] text-[#898989] font-medium">Organization Member</p>
               </div>
             </div>
 
@@ -138,8 +159,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
                 <input 
                   type="email" 
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="px-0 py-1 border-b border-[#d0d0d0] text-[14px] text-[#242424] focus:outline-none focus:border-[#0066cc] bg-transparent"
+                  readOnly
+                  className="px-0 py-1 border-b border-transparent text-[14px] text-[#242424] focus:outline-none bg-transparent"
                 />
               </div>
               <div className="flex flex-col gap-1">
@@ -176,23 +197,6 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
                   <option>Europe/London</option>
                 </select>
               </div>
-
-              <div className="flex flex-col gap-1 col-span-2">
-                <label className="text-[14px] font-bold text-[#242424]">Allowed Companies</label>
-                <div className="flex flex-wrap items-center gap-2 mt-1 border-b border-[#d0d0d0] pb-1">
-                  {formData.companies.map((company, i) => (
-                    <div key={i} className="flex items-center gap-1 bg-[#f1f5f9] px-2 py-1 rounded-[4px] text-[13px] text-[#242424]">
-                      {company}
-                      <button className="text-[#898989] hover:text-[#dc3545]"><X className="w-3 h-3" /></button>
-                    </div>
-                  ))}
-                  <input 
-                    type="text" 
-                    placeholder="Add organization..."
-                    className="flex-1 min-w-[150px] text-[14px] focus:outline-none bg-transparent placeholder-[#898989]"
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Tabs */}
@@ -215,119 +219,48 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
             {activeTab === 'access_rights' && (
               <div className="grid grid-cols-2 gap-12">
                 
-                {/* Application Access */}
-                <div className="flex flex-col gap-4">
-                  <h3 className="text-[12px] font-bold text-[#242424] uppercase tracking-wider mb-2">Application Access</h3>
+                {/* Organization Roles Mapping */}
+                <div className="flex flex-col gap-4 col-span-2 md:col-span-1">
+                  <h3 className="text-[12px] font-bold text-[#242424] uppercase tracking-wider mb-2">Organization Roles</h3>
                   
-                  <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                    <label className="text-[14px] font-medium text-[#242424]">Sales</label>
-                    <select 
-                      value={accessRights.sales}
-                      onChange={(e) => setAccessRights({ ...accessRights, sales: e.target.value })}
-                      className="w-full px-3 py-1.5 border border-[#d0d0d0] rounded-[4px] text-[14px] text-[#242424] focus:outline-none focus:border-[#0066cc]"
-                    >
-                      <option>None</option>
-                      <option>User: Own Documents Only</option>
-                      <option>User: All Documents</option>
-                      <option>Administrator</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                    <label className="text-[14px] font-medium text-[#242424]">Inventory</label>
-                    <select 
-                      value={accessRights.inventory}
-                      onChange={(e) => setAccessRights({ ...accessRights, inventory: e.target.value })}
-                      className="w-full px-3 py-1.5 border border-[#d0d0d0] rounded-[4px] text-[14px] text-[#242424] focus:outline-none focus:border-[#0066cc]"
-                    >
-                      <option>None</option>
-                      <option>User</option>
-                      <option>Administrator</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                    <label className="text-[14px] font-medium text-[#242424]">Marketing</label>
-                    <select 
-                      value={accessRights.marketing}
-                      onChange={(e) => setAccessRights({ ...accessRights, marketing: e.target.value })}
-                      className="w-full px-3 py-1.5 border border-[#d0d0d0] rounded-[4px] text-[14px] text-[#242424] focus:outline-none focus:border-[#0066cc]"
-                    >
-                      <option>None</option>
-                      <option>User</option>
-                      <option>Manager</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                    <label className="text-[14px] font-medium text-[#242424]">Administration</label>
-                    <select 
-                      value={accessRights.administration}
-                      onChange={(e) => setAccessRights({ ...accessRights, administration: e.target.value })}
-                      className="w-full px-3 py-1.5 border border-[#d0d0d0] rounded-[4px] text-[14px] text-[#242424] focus:outline-none focus:border-[#0066cc]"
-                    >
-                      <option>None</option>
-                      <option>Access Rights</option>
-                      <option>Settings</option>
-                    </select>
-                  </div>
+                  {rolesLoading ? (
+                    <div className="text-[13px] text-[#898989] flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Loading roles...
+                    </div>
+                  ) : availableRoles.length === 0 ? (
+                    <div className="text-[13px] text-[#898989]">No roles available in this organization.</div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {availableRoles.map(role => (
+                        <label key={role.id} className="flex items-center gap-3 cursor-pointer group">
+                          <div className={`w-[18px] h-[18px] rounded-[3px] border flex items-center justify-center transition-colors ${selectedRoleIds.includes(role.id) ? 'bg-[#0066cc] border-[#0066cc]' : 'bg-white border-[#d0d0d0] group-hover:border-[#0066cc]'}`}>
+                            {selectedRoleIds.includes(role.id) && <Check className="w-3.5 h-3.5 text-white" />}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[14px] font-medium text-[#242424]">{role.name}</span>
+                            {/* {role.description && <span className="text-[12px] text-[#898989]">{role.description}</span>} */}
+                          </div>
+                          <input 
+                            type="checkbox" 
+                            className="hidden" 
+                            checked={selectedRoleIds.includes(role.id)}
+                            onChange={() => toggleRole(role.id)}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Technical Settings */}
-                <div className="flex flex-col gap-4">
-                  <h3 className="text-[12px] font-bold text-[#242424] uppercase tracking-wider mb-2">Technical Settings</h3>
-                  
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={`w-[18px] h-[18px] rounded-[3px] border flex items-center justify-center transition-colors ${accessRights.manageAccessRights ? 'bg-[#0066cc] border-[#0066cc]' : 'bg-white border-[#d0d0d0] group-hover:border-[#0066cc]'}`}>
-                      {accessRights.manageAccessRights && <Check className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <span className="text-[14px] text-[#242424]">Manage Access Rights</span>
-                    <input 
-                      type="checkbox" 
-                      className="hidden" 
-                      checked={accessRights.manageAccessRights}
-                      onChange={(e) => setAccessRights({ ...accessRights, manageAccessRights: e.target.checked })}
-                    />
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={`w-[18px] h-[18px] rounded-[3px] border flex items-center justify-center transition-colors ${accessRights.multiOrgAdmin ? 'bg-[#0066cc] border-[#0066cc]' : 'bg-white border-[#d0d0d0] group-hover:border-[#0066cc]'}`}>
-                      {accessRights.multiOrgAdmin && <Check className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <span className="text-[14px] text-[#242424]">Multi-Organizations Admin</span>
-                    <input 
-                      type="checkbox" 
-                      className="hidden" 
-                      checked={accessRights.multiOrgAdmin}
-                      onChange={(e) => setAccessRights({ ...accessRights, multiOrgAdmin: e.target.checked })}
-                    />
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={`w-[18px] h-[18px] rounded-[3px] border flex items-center justify-center transition-colors ${accessRights.apiAccess ? 'bg-[#0066cc] border-[#0066cc]' : 'bg-white border-[#d0d0d0] group-hover:border-[#0066cc]'}`}>
-                      {accessRights.apiAccess && <Check className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <span className="text-[14px] text-[#242424]">API Access Allowed</span>
-                    <input 
-                      type="checkbox" 
-                      className="hidden" 
-                      checked={accessRights.apiAccess}
-                      onChange={(e) => setAccessRights({ ...accessRights, apiAccess: e.target.checked })}
-                    />
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={`w-[18px] h-[18px] rounded-[3px] border flex items-center justify-center transition-colors ${accessRights.bypass2fa ? 'bg-[#0066cc] border-[#0066cc]' : 'bg-white border-[#d0d0d0] group-hover:border-[#0066cc]'}`}>
-                      {accessRights.bypass2fa && <Check className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <span className="text-[14px] text-[#242424]">Bypass Two-Factor Auth (Internal Network)</span>
-                    <input 
-                      type="checkbox" 
-                      className="hidden" 
-                      checked={accessRights.bypass2fa}
-                      onChange={(e) => setAccessRights({ ...accessRights, bypass2fa: e.target.checked })}
-                    />
-                  </label>
+                {/* Info Block instead of Technical Settings */}
+                <div className="flex flex-col gap-4 col-span-2 md:col-span-1 bg-[#f8f8f8] p-4 rounded-[4px] border border-[#e0e0e0]">
+                  <h3 className="text-[12px] font-bold text-[#242424] uppercase tracking-wider mb-2">Note on Access Rights</h3>
+                  <p className="text-[13px] text-[#64748b] leading-relaxed">
+                    Roles define what modules and features this user can access. A user can have multiple roles, and their permissions will be cumulative.
+                  </p>
+                  <p className="text-[13px] text-[#64748b] leading-relaxed">
+                    Changes to roles are applied immediately upon saving, but the user may need to refresh their application to see new menu items.
+                  </p>
                 </div>
 
               </div>

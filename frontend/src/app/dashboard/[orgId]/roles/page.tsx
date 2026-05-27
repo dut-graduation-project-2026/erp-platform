@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Plus, Filter, MoreHorizontal, ShieldCheck, LayoutGrid, List as ListIcon, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Search, Plus, MoreHorizontal, ShieldCheck, LayoutGrid, List as ListIcon, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { PermissionGuard } from "@/components/rbac/PermissionGuard";
 import { PERMISSIONS } from "@/config/permissions";
 import Link from "next/link";
@@ -19,7 +19,7 @@ export default function RolesPage() {
   return (
     <PermissionGuard 
       permission={PERMISSIONS.ROLES.READ} 
-      fallback={<div className="p-8 text-center text-[#dc3545]">Access Denied. You don't have permission to view roles.</div>}
+      fallback={<div className="p-8 text-center text-[#dc3545]">Access Denied. You don&apos;t have permission to view roles.</div>}
     >
       <div className="h-full bg-[#f8f8f8] flex flex-col font-['Segoe_UI',_sans-serif]">
         {/* Top Control Bar */}

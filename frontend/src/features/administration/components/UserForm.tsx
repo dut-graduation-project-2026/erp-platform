@@ -2,7 +2,7 @@
 // User Form Component - Add/Edit user with role selection
 // Follows DESIGN.md: Form pattern, modal, proper spacing
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,6 @@ interface UserFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: UserFormData) => void;
-  onQuickCreateRole: () => void;
   onRoleCreated?: (role: Role) => void;
   user?: User | null;
   roles: Role[];
@@ -27,7 +26,6 @@ export const UserForm: React.FC<UserFormProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  onQuickCreateRole,
   onRoleCreated,
   user,
   roles,

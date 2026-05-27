@@ -2,12 +2,12 @@
 // Role Permission Matrix Component - Define permissions for a role
 // Follows DESIGN.md: Table pattern, checkboxes, proper spacing
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getResources, getActions } from '@/services/mockPermissions';
-import type { PermissionMatrix } from '../types';
+
 
 interface RoleMatrixProps {
   selectedPermissions: string[];
@@ -18,19 +18,7 @@ export const RoleMatrix: React.FC<RoleMatrixProps> = ({
   selectedPermissions,
   onPermissionsChange,
 }) => {
-  const matrix = useMemo(() => {
-    const resources = getResources();
-    const actions = getActions();
 
-    return resources.map(resource => ({
-      resource,
-      actions: actions.reduce((acc, action) => {
-        const permission = `${resource}:${action}`;
-        acc[action] = selectedPermissions.includes(permission);
-        return acc;
-      }, {} as Record<string, boolean>),
-    }));
-  }, [selectedPermissions]);
 
   const handlePermissionToggle = (resource: string, action: string, checked: boolean) => {
     const permission = `${resource}:${action}`;

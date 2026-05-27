@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ErpModule, fetchMyModulesApi } from '../services/erpModuleService';
-import { toast } from 'sonner';
 
 export const useErpModules = (organizationId: string | null) => {
   const [modules, setModules] = useState<ErpModule[]>([]);
@@ -18,6 +17,7 @@ export const useErpModules = (organizationId: string | null) => {
       setError(null);
       const data = await fetchMyModulesApi(organizationId);
       setModules(data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Fetch modules error:', err);
       // Let global interceptor handle the toast, we just set the local error state

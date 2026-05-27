@@ -17,6 +17,7 @@ export const useAllErpModules = (organizationId: string | null) => {
       setError(null);
       const data = await fetchAllModulesApi(organizationId);
       setModules(data || []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Fetch all modules error:', err);
       setError(err.response?.data?.message || 'Failed to fetch modules.');

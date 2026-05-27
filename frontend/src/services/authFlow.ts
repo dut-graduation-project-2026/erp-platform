@@ -12,7 +12,8 @@ export interface AuthUser {
   avatarUrl?: string;
 }
 
-export const getRedirectPath = (user: AuthUser): string => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const getRedirectPath = (_user: AuthUser): string => {
   // Always go to select-org after login for this frontend
   // Note: (onboarding) is a route group in Next.js so it's omitted from the URL
   return '/select-org';

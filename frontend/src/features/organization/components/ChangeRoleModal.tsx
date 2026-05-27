@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useRoles } from '../hooks/useRoles';
+import { organizationMemberService } from '../services/organizationMemberService';
 
 interface ChangeRoleModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({ isOpen, onClos
 
   useEffect(() => {
     if (user?.roleId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRoleId(user.roleId);
     } else {
       setRoleId('');
@@ -32,15 +34,18 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({ isOpen, onClos
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roleId) return;
+    if (!roleId || !user) return;
 
-    // Simulate API call to change role since endpoint might not be available yet
-    setIsUpdating(true);
-    setTimeout(() => {
-      setIsUpdating(false);
+    try {
+      setIsUpdating(true);
+      await organizationMemberService.updateMemberRoles(orgId, user.id, [roleId]);
       onSuccess();
       onClose();
-    }, 1000);
+    } catch (err: unknown) {
+      console.error(err);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (

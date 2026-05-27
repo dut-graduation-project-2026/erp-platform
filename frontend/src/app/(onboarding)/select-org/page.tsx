@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Building2, Mail, ArrowRight, Plus } from 'lucide-react';
+import { Building2, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
 
@@ -184,7 +184,6 @@ export default function SelectOrgPage() {
                   id={org.id}
                   name={org.name}
                   description={org.description}
-                  address={org.address}
                   role={org.role}
                   onSelect={handleSelectOrg}
                 />
@@ -196,7 +195,7 @@ export default function SelectOrgPage() {
                 <div className="max-w-md mx-auto">
                   <Building2 className="h-12 w-12 text-[#414753] mx-auto mb-4" />
                   <p className="text-[16px] font-medium text-[#414753] mb-6">
-                    You haven't joined any organization yet. Please create a new one to get started.
+                    You haven&apos;t joined any organization yet. Please create a new one to get started.
                   </p>
                   
                   <DialogTrigger asChild>

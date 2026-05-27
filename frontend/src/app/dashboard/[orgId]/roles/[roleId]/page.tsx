@@ -98,9 +98,9 @@ export default function RoleFormPage() {
         toast.success("Role updated successfully");
       }
       router.push(`/dashboard/${orgId}/roles`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to save role:", err);
-      toast.error(err.response?.data?.message || "Failed to save role");
+      toast.error((err as {response?: {data?: {message?: string}}})?.response?.data?.message || "Failed to save role");
     } finally {
       setIsSaving(false);
     }
@@ -117,7 +117,7 @@ export default function RoleFormPage() {
   return (
     <PermissionGuard 
       permission={isNew ? PERMISSIONS.ROLES.CREATE : PERMISSIONS.ROLES.WRITE} 
-      fallback={<div className="p-8 text-center text-[#dc3545]">Access Denied. You don't have permission to edit roles.</div>}
+      fallback={<div className="p-8 text-center text-[#dc3545]">Access Denied. You don&apos;t have permission to edit roles.</div>}
     >
       <div className="h-full bg-[#f8f8f8] flex flex-col font-['Segoe_UI',_sans-serif] overflow-auto">
         
@@ -375,6 +375,7 @@ export default function RoleFormPage() {
                     {/* Entry 1: Current Status */}
                     <div className="relative z-10 flex gap-4 mb-6">
                       <div className="w-10 h-10 rounded-full border border-[#d0d0d0] shrink-0 bg-white overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${role?.name || 'Role'}`} alt="Role Avatar" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 mt-1">

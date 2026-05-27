@@ -29,7 +29,6 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/use-auth-store';
 import { APP_MODULES } from '@/config/modules';
-import Link from 'next/link';
 import { useErpModules } from '@/features/organization/hooks/useErpModules';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
 
@@ -46,7 +45,7 @@ export function Header({ className }: HeaderProps) {
   const [isAppLauncherOpen, setIsAppLauncherOpen] = useState(false);
 
   // Fetch modules for the App Launcher Overlay
-  const { modules: backendModules, loading: modulesLoading } = useErpModules(currentOrgId || '');
+  const { modules: backendModules } = useErpModules(currentOrgId || '');
 
   // Determine if we are on the App Launcher or inside a module
   const segments = pathname.split('/').filter(Boolean);

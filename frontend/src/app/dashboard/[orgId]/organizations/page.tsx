@@ -17,7 +17,7 @@ export default function OrganizationsPage() {
   return (
     <PermissionGuard 
       permission={PERMISSIONS.ORGANIZATIONS.READ} 
-      fallback={<div className="p-8 text-center text-[#dc3545]">Access Denied. You don't have permission to view organizations.</div>}
+      fallback={<div className="p-8 text-center text-[#dc3545]">Access Denied. You don&apos;t have permission to view organizations.</div>}
     >
       <div className="h-full bg-white flex flex-col font-['Segoe_UI',_sans-serif]">
         {/* Top Control Bar */}

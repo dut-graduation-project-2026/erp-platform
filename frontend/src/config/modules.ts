@@ -11,7 +11,6 @@ import {
   Package,
   Building2,
   Shield,
-  Settings,
   AppWindow
 } from 'lucide-react';
 import { PERMISSIONS, AppPermission } from './permissions';

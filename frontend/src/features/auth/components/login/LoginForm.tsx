@@ -108,20 +108,7 @@ const LoaderIcon = () => (
   </svg>
 );
 
-// ─── DEMO CREDENTIALS HELPER ──────────────────────────────────────────────────
 
-interface DemoCredential {
-  label: string;
-  email: string;
-  password: string;
-  role: string;
-}
-
-const DEMO_CREDENTIALS: DemoCredential[] = [
-  { label: 'Admin', email: 'admin@erp.com', password: 'admin123', role: 'System Admin' },
-  { label: 'User', email: 'user@erp.com', password: 'user123', role: 'Org User' },
-  { label: 'Manager', email: 'manager@erp.com', password: 'manager123', role: 'Manager' },
-];
 
 // ─── PROPS ────────────────────────────────────────────────────────────────────
 
@@ -156,11 +143,7 @@ const LoginForm = ({
     mode: 'onTouched', // Validate khi user blur khỏi field
   });
 
-  // Điền nhanh thông tin demo vào form
-  const fillDemoCredentials = (cred: DemoCredential) => {
-    setValue('email', cred.email, { shouldValidate: true });
-    setValue('password', cred.password, { shouldValidate: true });
-  };
+
 
   return (
     <Card className="rounded-[4px] border border-border bg-card py-0 shadow-[0px_1px_3px_rgba(0,0,0,0.12)] ring-0">
@@ -348,7 +331,7 @@ const LoginForm = ({
 
           {/* Register Link */}
           <p className="pt-1 text-center text-[12px] leading-[1.4] text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/register"
               className="text-[#0099ff] underline underline-offset-2 hover:text-[#004499] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
