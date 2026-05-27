@@ -43,8 +43,8 @@ public class JwtUtils {
     Instant expiryDate = now.plusMillis(jwtProperties.refreshTokenExpiration());
     String jti = UUID.randomUUID().toString();
 
-    String token = generateToken(
-        user, TOKEN_TYPE_REFRESH, now, jwtProperties.refreshTokenExpiration(), jti);
+    String token =
+        generateToken(user, TOKEN_TYPE_REFRESH, now, jwtProperties.refreshTokenExpiration(), jti);
 
     return new RefreshTokenInfo(token, jti, expiryDate);
   }
@@ -65,14 +65,17 @@ public class JwtUtils {
     return jti.substring(0, length) + "...";
   }
 
+  private String generateToken(User user, String tokenType, Instant issuedAt, long expirationMs) {
+    return generateToken(user, tokenType, issuedAt, expirationMs, UUID.randomUUID().toString());
+  }
+
   private String generateToken(
       User user, String tokenType, Instant issuedAt, long expirationMs, String jti) {
     validateUser(user);
-
     Instant expiryDate = issuedAt.plusMillis(expirationMs);
 
     return Jwts.builder()
-        .id(jti)
+        .id(jti) // Sử dụng jti được truyền vào
         .subject(user.getId().toString())
         .claim(TOKEN_TYPE_CLAIM, tokenType)
         .issuedAt(Date.from(issuedAt))

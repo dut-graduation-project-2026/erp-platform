@@ -1,0 +1,175 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-create-sale-orders-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: sale_orders
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_sale_orders
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partner_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: opportunity_id
+                  type: UUID
+              - column:
+                  name: salesperson_id
+                  type: UUID
+              - column:
+                  name: order_number
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: DRAFT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: DECIMAL(15,2)
+                  defaultValueNumeric: 0.00
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addUniqueConstraint:
+            tableName: sale_orders
+            columnNames: organization_id, order_number
+            constraintName: uk_sale_orders_org_number
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_orders_organization
+            baseTableName: sale_orders
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_orders_partner
+            baseTableName: sale_orders
+            baseColumnNames: partner_id
+            referencedTableName: sale_partners
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_orders_opportunity
+            baseTableName: sale_orders
+            baseColumnNames: opportunity_id
+            referencedTableName: crm_leads
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_orders_salesperson
+            baseTableName: sale_orders
+            baseColumnNames: salesperson_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_orders_created_by
+            baseTableName: sale_orders
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_orders_updated_by
+            baseTableName: sale_orders
+            baseColumnNames: updated_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+
+  - changeSet:
+      id: 021-create-sale-order-lines-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: sale_order_lines
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_sale_order_lines
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: DECIMAL(15,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: DECIMAL(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: discount_percent
+                  type: DECIMAL(5,2)
+                  defaultValueNumeric: 0.00
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subtotal
+                  type: DECIMAL(15,2)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_order_lines_order
+            baseTableName: sale_order_lines
+            baseColumnNames: order_id
+            referencedTableName: sale_orders
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_order_lines_product
+            baseTableName: sale_order_lines
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id

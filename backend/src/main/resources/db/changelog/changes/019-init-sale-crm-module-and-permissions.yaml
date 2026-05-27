@@ -1,0 +1,565 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-init-sale-crm-modules-and-permissions
+      author: halwins
+      changes:
+        # ---- ERP Modules ----
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Sale Partners
+              - column:
+                  name: code
+                  value: sale_partners
+              - column:
+                  name: description
+                  value: Management of customers and business partners.
+
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Products
+              - column:
+                  name: code
+                  value: products
+              - column:
+                  name: description
+                  value: Management of product and service catalog.
+
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: CRM
+              - column:
+                  name: code
+                  value: crm
+              - column:
+                  name: description
+                  value: Customer Relationship Management — Leads, Opportunities, and Appointments.
+
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Sales
+              - column:
+                  name: code
+                  value: sales
+              - column:
+                  name: description
+                  value: Quotations and Sale Orders management.
+
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Finance
+              - column:
+                  name: code
+                  value: finance
+              - column:
+                  name: description
+                  value: Sale Invoices and payment tracking.
+
+        # ---- Sale Partners Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_partners:select
+              - column:
+                  name: code
+                  value: sale_partners:select
+              - column:
+                  name: description
+                  value: Allow listing sale partners.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_partners')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_partners:read
+              - column:
+                  name: code
+                  value: sale_partners:read
+              - column:
+                  name: description
+                  value: Allow reading sale partner details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_partners')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_partners:write
+              - column:
+                  name: code
+                  value: sale_partners:write
+              - column:
+                  name: description
+                  value: Allow updating sale partners.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_partners')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_partners:create
+              - column:
+                  name: code
+                  value: sale_partners:create
+              - column:
+                  name: description
+                  value: Allow creating sale partners.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_partners')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_partners:delete
+              - column:
+                  name: code
+                  value: sale_partners:delete
+              - column:
+                  name: description
+                  value: Allow deleting sale partners.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_partners')
+
+        # ---- Products Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:select
+              - column:
+                  name: code
+                  value: products:select
+              - column:
+                  name: description
+                  value: Allow listing products.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:read
+              - column:
+                  name: code
+                  value: products:read
+              - column:
+                  name: description
+                  value: Allow reading product details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:write
+              - column:
+                  name: code
+                  value: products:write
+              - column:
+                  name: description
+                  value: Allow updating products.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:create
+              - column:
+                  name: code
+                  value: products:create
+              - column:
+                  name: description
+                  value: Allow creating products.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:delete
+              - column:
+                  name: code
+                  value: products:delete
+              - column:
+                  name: description
+                  value: Allow deleting products.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        # ---- CRM Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: crm:select
+              - column:
+                  name: code
+                  value: crm:select
+              - column:
+                  name: description
+                  value: Allow listing CRM records.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'crm')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: crm:read
+              - column:
+                  name: code
+                  value: crm:read
+              - column:
+                  name: description
+                  value: Allow reading CRM record details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'crm')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: crm:write
+              - column:
+                  name: code
+                  value: crm:write
+              - column:
+                  name: description
+                  value: Allow updating CRM records.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'crm')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: crm:create
+              - column:
+                  name: code
+                  value: crm:create
+              - column:
+                  name: description
+                  value: Allow creating CRM records.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'crm')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: crm:delete
+              - column:
+                  name: code
+                  value: crm:delete
+              - column:
+                  name: description
+                  value: Allow deleting CRM records.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'crm')
+
+        # ---- Sales Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sales:select
+              - column:
+                  name: code
+                  value: sales:select
+              - column:
+                  name: description
+                  value: Allow listing sale orders.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sales')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sales:read
+              - column:
+                  name: code
+                  value: sales:read
+              - column:
+                  name: description
+                  value: Allow reading sale order details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sales')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sales:write
+              - column:
+                  name: code
+                  value: sales:write
+              - column:
+                  name: description
+                  value: Allow updating sale orders.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sales')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sales:create
+              - column:
+                  name: code
+                  value: sales:create
+              - column:
+                  name: description
+                  value: Allow creating sale orders.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sales')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sales:delete
+              - column:
+                  name: code
+                  value: sales:delete
+              - column:
+                  name: description
+                  value: Allow deleting sale orders.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sales')
+
+        # ---- Finance Permissions ----
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: finance:select
+              - column:
+                  name: code
+                  value: finance:select
+              - column:
+                  name: description
+                  value: Allow listing sale invoices.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'finance')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: finance:read
+              - column:
+                  name: code
+                  value: finance:read
+              - column:
+                  name: description
+                  value: Allow reading sale invoice details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'finance')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: finance:write
+              - column:
+                  name: code
+                  value: finance:write
+              - column:
+                  name: description
+                  value: Allow updating and registering payments for invoices.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'finance')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: finance:create
+              - column:
+                  name: code
+                  value: finance:create
+              - column:
+                  name: description
+                  value: Allow creating sale invoices.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'finance')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: finance:delete
+              - column:
+                  name: code
+                  value: finance:delete
+              - column:
+                  name: description
+                  value: Allow deleting/cancelling sale invoices.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'finance')
