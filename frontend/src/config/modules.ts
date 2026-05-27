@@ -11,7 +11,8 @@ import {
   Package,
   Building2,
   Shield,
-  AppWindow
+  AppWindow,
+  Target
 } from 'lucide-react';
 import { PERMISSIONS, AppPermission } from './permissions';
 import { ERP_MODULE_CODES } from './erp-modules';
@@ -130,12 +131,20 @@ export const APP_MODULES: ModuleConfig[] = [
     bgColor: 'bg-yellow-600',
   },
   {
+    id: ERP_MODULE_CODES.CRM,
+    name: 'CRM',
+    icon: Target,
+    route: '/crm',
+    permission: PERMISSIONS.CRM.ACCESS,
+    bgColor: 'bg-indigo-600',
+  },
+  {
     id: ERP_MODULE_CODES.SALES,
-    name: 'Sales & CRM',
+    name: 'Sales',
     icon: ShoppingCart,
     route: '/sales',
     permission: PERMISSIONS.SALES.ACCESS,
-    bgColor: 'bg-indigo-600',
+    bgColor: 'bg-emerald-700',
   },
   {
     id: ERP_MODULE_CODES.INVENTORY,

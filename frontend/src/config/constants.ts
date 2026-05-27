@@ -20,13 +20,16 @@ export const API_ENDPOINTS = {
     BASE: "/erp-modules",
     ME: "/erp-modules/me",
   },
-  SALES: {
-    ORDERS: "/sales/orders",
-    INVOICES: "/sales/invoices",
+  CRM: {
+    LEADS: (orgId: string) => `/organizations/${orgId}/crm/leads`,
+    APPOINTMENTS: (orgId: string) => `/organizations/${orgId}/crm/appointments`,
   },
-  INVENTORY: {
-    PRODUCTS: "/inventory/products",
-    WAREHOUSES: "/inventory/warehouses",
+  SALES: {
+    ORDERS: (orgId: string) => `/organizations/${orgId}/sale-orders`,
+    INVOICES: (orgId: string) => `/organizations/${orgId}/sale-invoices`,
+    PARTNERS: (orgId: string) => `/organizations/${orgId}/sale-partners`,
+    PRODUCTS: (orgId: string) => `/organizations/${orgId}/products`,
+    REPORTS: (orgId: string) => `/organizations/${orgId}/reports/sales-dashboard`,
   },
   BLOCKCHAIN: {
     TRANSACTIONS: "/blockchain/transactions",

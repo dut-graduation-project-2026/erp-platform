@@ -18,6 +18,7 @@ export const ERP_MODULE_CODES = {
   EMPLOYEES: "employees",
   TIME_OFF: "time_off",
   SALES: "sales",
+  CRM: "crm",
   INVENTORY: "inventory",
 } as const;
 

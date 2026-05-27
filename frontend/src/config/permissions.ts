@@ -66,6 +66,9 @@ export const PERMISSIONS = {
   SALES: {
     ACCESS: 'sales:access',
   },
+  CRM: {
+    ACCESS: 'crm:access',
+  },
   INVENTORY: {
     ACCESS: 'inventory:access',
   },
