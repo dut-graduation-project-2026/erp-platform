@@ -1,6 +1,8 @@
-import { ReactNode } from 'react';
+'use client';
+
+import { ReactNode, use } from 'react';
 import Link from 'next/link';
-import { FileText, BarChart2, Package } from 'lucide-react';
+import { FileText, BarChart2, Package, Users, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 
@@ -9,14 +11,16 @@ export default function SalesLayout({
   params,
 }: {
   children: ReactNode;
-  params: { orgId: string };
+  params: Promise<{ orgId: string }>;
 }) {
   const pathname = usePathname();
-  const orgId = params.orgId;
+  const { orgId } = use(params);
   const basePath = `/dashboard/${orgId}/sales`;
 
   const navItems = [
     { name: 'Quotations', href: `${basePath}/quotations`, icon: FileText },
+    { name: 'Invoices', href: `${basePath}/invoices`, icon: Receipt },
+    { name: 'Customers', href: `${basePath}/customers`, icon: Users },
     { name: 'Products', href: `${basePath}/products`, icon: Package },
     { name: 'Analytics', href: `${basePath}/analytics`, icon: BarChart2 },
   ];

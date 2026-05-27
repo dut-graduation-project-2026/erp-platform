@@ -4,6 +4,7 @@ import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.request.UpdateUserRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.UserBaseResponse;
+import com.dut.erp.dto.response.UserPermissionsResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.UserService;
 import jakarta.validation.Valid;

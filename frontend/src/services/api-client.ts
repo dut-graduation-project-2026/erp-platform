@@ -123,6 +123,9 @@ apiClient.interceptors.response.use(
           processQueue(refreshError, null);
           // Refresh failed, logout and redirect to login
           useAuthStore.getState().clearAuth();
+          document.cookie = 'currentOrgId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          document.cookie = 'userOrgIds=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          document.cookie = 'clientSession=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
             toast.error('Session expired. Please login again.');

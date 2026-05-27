@@ -72,6 +72,7 @@ export const useLogin = (): UseLoginReturn => {
         // Frontend chỉ cần set userOrgIds để middleware Next.js validate định tuyến.
         const orgIds = userOrgs.map((org) => org.id).join(',');
         document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; samesite=strict`;
+        document.cookie = `clientSession=true; path=/; max-age=86400; samesite=strict`;
 
         // ═══════════════════════════════════════════════════════════
         // 🟡 BƯỚC 4: PHÂN LUỒNG ĐIỀU HƯỚNG

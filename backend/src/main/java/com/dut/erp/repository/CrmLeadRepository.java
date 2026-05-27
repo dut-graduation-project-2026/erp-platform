@@ -49,14 +49,14 @@ public interface CrmLeadRepository extends JpaRepository<CrmLead, UUID> {
       AND cl.type = :type
       """)
   Long countByOrganizationIdAndType(
-      @Param("organizationId") UUID organizationId, @Param("type") String type);
+      @Param("organizationId") UUID organizationId, @Param("type") com.dut.erp.enums.LeadType type);
 
   @Query("""
       SELECT cs.name, COUNT(cl), COALESCE(SUM(cl.expectedRevenue), 0)
       FROM CrmLead cl
       JOIN cl.stage cs
       WHERE cl.organization.id = :organizationId
-      GROUP BY cs.name
+      GROUP BY cs.name, cs.sequence
       ORDER BY cs.sequence ASC
       """)
   List<Object[]> countAndSumRevenueByStage(@Param("organizationId") UUID organizationId);

@@ -51,7 +51,7 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, UUID> {
       AND so.status = :status
       """)
   Long countByOrganizationIdAndStatus(
-      @Param("organizationId") UUID organizationId, @Param("status") String status);
+      @Param("organizationId") UUID organizationId, @Param("status") com.dut.erp.enums.SaleOrderStatus status);
 
   @Query("""
       SELECT COALESCE(SUM(so.totalAmount), 0)
@@ -60,5 +60,5 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, UUID> {
       AND so.status = :status
       """)
   java.math.BigDecimal sumTotalAmountByOrganizationIdAndStatus(
-      @Param("organizationId") UUID organizationId, @Param("status") String status);
+      @Param("organizationId") UUID organizationId, @Param("status") com.dut.erp.enums.SaleOrderStatus status);
 }

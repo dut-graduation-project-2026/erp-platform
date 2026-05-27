@@ -64,10 +64,18 @@ export const PERMISSIONS = {
     ACCESS: 'time_off:access',
   },
   SALES: {
-    ACCESS: 'sales:access',
+    SELECT: 'sales:select',
+    READ: 'sales:read',
+    WRITE: 'sales:write',
+    CREATE: 'sales:create',
+    DELETE: 'sales:delete',
   },
   CRM: {
-    ACCESS: 'crm:access',
+    SELECT: 'crm:select',
+    READ: 'crm:read',
+    WRITE: 'crm:write',
+    CREATE: 'crm:create',
+    DELETE: 'crm:delete',
   },
   INVENTORY: {
     ACCESS: 'inventory:access',

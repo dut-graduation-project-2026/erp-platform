@@ -64,16 +64,16 @@ public class SalesReportServiceImpl implements SalesReportService {
   // ---- Private JPQL queries ----
 
   private Long countLeadsByType(UUID organizationId, LeadType type) {
-    return crmLeadRepository.countByOrganizationIdAndType(organizationId, type.name());
+    return crmLeadRepository.countByOrganizationIdAndType(organizationId, type);
   }
 
   private Long countOrdersByStatus(UUID organizationId, SaleOrderStatus status) {
-    return saleOrderRepository.countByOrganizationIdAndStatus(organizationId, status.name());
+    return saleOrderRepository.countByOrganizationIdAndStatus(organizationId, status);
   }
 
   private BigDecimal sumOrderTotalByStatus(UUID organizationId, SaleOrderStatus status) {
     return saleOrderRepository.sumTotalAmountByOrganizationIdAndStatus(
-        organizationId, status.name());
+        organizationId, status);
   }
 
   private Long countInvoicesByOrganization(UUID organizationId) {

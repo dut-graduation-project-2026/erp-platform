@@ -48,3 +48,9 @@ export const getProducts = async (orgId: string, params?: any): Promise<PagedEnt
   const response = await apiClient.get<PagedEntityResponse<Product>>(API_ENDPOINTS.SALES.PRODUCTS(orgId), { params });
   return response.data;
 };
+
+// Analytics Dashboard
+export const getSalesDashboard = async (orgId: string): Promise<any> => {
+  const response = await apiClient.get(API_ENDPOINTS.SALES.REPORTS(orgId));
+  return response.data;
+};

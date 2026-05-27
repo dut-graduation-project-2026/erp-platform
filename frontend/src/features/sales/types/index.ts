@@ -10,10 +10,10 @@ export interface SalePartner {
 export interface Product {
   id: string;
   name: string;
+  sku: string;
   description: string;
   price: number;
-  cost: number;
-  stockQuantity: number;
+  isActive?: boolean;
 }
 
 export interface SaleOrderLine {

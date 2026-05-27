@@ -135,7 +135,7 @@ export const APP_MODULES: ModuleConfig[] = [
     name: 'CRM',
     icon: Target,
     route: '/crm',
-    permission: PERMISSIONS.CRM.ACCESS,
+    permission: PERMISSIONS.CRM.READ,
     bgColor: 'bg-indigo-600',
   },
   {
@@ -143,7 +143,7 @@ export const APP_MODULES: ModuleConfig[] = [
     name: 'Sales',
     icon: ShoppingCart,
     route: '/sales',
-    permission: PERMISSIONS.SALES.ACCESS,
+    permission: PERMISSIONS.SALES.READ,
     bgColor: 'bg-emerald-700',
   },
   {

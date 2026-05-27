@@ -21,8 +21,12 @@ export function middleware(request: NextRequest) {
 
   // Middleware không nên chặn quá sớm khi access_token vừa hết hạn/mất,
   // để frontend có cơ hội gọi /auth/refresh và khôi phục phiên.
+  const clientSessionCookie = request.cookies.get('clientSession')?.value;
   const userOrgIdsCookie = request.cookies.get('userOrgIds')?.value;
-  const hasClientSessionContext = Boolean(userOrgIdsCookie && userOrgIdsCookie.trim());
+  
+  const hasClientSessionContext = Boolean(
+    clientSessionCookie === 'true' || (userOrgIdsCookie && userOrgIdsCookie.trim())
+  );
 
   // Nếu không còn ngữ cảnh phiên tối thiểu từ client thì coi như chưa đăng nhập.
   if (!hasClientSessionContext) {

@@ -1,4 +1,6 @@
-import { ReactNode } from 'react';
+'use client';
+
+import { ReactNode, use } from 'react';
 import Link from 'next/link';
 import { Target, BarChart2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -9,10 +11,10 @@ export default function CrmLayout({
   params,
 }: {
   children: ReactNode;
-  params: { orgId: string };
+  params: Promise<{ orgId: string }>;
 }) {
   const pathname = usePathname();
-  const orgId = params.orgId;
+  const { orgId } = use(params);
   const basePath = `/dashboard/${orgId}/crm`;
 
   const navItems = [
