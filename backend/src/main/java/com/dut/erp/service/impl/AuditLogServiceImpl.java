@@ -40,6 +40,11 @@ public class AuditLogServiceImpl implements AuditLogService {
       String message) {
 
     try {
+      String finalMessage = message;
+      if (finalMessage == null || finalMessage.trim().isEmpty()) {
+        finalMessage = action + " " + entityType.name() + " (" + entityId + ")";
+      }
+
       AuditLog auditLog =
           AuditLog.builder()
               .entityType(entityType.name())
@@ -48,7 +53,7 @@ public class AuditLogServiceImpl implements AuditLogService {
               .changedField(changedField)
               .oldValue(oldValue)
               .newValue(newValue)
-              .message(message)
+              .message(finalMessage)
               .organizationId(organizationId)
               .build();
 

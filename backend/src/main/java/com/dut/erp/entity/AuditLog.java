@@ -59,7 +59,7 @@ public class AuditLog {
   @Column(name = "new_value", columnDefinition = "TEXT")
   String newValue;
 
-  @Column(name = "message", columnDefinition = "TEXT")
+  @Column(name = "message", nullable = false, columnDefinition = "TEXT")
   String message;
 
   @Column(name = "organization_id")

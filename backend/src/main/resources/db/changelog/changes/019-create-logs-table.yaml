@@ -40,6 +40,8 @@ databaseChangeLog:
               - column:
                   name: message
                   type: TEXT
+                  constraints:
+                    nullable: false
               - column:
                   name: organization_id
                   type: UUID
