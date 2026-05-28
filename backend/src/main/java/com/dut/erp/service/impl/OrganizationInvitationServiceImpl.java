@@ -8,6 +8,8 @@ import com.dut.erp.entity.OrganizationInvitation;
 import com.dut.erp.entity.Role;
 import com.dut.erp.entity.User;
 import com.dut.erp.enums.OrganizationInvitationStatus;
+import com.dut.erp.enums.ActionType;
+import com.dut.erp.enums.EntityType;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.InvitationMapper;
@@ -15,6 +17,7 @@ import com.dut.erp.repository.OrganizationInvitationRepository;
 import com.dut.erp.repository.RoleRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.security.CustomUserDetails;
+import com.dut.erp.service.AuditLogService;
 import com.dut.erp.service.OrganizationInvitationService;
 import java.time.Instant;
 import java.util.UUID;
@@ -36,6 +39,7 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
   private final UserRepository userRepository;
   private final InvitationMapper invitationMapper;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final AuditLogService auditLogService;
 
   @Override
   @Transactional
@@ -93,6 +97,14 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
     OrganizationInvitationResponse response =
         invitationMapper.toOrganizationInvitationResponse(invitation);
     log.info("User {} invited to organization {} by {}", email, organizationId, inviter.getEmail());
+
+    auditLogService.record(
+        organizationId,
+        EntityType.INVITATION,
+        invitation.getId(),
+        ActionType.CREATE,
+        "Invited user: " + email + " with role: " + role.getName());
+
     return response;
   }
 
@@ -138,6 +150,14 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
         invitationId,
         invitation.getEmail(),
         inviter.getEmail());
+
+    auditLogService.record(
+        organizationId,
+        EntityType.INVITATION,
+        invitationId,
+        ActionType.UPDATE,
+        "Resent invitation to user: " + invitation.getEmail());
+
     return invitationMapper.toOrganizationInvitationResponse(invitation);
   }
 
@@ -177,8 +197,13 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
 
     User responderUser = findUserByIdWithRolesAndOrganizations(responder.getId());
 
-    invitation.setStatus(
-        accepted ? OrganizationInvitationStatus.ACCEPTED : OrganizationInvitationStatus.DECLINED);
+    String oldStatus = invitation.getStatus().name();
+    OrganizationInvitationStatus newStatusEnum =
+        accepted ? OrganizationInvitationStatus.ACCEPTED : OrganizationInvitationStatus.DECLINED;
+    String newStatus = newStatusEnum.name();
+    String message = (accepted ? "Accepted" : "Declined") + " invitation to organization for user: " + invitation.getEmail();
+
+    invitation.setStatus(newStatusEnum);
 
     if (accepted) {
       addUserToOrganization(invitation, responderUser);
@@ -186,6 +211,17 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
     invitation.setRespondedBy(responderUser);
 
     organizationInvitationRepository.save(invitation);
+
+    auditLogService.record(
+        organizationId,
+        EntityType.INVITATION,
+        invitationId,
+        ActionType.UPDATE,
+        "status",
+        oldStatus,
+        newStatus,
+        message);
+
     return invitationMapper.toOrganizationInvitationResponse(invitation);
   }
 

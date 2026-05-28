@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-create-logs-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_audit_logs
+                    nullable: false
+              - column:
+                  name: entity_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_field
+                  type: VARCHAR(100)
+              - column:
+                  name: old_value
+                  type: TEXT
+              - column:
+                  name: new_value
+                  type: TEXT
+              - column:
+                  name: message
+                  type: TEXT
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_audit_logs_organization
+            baseTableName: audit_logs
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_audit_logs_created_by
+            baseTableName: audit_logs
+            baseColumnNames: created_by_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - createIndex:
+            tableName: audit_logs
+            indexName: idx_audit_logs_entity
+            columns:
+              - column:
+                  name: entity_type
+              - column:
+                  name: entity_id
+        - createIndex:
+            tableName: audit_logs
+            indexName: idx_audit_logs_org_created_at
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: created_at

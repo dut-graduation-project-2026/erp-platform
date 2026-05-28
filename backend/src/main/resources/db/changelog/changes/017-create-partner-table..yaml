@@ -1,0 +1,105 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-create-partners-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: partners
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_partners
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tax_code
+                  type: VARCHAR(50)
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+              - column:
+                  name: phone
+                  type: VARCHAR(50)
+              - column:
+                  name: address
+                  type: VARCHAR(255)
+              - column:
+                  name: job_position
+                  type: VARCHAR(255)
+              - column:
+                  name: notes
+                  type: TEXT
+              - column:
+                  name: is_archived
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partner_type
+                  type: VARCHAR(50)
+                  defaultValue: INDIVIDUAL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addForeignKeyConstraint:
+            constraintName: fk_partners_organization
+            baseTableName: partners
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_partners_created_by
+            baseTableName: partners
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_partners_updated_by
+            baseTableName: partners
+            baseColumnNames: updated_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - createIndex:
+            tableName: partners
+            indexName: idx_partners_organization_id
+            columns:
+              - column:
+                  name: organization_id
+        - createIndex:
+            tableName: partners
+            indexName: idx_partners_organization_is_archived
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: is_archived

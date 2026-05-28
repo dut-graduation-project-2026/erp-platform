@@ -15,9 +15,14 @@ import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.PermissionRepository;
 import com.dut.erp.repository.RoleRepository;
 import com.dut.erp.repository.UserRepository;
+import com.dut.erp.service.AuditLogService;
 import com.dut.erp.service.OrganizationService;
+import com.dut.erp.enums.ActionType;
+import com.dut.erp.enums.EntityType;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +41,7 @@ public class OrganizationServiceImpl implements OrganizationService {
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
   private final PermissionRepository permissionRepository;
+  private final AuditLogService auditLogService;
 
   @Override
   @Transactional
@@ -78,6 +84,14 @@ public class OrganizationServiceImpl implements OrganizationService {
     userRepository.save(creator);
 
     log.info("Organization {} created by user {}", organization.getId(), userId);
+
+    auditLogService.record(
+        organization.getId(),
+        EntityType.ORGANIZATION,
+        organization.getId(),
+        ActionType.CREATE,
+        "Created organization: " + organization.getName());
+
     return organizationMapper.toOrganizationResponse(organization);
   }
 
@@ -106,6 +120,42 @@ public class OrganizationServiceImpl implements OrganizationService {
       throw new ResourceAlreadyExistsException("Organization with this tax code already exists.");
     }
 
+    List<String> changes = new ArrayList<>();
+    if (!Objects.equals(organization.getName(), request.name())) {
+      changes.add("name: '" + organization.getName() + "' -> '" + request.name() + "'");
+    }
+    if (!Objects.equals(organization.getDescription(), request.description())) {
+      changes.add("description: '" + organization.getDescription() + "' -> '" + request.description() + "'");
+    }
+    if (!Objects.equals(organization.getAddress(), request.address())) {
+      changes.add("address: '" + organization.getAddress() + "' -> '" + request.address() + "'");
+    }
+    if (!Objects.equals(organization.getHotline(), request.hotline())) {
+      changes.add("hotline: '" + organization.getHotline() + "' -> '" + request.hotline() + "'");
+    }
+    if (!Objects.equals(organization.getTaxCode(), request.taxCode())) {
+      changes.add("taxCode: '" + organization.getTaxCode() + "' -> '" + request.taxCode() + "'");
+    }
+
+    String message = "Updated organization: " + request.name();
+    String changedField = null;
+    String oldValue = null;
+    String newValue = null;
+
+    if (!changes.isEmpty()) {
+      message += ". Changes: " + String.join(", ", changes);
+      String firstChange = changes.get(0);
+      int colonIdx = firstChange.indexOf(":");
+      int arrowIdx = firstChange.indexOf(" -> ");
+      if (colonIdx > 0 && arrowIdx > colonIdx) {
+        changedField = firstChange.substring(0, colonIdx).trim();
+        oldValue = firstChange.substring(colonIdx + 1, arrowIdx).replace("'", "").trim();
+        newValue = firstChange.substring(arrowIdx + 4).replace("'", "").trim();
+      }
+    } else {
+      message += ". No fields changed.";
+    }
+
     organization.setName(request.name());
     organization.setDescription(request.description());
     organization.setAddress(request.address());
@@ -114,6 +164,17 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     organization = organizationRepository.save(organization);
     log.info("Organization {} updated", organizationId);
+
+    auditLogService.record(
+        organizationId,
+        EntityType.ORGANIZATION,
+        organization.getId(),
+        ActionType.UPDATE,
+        changedField,
+        oldValue,
+        newValue,
+        message);
+
     return organizationMapper.toOrganizationResponse(organization);
   }
 
