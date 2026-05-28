@@ -14,6 +14,5 @@ public record AuditLogResponse(
     String oldValue,
     String newValue,
     String message,
-    String ipAddress,
     UserBaseResponse createdBy,
     Instant createdAt) {}
