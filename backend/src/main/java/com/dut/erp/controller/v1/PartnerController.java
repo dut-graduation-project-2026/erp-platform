@@ -50,7 +50,7 @@ public class PartnerController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('partners:write', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('partners:create', #organizationId, #userDetails)
       """)
   public ResponseEntity<PartnerResponse> createPartner(
       @PathVariable UUID organizationId,
@@ -179,7 +179,7 @@ public class PartnerController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('partners:write', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('partners:delete', #organizationId, #userDetails)
       """)
   public ResponseEntity<Void> deletePartner(
       @PathVariable UUID organizationId,

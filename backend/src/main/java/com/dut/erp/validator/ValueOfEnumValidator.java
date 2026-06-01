@@ -4,6 +4,7 @@ import com.dut.erp.annotation.ValueOfEnum;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,7 @@ public class ValueOfEnumValidator implements ConstraintValidator<ValueOfEnum, St
     validValues =
         Arrays.stream(annotation.enumClass().getEnumConstants())
             .map(Enum::name)
-            .collect(Collectors.toSet());
+            .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   @Override

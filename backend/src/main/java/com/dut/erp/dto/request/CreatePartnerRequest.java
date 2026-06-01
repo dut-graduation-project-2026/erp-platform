@@ -26,5 +26,5 @@ public record CreatePartnerRequest(
         @ValueOfEnum(
             enumClass = PartnerType.class,
             message = "Partner type must be one of: {enumValues}")
-        PartnerType partnerType,
+        String partnerType,
     List<PartnerContactRequest> contacts) {}

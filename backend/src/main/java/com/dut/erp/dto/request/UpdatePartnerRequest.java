@@ -1,5 +1,6 @@
 package com.dut.erp.dto.request;
 
+import com.dut.erp.annotation.ValueOfEnum;
 import com.dut.erp.enums.PartnerType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -19,5 +20,9 @@ public record UpdatePartnerRequest(
     @Size(max = 255, message = "Address cannot exceed 255 characters") String address,
     @Size(max = 255, message = "Job position cannot exceed 255 characters") String jobPosition,
     @Size(max = 2000, message = "Notes cannot exceed 2000 characters") String notes,
-    @NotNull(message = "Partner type is required") PartnerType partnerType,
+    @NotNull(message = "Partner type is required")
+        @ValueOfEnum(
+            enumClass = PartnerType.class,
+            message = "Partner type must be one of: {enumValues}")
+        String partnerType,
     List<PartnerContactRequest> contacts) {}

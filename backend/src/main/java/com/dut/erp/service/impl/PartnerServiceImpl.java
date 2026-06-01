@@ -8,10 +8,10 @@ import com.dut.erp.dto.response.PartnerResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Partner;
 import com.dut.erp.entity.PartnerContact;
+import com.dut.erp.enums.PartnerType;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.PartnerMapper;
 import com.dut.erp.repository.OrganizationRepository;
-import com.dut.erp.repository.PartnerContactRepository;
 import com.dut.erp.repository.PartnerRepository;
 import com.dut.erp.service.PartnerService;
 import java.util.ArrayList;
@@ -32,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PartnerServiceImpl implements PartnerService {
 
   private final PartnerRepository partnerRepository;
-  private final PartnerContactRepository partnerContactRepository;
   private final OrganizationRepository organizationRepository;
   private final PartnerMapper partnerMapper;
 
@@ -50,7 +49,7 @@ public class PartnerServiceImpl implements PartnerService {
             .address(request.address())
             .jobPosition(request.jobPosition())
             .notes(request.notes())
-            .partnerType(request.partnerType())
+            .partnerType(PartnerType.valueOf(request.partnerType()))
             .organization(organization)
             .build();
 
@@ -81,7 +80,6 @@ public class PartnerServiceImpl implements PartnerService {
     return partnerMapper.toPartnerResponse(partner);
   }
 
-
   @Override
   public List<PartnerResponse> getPartners(UUID organizationId) {
     findOrganizationById(organizationId);
@@ -109,7 +107,7 @@ public class PartnerServiceImpl implements PartnerService {
     partner.setAddress(request.address());
     partner.setJobPosition(request.jobPosition());
     partner.setNotes(request.notes());
-    partner.setPartnerType(request.partnerType());
+    partner.setPartnerType(PartnerType.valueOf(request.partnerType()));
 
     List<PartnerContactRequest> contactRequests =
         request.contacts() != null ? request.contacts() : List.of();
@@ -120,23 +118,14 @@ public class PartnerServiceImpl implements PartnerService {
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
-    List<PartnerContact> existingContacts =
-        partnerContactRepository.findAllByPartnerId(partnerId);
-    List<PartnerContact> toDelete =
-        existingContacts.stream()
-            .filter(c -> !retainedIds.contains(c.getId()))
-            .toList();
-    if (!toDelete.isEmpty()) {
-      partnerContactRepository.deleteAll(toDelete);
-      log.debug(
-          "Deleted {} orphan contact(s) from partner {}", toDelete.size(), partnerId);
-    }
+    partner.getContacts().removeIf(c -> !retainedIds.contains(c.getId()));
 
     for (PartnerContactRequest contactRequest : contactRequests) {
       if (contactRequest.id() != null) {
         PartnerContact existing =
-            partnerContactRepository
-                .findByIdAndPartnerId(contactRequest.id(), partnerId)
+            partner.getContacts().stream()
+                .filter(c -> c.getId().equals(contactRequest.id()))
+                .findFirst()
                 .orElseThrow(
                     () -> {
                       log.warn(
@@ -152,7 +141,6 @@ public class PartnerServiceImpl implements PartnerService {
         existing.setPhone(contactRequest.phone());
         existing.setJobPosition(contactRequest.jobPosition());
         existing.setNotes(contactRequest.notes());
-        partnerContactRepository.save(existing);
         log.debug("Updated existing contact {} for partner {}", existing.getId(), partnerId);
       } else {
         PartnerContact newContact =
@@ -164,7 +152,7 @@ public class PartnerServiceImpl implements PartnerService {
                 .notes(contactRequest.notes())
                 .partner(partner)
                 .build();
-        partnerContactRepository.save(newContact);
+        partner.getContacts().add(newContact);
         log.debug("Created new contact for partner {}", partnerId);
       }
     }

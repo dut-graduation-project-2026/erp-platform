@@ -31,7 +31,7 @@ databaseChangeLog:
                   type: VARCHAR(50)
               - column:
                   name: job_position
-                  type: VARCHAR(100)
+                  type: VARCHAR(255)
               - column:
                   name: notes
                   type: TEXT
