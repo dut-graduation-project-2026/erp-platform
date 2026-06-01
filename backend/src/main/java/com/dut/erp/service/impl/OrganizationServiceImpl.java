@@ -78,6 +78,7 @@ public class OrganizationServiceImpl implements OrganizationService {
     userRepository.save(creator);
 
     log.info("Organization {} created by user {}", organization.getId(), userId);
+
     return organizationMapper.toOrganizationResponse(organization);
   }
 
@@ -114,6 +115,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     organization = organizationRepository.save(organization);
     log.info("Organization {} updated", organizationId);
+
     return organizationMapper.toOrganizationResponse(organization);
   }
 

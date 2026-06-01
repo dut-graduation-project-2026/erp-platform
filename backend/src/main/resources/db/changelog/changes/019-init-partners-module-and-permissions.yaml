@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-init-partners-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Partners
+              - column:
+                  name: code
+                  value: partners
+              - column:
+                  name: description
+                  value: Customer and Vendor partner management system.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: partners:select
+              - column:
+                  name: code
+                  value: partners:select
+              - column:
+                  name: description
+                  value: Allow selecting partner information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'partners')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: partners:read
+              - column:
+                  name: code
+                  value: partners:read
+              - column:
+                  name: description
+                  value: Allow viewing of partner details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'partners')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: partners:write
+              - column:
+                  name: code
+                  value: partners:write
+              - column:
+                  name: description
+                  value: Allow writing/updating partner details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'partners')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: partners:create
+              - column:
+                  name: code
+                  value: partners:create
+              - column:
+                  name: description
+                  value: Allow creating new partners.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'partners')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: partners:delete
+              - column:
+                  name: code
+                  value: partners:delete
+              - column:
+                  name: description
+                  value: Allow deleting partners.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'partners')

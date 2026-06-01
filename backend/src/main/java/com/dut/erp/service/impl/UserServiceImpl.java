@@ -11,7 +11,6 @@ import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.UserService;
 import com.dut.erp.util.SearchUtils;
-
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,6 +76,7 @@ public class UserServiceImpl implements UserService {
 
     user = userRepository.save(user);
     log.info("User {} updated successfully", userId);
+
     return userMapper.toUserBaseResponse(user);
   }
 }

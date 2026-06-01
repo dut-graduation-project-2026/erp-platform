@@ -84,6 +84,7 @@ public class RoleServiceImpl implements RoleService {
     role = roleRepository.save(role);
 
     log.info("Created role {} in organization {}", role.getId(), organizationId);
+
     return roleMapper.toRoleResponse(role);
   }
 
@@ -114,15 +115,19 @@ public class RoleServiceImpl implements RoleService {
     Role role = findRoleById(roleId);
     verifyRoleBelongsToOrganization(roleId, organizationId);
 
+    Set<UUID> requestPermIds = request.permissionIds() != null ? request.permissionIds() : Set.of();
+    Set<Permission> resolvedPerms = resolvePermissions(requestPermIds, organizationId);
+
     if (!role.getName().equals(request.name())) {
       assertRoleNameAvailable(request.name(), organizationId);
     }
 
     role.setName(request.name());
-    role.setPermissions(resolvePermissions(request.permissionIds(), organizationId));
+    role.setPermissions(resolvedPerms);
     role = roleRepository.save(role);
 
     log.info("Updated role {} in organization {}", roleId, organizationId);
+
     return roleMapper.toRoleResponse(role);
   }
 

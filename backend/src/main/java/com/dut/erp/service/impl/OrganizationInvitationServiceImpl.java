@@ -93,6 +93,7 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
     OrganizationInvitationResponse response =
         invitationMapper.toOrganizationInvitationResponse(invitation);
     log.info("User {} invited to organization {} by {}", email, organizationId, inviter.getEmail());
+
     return response;
   }
 
@@ -138,6 +139,7 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
         invitationId,
         invitation.getEmail(),
         inviter.getEmail());
+
     return invitationMapper.toOrganizationInvitationResponse(invitation);
   }
 
@@ -177,8 +179,10 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
 
     User responderUser = findUserByIdWithRolesAndOrganizations(responder.getId());
 
-    invitation.setStatus(
-        accepted ? OrganizationInvitationStatus.ACCEPTED : OrganizationInvitationStatus.DECLINED);
+    OrganizationInvitationStatus newStatusEnum =
+        accepted ? OrganizationInvitationStatus.ACCEPTED : OrganizationInvitationStatus.DECLINED;
+
+    invitation.setStatus(newStatusEnum);
 
     if (accepted) {
       addUserToOrganization(invitation, responderUser);
@@ -186,6 +190,7 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
     invitation.setRespondedBy(responderUser);
 
     organizationInvitationRepository.save(invitation);
+
     return invitationMapper.toOrganizationInvitationResponse(invitation);
   }
 

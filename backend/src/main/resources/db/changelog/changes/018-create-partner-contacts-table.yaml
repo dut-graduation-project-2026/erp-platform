@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-create-partner-contacts-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: partner_contacts
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_partner_contacts
+                    nullable: false
+              - column:
+                  name: partner_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+              - column:
+                  name: phone
+                  type: VARCHAR(50)
+              - column:
+                  name: job_position
+                  type: VARCHAR(255)
+              - column:
+                  name: notes
+                  type: TEXT
+        - addForeignKeyConstraint:
+            constraintName: fk_partner_contacts_partner
+            baseTableName: partner_contacts
+            baseColumnNames: partner_id
+            referencedTableName: partners
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - createIndex:
+            tableName: partner_contacts
+            indexName: idx_partner_contacts_partner_id
+            columns:
+              - column:
+                  name: partner_id
