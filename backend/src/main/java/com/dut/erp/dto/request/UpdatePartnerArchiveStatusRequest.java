@@ -1,3 +1,5 @@
 package com.dut.erp.dto.request;
 
-public record UpdatePartnerArchiveStatusRequest(boolean isArchived) {}
+import jakarta.validation.constraints.NotNull;
+
+public record UpdatePartnerArchiveStatusRequest(@NotNull Boolean isArchived) {}

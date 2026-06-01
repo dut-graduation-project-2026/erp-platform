@@ -20,7 +20,7 @@ public record CreatePartnerRequest(
     @Size(max = 255, message = "Address cannot exceed 255 characters") String address,
     @Size(max = 255, message = "Job position cannot exceed 255 characters") String jobPosition,
     @Size(max = 2000, message = "Notes cannot exceed 2000 characters") String notes,
-    @Pattern(regexp = "^\\S+$", message = "Partner type must not be blank")
+    @Pattern(regexp = "^\\S+$", message = "Partner type must not contain whitespace")
         @ValueOfEnum(
             enumClass = PartnerType.class,
             message = "Partner type must be one of: {enumValues}")

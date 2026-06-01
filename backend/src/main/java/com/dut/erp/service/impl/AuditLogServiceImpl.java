@@ -93,7 +93,7 @@ public class AuditLogServiceImpl implements AuditLogService {
       UUID entityId,
       PaginationRequest paginationRequest) {
     Pageable pageable = PageRequest.of(paginationRequest.page() - 1, paginationRequest.limit());
-    Page<AuditLog> auditLogsPage = auditLogRepository.findByEntityId(entityId, pageable);
+    Page<AuditLog> auditLogsPage = auditLogRepository.findByOrganizationIdAndEntityId(organizationId, entityId, pageable);
     Page<AuditLogResponse> responsePage = auditLogsPage.map(auditLogMapper::toAuditLogResponse);
     return PagedEntityResponse.from(responsePage);
   }

@@ -63,14 +63,19 @@ public class PartnerController {
   /**
    * Retrieves all partners belonging to the specified organization.
    *
-   * <p>The authenticated user must have organization access.
+   * <p>The authenticated user must have organization access and {@code partners:read} permission.
    *
    * @param organizationId the UUID of the organization
    * @param userDetails the authenticated user's details
    * @return a ResponseEntity containing a list of PartnerResponse objects
    */
   @GetMapping
-  @PreAuthorize("@securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('partners:read', #organizationId, #userDetails)
+      """)
   public ResponseEntity<List<PartnerResponse>> getPartners(
       @PathVariable UUID organizationId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -81,7 +86,7 @@ public class PartnerController {
   /**
    * Retrieves a single partner by its ID within the specified organization.
    *
-   * <p>The authenticated user must have organization access.
+   * <p>The authenticated user must have organization access and {@code partners:select} permission.
    *
    * @param organizationId the UUID of the organization
    * @param partnerId the UUID of the partner to retrieve
@@ -89,7 +94,12 @@ public class PartnerController {
    * @return a ResponseEntity containing the PartnerResponse
    */
   @GetMapping("/{partnerId}")
-  @PreAuthorize("@securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('partners:select', #organizationId, #userDetails)
+      """)
   public ResponseEntity<PartnerResponse> getPartnerById(
       @PathVariable UUID organizationId,
       @PathVariable UUID partnerId,

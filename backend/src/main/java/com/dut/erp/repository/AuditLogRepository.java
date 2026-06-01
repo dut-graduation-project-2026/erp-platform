@@ -14,15 +14,17 @@ import org.springframework.stereotype.Repository;
 public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
 
   /**
-   * Find all audit logs for a specific entity ID.
+   * Find all audit logs for a specific entity ID within a specific organization.
    */
   @Query(
       """
       SELECT a FROM AuditLog a
-      WHERE a.entityId   = :entityId
+      WHERE a.entityId       = :entityId
+        AND a.organizationId = :organizationId
       ORDER BY a.createdAt DESC
       """)
-  Page<AuditLog> findByEntityId(
+  Page<AuditLog> findByOrganizationIdAndEntityId(
+      @Param("organizationId") UUID organizationId,
       @Param("entityId") UUID entityId,
       Pageable pageable);
 

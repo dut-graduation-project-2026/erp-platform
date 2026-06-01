@@ -10,5 +10,4 @@ public record PartnerContactResponse(
     String email,
     String phone,
     String jobPosition,
-    String notes,
-    UUID partnerId) {}
+    String notes) {}

@@ -8,14 +8,11 @@ import com.dut.erp.dto.response.PartnerResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Partner;
 import com.dut.erp.entity.PartnerContact;
-import com.dut.erp.enums.ActionType;
-import com.dut.erp.enums.EntityType;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.PartnerMapper;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.PartnerContactRepository;
 import com.dut.erp.repository.PartnerRepository;
-import com.dut.erp.service.AuditLogService;
 import com.dut.erp.service.PartnerService;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +35,6 @@ public class PartnerServiceImpl implements PartnerService {
   private final PartnerContactRepository partnerContactRepository;
   private final OrganizationRepository organizationRepository;
   private final PartnerMapper partnerMapper;
-  private final AuditLogService auditLogService;
 
   @Override
   @Transactional
@@ -82,13 +78,6 @@ public class PartnerServiceImpl implements PartnerService {
         partner.getContacts().size(),
         organizationId);
 
-    auditLogService.record(
-        organizationId,
-        EntityType.PARTNER,
-        partner.getId(),
-        ActionType.CREATE,
-        "Created partner: " + partner.getName());
-
     return partnerMapper.toPartnerResponse(partner);
   }
 
@@ -112,51 +101,6 @@ public class PartnerServiceImpl implements PartnerService {
   public PartnerResponse updatePartner(
       UUID organizationId, UUID partnerId, UpdatePartnerRequest request) {
     Partner partner = findPartnerByIdAndOrganization(partnerId, organizationId);
-
-    List<String> changes = new ArrayList<>();
-    if (!Objects.equals(partner.getName(), request.name())) {
-      changes.add("name: '" + partner.getName() + "' -> '" + request.name() + "'");
-    }
-    if (!Objects.equals(partner.getTaxCode(), request.taxCode())) {
-      changes.add("taxCode: '" + partner.getTaxCode() + "' -> '" + request.taxCode() + "'");
-    }
-    if (!Objects.equals(partner.getEmail(), request.email())) {
-      changes.add("email: '" + partner.getEmail() + "' -> '" + request.email() + "'");
-    }
-    if (!Objects.equals(partner.getPhone(), request.phone())) {
-      changes.add("phone: '" + partner.getPhone() + "' -> '" + request.phone() + "'");
-    }
-    if (!Objects.equals(partner.getAddress(), request.address())) {
-      changes.add("address: '" + partner.getAddress() + "' -> '" + request.address() + "'");
-    }
-    if (!Objects.equals(partner.getJobPosition(), request.jobPosition())) {
-      changes.add("jobPosition: '" + partner.getJobPosition() + "' -> '" + request.jobPosition() + "'");
-    }
-    if (!Objects.equals(partner.getNotes(), request.notes())) {
-      changes.add("notes: '" + partner.getNotes() + "' -> '" + request.notes() + "'");
-    }
-    if (!Objects.equals(partner.getPartnerType(), request.partnerType())) {
-      changes.add("partnerType: '" + partner.getPartnerType() + "' -> '" + request.partnerType() + "'");
-    }
-
-    String message = "Updated partner: " + request.name();
-    String changedField = null;
-    String oldValue = null;
-    String newValue = null;
-
-    if (!changes.isEmpty()) {
-      message += ". Changes: " + String.join(", ", changes);
-      String firstChange = changes.get(0);
-      int colonIdx = firstChange.indexOf(":");
-      int arrowIdx = firstChange.indexOf(" -> ");
-      if (colonIdx > 0 && arrowIdx > colonIdx) {
-        changedField = firstChange.substring(0, colonIdx).trim();
-        oldValue = firstChange.substring(colonIdx + 1, arrowIdx).replace("'", "").trim();
-        newValue = firstChange.substring(arrowIdx + 4).replace("'", "").trim();
-      }
-    } else {
-      message += ". No fields changed.";
-    }
 
     partner.setName(request.name());
     partner.setTaxCode(request.taxCode());
@@ -229,16 +173,6 @@ public class PartnerServiceImpl implements PartnerService {
     partner = findPartnerByIdAndOrganization(partnerId, organizationId);
     log.info("Updated partner {} in organization {}", partnerId, organizationId);
 
-    auditLogService.record(
-        organizationId,
-        EntityType.PARTNER,
-        partner.getId(),
-        ActionType.UPDATE,
-        changedField,
-        oldValue,
-        newValue,
-        message);
-
     return partnerMapper.toPartnerResponse(partner);
   }
 
@@ -248,7 +182,6 @@ public class PartnerServiceImpl implements PartnerService {
       UUID organizationId, UUID partnerId, UpdatePartnerArchiveStatusRequest request) {
     Partner partner = findPartnerByIdAndOrganization(partnerId, organizationId);
 
-    boolean oldVal = partner.getIsArchived() != null ? partner.getIsArchived() : false;
     partner.setIsArchived(request.isArchived());
 
     partner = partnerRepository.save(partner);
@@ -257,16 +190,6 @@ public class PartnerServiceImpl implements PartnerService {
         partnerId,
         request.isArchived(),
         organizationId);
-
-    auditLogService.record(
-        organizationId,
-        EntityType.PARTNER,
-        partner.getId(),
-        ActionType.UPDATE,
-        "isArchived",
-        String.valueOf(oldVal),
-        String.valueOf(request.isArchived()),
-        "Updated partner archive status to: " + request.isArchived());
 
     return partnerMapper.toPartnerResponse(partner);
   }
@@ -277,13 +200,6 @@ public class PartnerServiceImpl implements PartnerService {
     Partner partner = findPartnerByIdAndOrganization(partnerId, organizationId);
     partnerRepository.delete(partner);
     log.info("Deleted partner {} from organization {}", partnerId, organizationId);
-
-    auditLogService.record(
-        organizationId,
-        EntityType.PARTNER,
-        partnerId,
-        ActionType.DELETE,
-        "Deleted partner: " + partner.getName());
   }
 
   private Organization findOrganizationById(UUID organizationId) {

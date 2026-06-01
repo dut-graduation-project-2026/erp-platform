@@ -5,6 +5,8 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,6 +26,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import com.dut.erp.config.AuditLogListener;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -38,7 +41,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
+@EntityListeners({AuditingEntityListener.class, AuditLogListener.class})
 public class Partner {
 
   @Id
@@ -70,8 +73,9 @@ public class Partner {
   @Builder.Default
   Boolean isArchived = false;
 
-  @Column(name = "partner_type", nullable = false)
   @Builder.Default
+  @Column(name = "partner_type", nullable = false)
+  @Enumerated(EnumType.STRING)
   PartnerType partnerType = PartnerType.INDIVIDUAL;
 
   @ManyToOne(fetch = FetchType.LAZY)

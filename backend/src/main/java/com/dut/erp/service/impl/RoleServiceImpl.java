@@ -11,8 +11,6 @@ import com.dut.erp.dto.response.RoleResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Permission;
 import com.dut.erp.entity.Role;
-import com.dut.erp.enums.ActionType;
-import com.dut.erp.enums.EntityType;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.ResourceNotFoundException;
@@ -20,9 +18,7 @@ import com.dut.erp.mapper.RoleMapper;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.PermissionRepository;
 import com.dut.erp.repository.RoleRepository;
-import com.dut.erp.service.AuditLogService;
 import com.dut.erp.service.RoleService;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +46,6 @@ public class RoleServiceImpl implements RoleService {
   private final RoleRepository roleRepository;
   private final PermissionRepository permissionRepository;
   private final RoleMapper roleMapper;
-  private final AuditLogService auditLogService;
 
   @Override
   public PagedEntityResponse<RoleBaseResponse> getRolesByOrganizationId(
@@ -90,13 +85,6 @@ public class RoleServiceImpl implements RoleService {
 
     log.info("Created role {} in organization {}", role.getId(), organizationId);
 
-    auditLogService.record(
-        organizationId,
-        EntityType.ROLE,
-        role.getId(),
-        ActionType.CREATE,
-        "Created role: " + role.getName());
-
     return roleMapper.toRoleResponse(role);
   }
 
@@ -127,49 +115,8 @@ public class RoleServiceImpl implements RoleService {
     Role role = findRoleById(roleId);
     verifyRoleBelongsToOrganization(roleId, organizationId);
 
-    List<String> changes = new ArrayList<>();
-    if (!Objects.equals(role.getName(), request.name())) {
-      changes.add("name: '" + role.getName() + "' -> '" + request.name() + "'");
-    }
-
-    Set<String> oldPerms = role.getPermissions() != null
-        ? role.getPermissions().stream().map(Permission::getCode).collect(Collectors.toSet())
-        : Set.of();
     Set<UUID> requestPermIds = request.permissionIds() != null ? request.permissionIds() : Set.of();
     Set<Permission> resolvedPerms = resolvePermissions(requestPermIds, organizationId);
-    Set<String> newPerms = resolvedPerms.stream().map(Permission::getCode).collect(Collectors.toSet());
-
-    if (!oldPerms.equals(newPerms)) {
-      Set<String> added = new HashSet<>(newPerms);
-      added.removeAll(oldPerms);
-      Set<String> removed = new HashSet<>(oldPerms);
-      removed.removeAll(newPerms);
-      if (!added.isEmpty()) {
-        changes.add("added permissions: " + added);
-      }
-      if (!removed.isEmpty()) {
-        changes.add("removed permissions: " + removed);
-      }
-    }
-
-    String message = "Updated role: " + request.name();
-    String changedField = null;
-    String oldValue = null;
-    String newValue = null;
-
-    if (!changes.isEmpty()) {
-      message += ". Changes: " + String.join(", ", changes);
-      String firstChange = changes.get(0);
-      int colonIdx = firstChange.indexOf(":");
-      int arrowIdx = firstChange.indexOf(" -> ");
-      if (colonIdx > 0 && arrowIdx > colonIdx) {
-        changedField = firstChange.substring(0, colonIdx).trim();
-        oldValue = firstChange.substring(colonIdx + 1, arrowIdx).replace("'", "").trim();
-        newValue = firstChange.substring(arrowIdx + 4).replace("'", "").trim();
-      }
-    } else {
-      message += ". No fields changed.";
-    }
 
     if (!role.getName().equals(request.name())) {
       assertRoleNameAvailable(request.name(), organizationId);
@@ -180,16 +127,6 @@ public class RoleServiceImpl implements RoleService {
     role = roleRepository.save(role);
 
     log.info("Updated role {} in organization {}", roleId, organizationId);
-
-    auditLogService.record(
-        organizationId,
-        EntityType.ROLE,
-        role.getId(),
-        ActionType.UPDATE,
-        changedField,
-        oldValue,
-        newValue,
-        message);
 
     return roleMapper.toRoleResponse(role);
   }
@@ -203,13 +140,6 @@ public class RoleServiceImpl implements RoleService {
 
     roleRepository.delete(role);
     log.info("Deleted role {} from organization {}", roleId, organizationId);
-
-    auditLogService.record(
-        organizationId,
-        EntityType.ROLE,
-        roleId,
-        ActionType.DELETE,
-        "Deleted role: " + role.getName());
   }
 
   private void assertRoleNameAvailable(String name, UUID organizationId) {
