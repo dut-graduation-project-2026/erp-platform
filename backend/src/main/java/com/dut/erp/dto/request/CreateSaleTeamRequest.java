@@ -17,5 +17,4 @@ public record CreateSaleTeamRequest(
                     + " numbers, spaces, hyphens, and apostrophes")
         String name,
     @NotNull(message = "Leader ID cannot be null") UUID leaderId,
-    @NotNull(message = "Organization ID cannot be null") UUID organizationId,
     Set<UUID> memberIds) {}

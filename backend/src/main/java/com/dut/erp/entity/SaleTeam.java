@@ -12,6 +12,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +31,10 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "sale_teams")
+@Table(
+    name = "sale_teams",
+    uniqueConstraints = @UniqueConstraint(name = "uq_sale_teams_org_name", columnNames = {"organization_id", "name"})
+)
 @Getter
 @Setter
 @NoArgsConstructor

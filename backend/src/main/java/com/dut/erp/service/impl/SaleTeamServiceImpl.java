@@ -11,6 +11,8 @@ import com.dut.erp.dto.response.SaleTeamResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.SaleTeam;
 import com.dut.erp.entity.User;
+import com.dut.erp.exception.BadRequestException;
+import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.SaleTeamMapper;
 import com.dut.erp.repository.OrganizationRepository;
@@ -82,6 +84,13 @@ public class SaleTeamServiceImpl implements SaleTeamService {
   }
 
   @Override
+  public SaleTeamResponse getSaleTeamById(UUID organizationId, UUID id) {
+    log.info("Fetching sale team {} in organization {}", id, organizationId);
+    SaleTeam saleTeam = findSaleTeamByIdAndOrganizationId(id, organizationId);
+    return saleTeamMapper.toResponse(saleTeam);
+  }
+
+  @Override
   public List<SaleTeamResponse> getMySaleTeamsByOrganizationId(UUID organizationId, UUID userId) {
     log.info("Fetching my sale teams for user {} in organization {}", userId, organizationId);
     List<SaleTeam> saleTeams =
@@ -94,10 +103,14 @@ public class SaleTeamServiceImpl implements SaleTeamService {
   public SaleTeamResponse createSaleTeam(UUID organizationId, CreateSaleTeamRequest request) {
     Organization organization = findOrganizationById(organizationId);
 
+    if (saleTeamRepository.existsByOrganizationIdAndName(organizationId, request.name())) {
+      throw new ResourceAlreadyExistsException("Sale team name already exists within this organization");
+    }
+
     User leader = null;
     if (request.leaderId() != null) {
       if (!userRepository.existsByIdAndOrganizationId(request.leaderId(), organizationId)) {
-        throw new com.dut.erp.exception.BadRequestException("Leader does not belong to the organization");
+        throw new BadRequestException("Leader does not belong to the organization");
       }
       leader = findUserById(request.leaderId());
     }
@@ -106,7 +119,7 @@ public class SaleTeamServiceImpl implements SaleTeamService {
     if (request.memberIds() != null && !request.memberIds().isEmpty()) {
       List<User> orgMembers = userRepository.findAllByIdInAndOrganizationId(request.memberIds(), organizationId);
       if (orgMembers.size() != request.memberIds().size()) {
-        throw new com.dut.erp.exception.BadRequestException("One or more members do not belong to the organization");
+        throw new BadRequestException("One or more members do not belong to the organization");
       }
       members.addAll(orgMembers);
     }
@@ -131,10 +144,14 @@ public class SaleTeamServiceImpl implements SaleTeamService {
       UUID organizationId, UUID id, UpdateSaleTeamRequest request) {
     SaleTeam saleTeam = findSaleTeamByIdAndOrganizationId(id, organizationId);
 
+    if (saleTeamRepository.existsByOrganizationIdAndNameAndIdNot(organizationId, request.name(), id)) {
+      throw new ResourceAlreadyExistsException("Sale team name already exists within this organization");
+    }
+
     User leader = null;
     if (request.leaderId() != null) {
       if (!userRepository.existsByIdAndOrganizationId(request.leaderId(), organizationId)) {
-        throw new com.dut.erp.exception.BadRequestException("Leader does not belong to the organization");
+        throw new BadRequestException("Leader does not belong to the organization");
       }
       leader = findUserById(request.leaderId());
     }
@@ -143,7 +160,7 @@ public class SaleTeamServiceImpl implements SaleTeamService {
     if (request.memberIds() != null && !request.memberIds().isEmpty()) {
       List<User> orgMembers = userRepository.findAllByIdInAndOrganizationId(request.memberIds(), organizationId);
       if (orgMembers.size() != request.memberIds().size()) {
-        throw new com.dut.erp.exception.BadRequestException("One or more members do not belong to the organization");
+        throw new BadRequestException("One or more members do not belong to the organization");
       }
       members.addAll(orgMembers);
     }

@@ -14,6 +14,8 @@ public interface SaleTeamService {
   PagedEntityResponse<SaleTeamBaseResponse> getSaleTeamsWithFilterByOrganizationId(
       UUID organizationId, String search, boolean isArchived, PaginationRequest paginationRequest);
 
+  SaleTeamResponse getSaleTeamById(UUID organizationId, UUID id);
+
   List<SaleTeamResponse> getMySaleTeamsByOrganizationId(UUID organizationId, UUID userId);
 
   SaleTeamResponse createSaleTeam(UUID organizationId, CreateSaleTeamRequest request);

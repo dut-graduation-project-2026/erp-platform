@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/** Controller for managing sale teams and their member assignments within an organization. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/organizations/{organizationId}/sale-teams")
@@ -99,6 +100,20 @@ public class SaleTeamController {
     return ResponseEntity.ok(
         saleTeamService.getSaleTeamsWithFilterByOrganizationId(
             organizationId, search, isArchived, paginationRequest));
+  }
+
+  @GetMapping("/{id}")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('sale_teams:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<SaleTeamResponse> getSaleTeamById(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID id,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(saleTeamService.getSaleTeamById(organizationId, id));
   }
 
   @GetMapping("/me")

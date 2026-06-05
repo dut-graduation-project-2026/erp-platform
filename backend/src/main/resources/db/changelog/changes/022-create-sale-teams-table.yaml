@@ -76,3 +76,7 @@ databaseChangeLog:
             referencedColumnNames: id
             onDelete: SET NULL
             onUpdate: CASCADE
+        - addUniqueConstraint:
+            tableName: sale_teams
+            columnNames: organization_id, name
+            constraintName: uq_sale_teams_org_name

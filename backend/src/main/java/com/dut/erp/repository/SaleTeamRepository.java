@@ -73,4 +73,8 @@ public interface SaleTeamRepository extends JpaRepository<SaleTeam, UUID> {
   List<SaleTeam> findAllByOrganizationIdAndMemberId(
       @Param("organizationId") UUID organizationId,
       @Param("userId") UUID userId);
+
+  boolean existsByOrganizationIdAndName(UUID organizationId, String name);
+
+  boolean existsByOrganizationIdAndNameAndIdNot(UUID organizationId, String name, UUID id);
 }
