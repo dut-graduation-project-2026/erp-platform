@@ -123,6 +123,9 @@ public class SaleTeamServiceImpl implements SaleTeamService {
       }
       members.addAll(orgMembers);
     }
+    if (leader != null) {
+      members.add(leader);
+    }
 
     SaleTeam saleTeam =
         SaleTeam.builder()
@@ -148,12 +151,12 @@ public class SaleTeamServiceImpl implements SaleTeamService {
       throw new ResourceAlreadyExistsException("Sale team name already exists within this organization");
     }
 
-    User leader = null;
     if (request.leaderId() != null) {
       if (!userRepository.existsByIdAndOrganizationId(request.leaderId(), organizationId)) {
         throw new BadRequestException("Leader does not belong to the organization");
       }
-      leader = findUserById(request.leaderId());
+      User leader = findUserById(request.leaderId());
+      saleTeam.setLeader(leader);
     }
 
     Set<User> members = new HashSet<>();
@@ -165,8 +168,11 @@ public class SaleTeamServiceImpl implements SaleTeamService {
       members.addAll(orgMembers);
     }
 
+    if (saleTeam.getLeader() != null) {
+      members.add(saleTeam.getLeader());
+    }
+
     saleTeam.setName(request.name());
-    saleTeam.setLeader(leader);
     saleTeam.getMembers().clear();
     saleTeam.getMembers().addAll(members);
 

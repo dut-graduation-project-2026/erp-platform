@@ -10,7 +10,6 @@ import com.dut.erp.dto.response.SaleTeamResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.SaleTeamService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +92,7 @@ public class SaleTeamController {
       """)
   public ResponseEntity<PagedEntityResponse<SaleTeamBaseResponse>> getSaleTeams(
       @PathVariable UUID organizationId,
-      @RequestParam(required = false) @Size(max = 30) String search,
+      @RequestParam(required = false) String search,
       @RequestParam(defaultValue = "false") Boolean isArchived,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
