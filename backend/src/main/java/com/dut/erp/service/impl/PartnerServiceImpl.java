@@ -2,7 +2,7 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.dto.request.CreatePartnerRequest;
 import com.dut.erp.dto.request.PartnerContactRequest;
-import com.dut.erp.dto.request.UpdatePartnerArchiveStatusRequest;
+import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
 import com.dut.erp.dto.response.PartnerResponse;
 import com.dut.erp.entity.Organization;
@@ -167,7 +167,7 @@ public class PartnerServiceImpl implements PartnerService {
   @Override
   @Transactional
   public PartnerResponse updatePartnerArchiveStatus(
-      UUID organizationId, UUID partnerId, UpdatePartnerArchiveStatusRequest request) {
+      UUID organizationId, UUID partnerId, UpdateArchiveStatusRequest request) {
     Partner partner = findPartnerByIdAndOrganization(partnerId, organizationId);
 
     partner.setIsArchived(request.isArchived());

@@ -1,7 +1,7 @@
 package com.dut.erp.controller.v1;
 
 import com.dut.erp.dto.request.CreatePartnerRequest;
-import com.dut.erp.dto.request.UpdatePartnerArchiveStatusRequest;
+import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
 import com.dut.erp.dto.response.PartnerResponse;
 import com.dut.erp.security.CustomUserDetails;
@@ -157,7 +157,7 @@ public class PartnerController {
   public ResponseEntity<PartnerResponse> updatePartnerArchiveStatus(
       @PathVariable UUID organizationId,
       @PathVariable UUID partnerId,
-      @Valid @RequestBody UpdatePartnerArchiveStatusRequest request,
+      @Valid @RequestBody UpdateArchiveStatusRequest request,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     PartnerResponse response =
         partnerService.updatePartnerArchiveStatus(organizationId, partnerId, request);
