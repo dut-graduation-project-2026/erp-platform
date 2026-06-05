@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-init-products-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Products
+              - column:
+                  name: code
+                  value: products
+              - column:
+                  name: description
+                  value: Product and services catalog management system.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:select
+              - column:
+                  name: code
+                  value: products:select
+              - column:
+                  name: description
+                  value: Allow selecting products in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:read
+              - column:
+                  name: code
+                  value: products:read
+              - column:
+                  name: description
+                  value: Allow reading products information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:write
+              - column:
+                  name: code
+                  value: products:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing products data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:create
+              - column:
+                  name: code
+                  value: products:create
+              - column:
+                  name: description
+                  value: Allow creating new products.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: products:delete
+              - column:
+                  name: code
+                  value: products:delete
+              - column:
+                  name: description
+                  value: Allow deleting products.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'products')
