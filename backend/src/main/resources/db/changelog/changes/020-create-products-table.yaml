@@ -24,11 +24,6 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: sku
-                  type: VARCHAR(100)
-                  constraints:
-                    nullable: false
-              - column:
                   name: price
                   type: DECIMAL(15,2)
                   defaultValueNumeric: 0.00

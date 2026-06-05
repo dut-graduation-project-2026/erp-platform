@@ -10,8 +10,8 @@ import java.util.UUID;
 
 public interface ProductService {
 
-  PagedEntityResponse<ProductBaseResponse> getProductsByOrganizationId(
-      UUID organizationId, PaginationRequest paginationRequest);
+  PagedEntityResponse<ProductBaseResponse> getProductsWithFilterByOrganizationId(
+      UUID organizationId, String search, PaginationRequest paginationRequest);
 
   ProductResponse getProductById(UUID organizationId, UUID productId);
 

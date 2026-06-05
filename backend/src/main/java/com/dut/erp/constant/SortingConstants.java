@@ -5,10 +5,7 @@ import java.util.Arrays;
 import org.springframework.data.domain.Sort;
 
 public class SortingConstants {
-  public static final Sort DEFAULT_ENTITIES_SORT =
-      Sort.by(
-          Sort.Order.asc("id")
-          );
+  public static final Sort DEFAULT_ENTITIES_SORT = Sort.by(Sort.Order.asc("id"));
 
   private SortingConstants() {}
 

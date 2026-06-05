@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateProductRequest(
-    @NotBlank(message = "SKU cannot be blank")
-        @Size(max = 100, message = "SKU cannot exceed 100 characters")
-        String sku,
     @NotBlank(message = "Name cannot be blank")
         @Size(max = 255, message = "Name cannot exceed 255 characters")
         String name,

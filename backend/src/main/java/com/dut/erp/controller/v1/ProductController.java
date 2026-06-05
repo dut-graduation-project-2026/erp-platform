@@ -9,6 +9,7 @@ import com.dut.erp.dto.response.ProductResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.ProductService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Controller for managing products and services catalog within an organization. */
@@ -42,10 +44,12 @@ public class ProductController {
       """)
   public ResponseEntity<PagedEntityResponse<ProductBaseResponse>> getProducts(
       @PathVariable UUID organizationId,
+      @RequestParam(required = false) @Size(max = 30) String search,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
-        productService.getProductsByOrganizationId(organizationId, paginationRequest));
+        productService.getProductsWithFilterByOrganizationId(
+            organizationId, search, paginationRequest));
   }
 
   @GetMapping("/{id}")

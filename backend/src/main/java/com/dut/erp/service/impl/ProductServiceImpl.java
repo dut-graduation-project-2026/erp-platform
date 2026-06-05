@@ -11,7 +11,6 @@ import com.dut.erp.dto.response.ProductResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Product;
 import com.dut.erp.exception.BadRequestException;
-import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.ProductMapper;
 import com.dut.erp.repository.OrganizationRepository;
@@ -44,9 +43,13 @@ public class ProductServiceImpl implements ProductService {
   private final ProductMapper productMapper;
 
   @Override
-  public PagedEntityResponse<ProductBaseResponse> getProductsByOrganizationId(
-      UUID organizationId, PaginationRequest paginationRequest) {
+  public PagedEntityResponse<ProductBaseResponse> getProductsWithFilterByOrganizationId(
+      UUID organizationId, String search, PaginationRequest paginationRequest) {
     log.info("Fetching products for organization {}", organizationId);
+
+    if (search != null && search.length() > 30) {
+      throw new BadRequestException("Search query is too long.");
+    }
 
     Pageable pageable =
         PageRequest.of(
@@ -54,7 +57,10 @@ public class ProductServiceImpl implements ProductService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.asc("name"), SortField.asc("updatedAt")));
 
-    Page<UUID> ids = productRepository.findIdsByOrganizationId(organizationId, pageable);
+    Page<UUID> ids =
+        (search != null && !search.trim().isEmpty())
+            ? productRepository.findIdsByOrganizationIdAndSearch(organizationId, search, pageable)
+            : productRepository.findIdsByOrganizationId(organizationId, pageable);
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));
@@ -85,12 +91,10 @@ public class ProductServiceImpl implements ProductService {
   @Transactional
   public ProductResponse createProduct(UUID organizationId, CreateProductRequest request) {
     Organization organization = findOrganizationById(organizationId);
-    assertSkuAvailable(request.sku(), organizationId);
 
     Product product =
         Product.builder()
             .organization(organization)
-            .sku(request.sku())
             .name(request.name())
             .price(new BigDecimal(request.price()))
             .description(request.description())
@@ -146,12 +150,5 @@ public class ProductServiceImpl implements ProductService {
       throw new BadRequestException("Product does not belong to the specified organization.");
     }
     return product;
-  }
-
-  private void assertSkuAvailable(String sku, UUID organizationId) {
-    if (productRepository.findBySkuAndOrganizationId(sku, organizationId).isPresent()) {
-      throw new ResourceAlreadyExistsException(
-          "Product with SKU '" + sku + "' already exists in this organization.");
-    }
   }
 }

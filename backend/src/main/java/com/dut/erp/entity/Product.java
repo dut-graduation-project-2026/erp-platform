@@ -42,9 +42,6 @@ public class Product {
   @Column(name = "id", nullable = false, updatable = false)
   UUID id;
 
-  @Column(name = "sku", nullable = false, length = 100)
-  String sku;
-
   @Column(name = "name", nullable = false, length = 255)
   String name;
 
