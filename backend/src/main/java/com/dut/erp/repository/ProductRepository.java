@@ -2,6 +2,7 @@ package com.dut.erp.repository;
 
 import com.dut.erp.entity.Product;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,10 +28,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
       SELECT p.id
       FROM Product p
       WHERE p.organization.id = :organizationId
-      AND (
-          LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
-          OR CAST(p.price AS string) LIKE CONCAT('%', :search, '%')
-      )
+      AND LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
       """)
   Page<UUID> findIdsByOrganizationIdAndSearch(
       @Param("organizationId") UUID organizationId,
@@ -44,4 +42,5 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
       WHERE p.id IN :ids
       """)
   List<Product> findAllByIdIn(@Param("ids") List<UUID> ids);
+  Optional<Product> findByIdAndOrganizationId(UUID id, UUID organizationId);
 }

@@ -1,8 +1,7 @@
 package com.dut.erp.service;
 
-import com.dut.erp.dto.request.CreateProductRequest;
 import com.dut.erp.dto.request.PaginationRequest;
-import com.dut.erp.dto.request.UpdateProductRequest;
+import com.dut.erp.dto.request.UpsertProductRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.ProductBaseResponse;
 import com.dut.erp.dto.response.ProductResponse;
@@ -15,9 +14,9 @@ public interface ProductService {
 
   ProductResponse getProductById(UUID organizationId, UUID productId);
 
-  ProductResponse createProduct(UUID organizationId, CreateProductRequest request);
+  ProductResponse createProduct(UUID organizationId, UpsertProductRequest request);
 
-  ProductResponse updateProduct(UUID organizationId, UUID productId, UpdateProductRequest request);
+  ProductResponse updateProduct(UUID organizationId, UUID productId, UpsertProductRequest request);
 
   void deleteProduct(UUID organizationId, UUID productId);
 }

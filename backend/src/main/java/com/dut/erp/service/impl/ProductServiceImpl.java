@@ -2,15 +2,13 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.constant.SortingConstants;
 import com.dut.erp.dto.common.SortField;
-import com.dut.erp.dto.request.CreateProductRequest;
 import com.dut.erp.dto.request.PaginationRequest;
-import com.dut.erp.dto.request.UpdateProductRequest;
+import com.dut.erp.dto.request.UpsertProductRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.ProductBaseResponse;
 import com.dut.erp.dto.response.ProductResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Product;
-import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.ProductMapper;
 import com.dut.erp.repository.OrganizationRepository;
@@ -47,10 +45,6 @@ public class ProductServiceImpl implements ProductService {
       UUID organizationId, String search, PaginationRequest paginationRequest) {
     log.info("Fetching products for organization {}", organizationId);
 
-    if (search != null && search.length() > 30) {
-      throw new BadRequestException("Search query is too long.");
-    }
-
     Pageable pageable =
         PageRequest.of(
             paginationRequest.page() - 1,
@@ -83,13 +77,13 @@ public class ProductServiceImpl implements ProductService {
   @Override
   public ProductResponse getProductById(UUID organizationId, UUID productId) {
     log.info("Fetching product {} for organization {}", productId, organizationId);
-    Product product = findProductByIdAndVerifyOrganization(productId, organizationId);
+    Product product = findProductByIdAndOrganizationId(productId, organizationId);
     return productMapper.toResponse(product);
   }
 
   @Override
   @Transactional
-  public ProductResponse createProduct(UUID organizationId, CreateProductRequest request) {
+  public ProductResponse createProduct(UUID organizationId, UpsertProductRequest request) {
     Organization organization = findOrganizationById(organizationId);
 
     Product product =
@@ -108,9 +102,8 @@ public class ProductServiceImpl implements ProductService {
   @Override
   @Transactional
   public ProductResponse updateProduct(
-      UUID organizationId, UUID productId, UpdateProductRequest request) {
-    findOrganizationById(organizationId);
-    Product product = findProductByIdAndVerifyOrganization(productId, organizationId);
+      UUID organizationId, UUID productId, UpsertProductRequest request) {
+    Product product = findProductByIdAndOrganizationId(productId, organizationId);
 
     product.setName(request.name());
     product.setPrice(new BigDecimal(request.price()));
@@ -124,8 +117,7 @@ public class ProductServiceImpl implements ProductService {
   @Override
   @Transactional
   public void deleteProduct(UUID organizationId, UUID productId) {
-    findOrganizationById(organizationId);
-    Product product = findProductByIdAndVerifyOrganization(productId, organizationId);
+    Product product = findProductByIdAndOrganizationId(productId, organizationId);
     productRepository.delete(product);
     log.info("Deleted product {} from organization {}", productId, organizationId);
   }
@@ -140,15 +132,10 @@ public class ProductServiceImpl implements ProductService {
                 new ResourceNotFoundException("Organization not found with id: " + organizationId));
   }
 
-  private Product findProductByIdAndVerifyOrganization(UUID productId, UUID organizationId) {
-    Product product =
-        productRepository
-            .findById(productId)
-            .orElseThrow(
-                () -> new ResourceNotFoundException("Product not found with id: " + productId));
-    if (!product.getOrganization().getId().equals(organizationId)) {
-      throw new BadRequestException("Product does not belong to the specified organization.");
-    }
-    return product;
+  private Product findProductByIdAndOrganizationId(UUID productId, UUID organizationId) {
+    return productRepository
+        .findByIdAndOrganizationId(productId, organizationId)
+        .orElseThrow(
+            () -> new ResourceNotFoundException("Product not found with id: " + productId));
   }
 }

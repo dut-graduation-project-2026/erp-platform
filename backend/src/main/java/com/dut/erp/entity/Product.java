@@ -46,8 +46,7 @@ public class Product {
   String name;
 
   @Column(name = "price", nullable = false, precision = 15, scale = 2)
-  @Builder.Default
-  BigDecimal price = BigDecimal.ZERO;
+  BigDecimal price;
 
   @Column(name = "description", columnDefinition = "TEXT")
   String description;

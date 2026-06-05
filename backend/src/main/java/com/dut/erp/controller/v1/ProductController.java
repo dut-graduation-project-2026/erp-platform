@@ -1,8 +1,7 @@
 package com.dut.erp.controller.v1;
 
-import com.dut.erp.dto.request.CreateProductRequest;
 import com.dut.erp.dto.request.PaginationRequest;
-import com.dut.erp.dto.request.UpdateProductRequest;
+import com.dut.erp.dto.request.UpsertProductRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.ProductBaseResponse;
 import com.dut.erp.dto.response.ProductResponse;
@@ -75,7 +74,7 @@ public class ProductController {
       """)
   public ResponseEntity<ProductResponse> createProduct(
       @PathVariable UUID organizationId,
-      @Valid @RequestBody CreateProductRequest request,
+      @Valid @RequestBody UpsertProductRequest request,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(productService.createProduct(organizationId, request));
@@ -91,7 +90,7 @@ public class ProductController {
   public ResponseEntity<ProductResponse> updateProduct(
       @PathVariable UUID organizationId,
       @PathVariable UUID id,
-      @Valid @RequestBody UpdateProductRequest request,
+      @Valid @RequestBody UpsertProductRequest request,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(productService.updateProduct(organizationId, id, request));
   }
