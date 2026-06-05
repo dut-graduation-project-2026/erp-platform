@@ -41,7 +41,7 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public PagedEntityResponse<ProductBaseResponse> getProductsWithFilterByOrganizationId(
-      UUID organizationId, String search, PaginationRequest paginationRequest) {
+      UUID organizationId, String search, boolean isArchived, PaginationRequest paginationRequest) {
     log.info("Fetching products for organization {}", organizationId);
 
     Pageable pageable =
@@ -52,8 +52,8 @@ public class ProductServiceImpl implements ProductService {
 
     Page<UUID> ids =
         (search != null && !search.trim().isEmpty())
-            ? productRepository.findIdsByOrganizationIdAndSearch(organizationId, search, pageable)
-            : productRepository.findIdsByOrganizationId(organizationId, pageable);
+            ? productRepository.findIdsByOrganizationIdAndIsArchivedAndSearch(organizationId, isArchived, search, pageable)
+            : productRepository.findIdsByOrganizationIdAndIsArchived(organizationId, isArchived, pageable);
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));

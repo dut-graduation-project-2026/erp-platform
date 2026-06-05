@@ -18,20 +18,24 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
       """
       SELECT p.id
       FROM Product p
-      WHERE p.organization.id = :organizationId
+      WHERE p.organization.id = :organizationId AND p.isArchived = :isArchived
       """)
-  Page<UUID> findIdsByOrganizationId(
-      @Param("organizationId") UUID organizationId, Pageable pageable);
+  Page<UUID> findIdsByOrganizationIdAndIsArchived(
+      @Param("organizationId") UUID organizationId,
+      @Param("isArchived") boolean isArchived,
+      Pageable pageable);
 
   @Query(
       """
       SELECT p.id
       FROM Product p
       WHERE p.organization.id = :organizationId
+      AND p.isArchived = :isArchived
       AND LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
       """)
-  Page<UUID> findIdsByOrganizationIdAndSearch(
+  Page<UUID> findIdsByOrganizationIdAndIsArchivedAndSearch(
       @Param("organizationId") UUID organizationId,
+      @Param("isArchived") boolean isArchived,
       @Param("search") String search,
       Pageable pageable);
 

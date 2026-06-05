@@ -46,11 +46,12 @@ public class ProductController {
   public ResponseEntity<PagedEntityResponse<ProductBaseResponse>> getProducts(
       @PathVariable UUID organizationId,
       @RequestParam(required = false) @Size(max = 30) String search,
+      @RequestParam(defaultValue = "false") Boolean isArchived,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
         productService.getProductsWithFilterByOrganizationId(
-            organizationId, search, paginationRequest));
+            organizationId, search, isArchived, paginationRequest));
   }
 
   @GetMapping("/{id}")

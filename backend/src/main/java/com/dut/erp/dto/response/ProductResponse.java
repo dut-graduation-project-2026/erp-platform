@@ -9,6 +9,7 @@ public record ProductResponse(
     String name,
     String description,
     BigDecimal price,
+    boolean isArchived,
     OrganizationBaseResponse organization,
     Instant createdAt,
     Instant updatedAt,
