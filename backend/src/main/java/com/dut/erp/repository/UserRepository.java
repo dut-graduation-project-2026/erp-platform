@@ -1,6 +1,7 @@
 package com.dut.erp.repository;
 
 import com.dut.erp.entity.User;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,27 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   Optional<User> findByEmail(String email);
 
   boolean existsByEmail(String email);
+
+  @Query(
+      """
+      SELECT COUNT(u) > 0
+      FROM User u
+      JOIN u.organizations o
+      WHERE u.id = :userId AND o.id = :organizationId
+      """)
+  boolean existsByIdAndOrganizationId(
+      @Param("userId") UUID userId, @Param("organizationId") UUID organizationId);
+
+  @Query(
+      """
+      SELECT u
+      FROM User u
+      JOIN u.organizations o
+      WHERE u.id IN :userIds AND o.id = :organizationId
+      """)
+  List<User> findAllByIdInAndOrganizationId(
+      @Param("userIds") java.util.Collection<UUID> userIds,
+      @Param("organizationId") UUID organizationId);
 
   Page<User> findAllByOrganizationsId(UUID organizationId, Pageable pageable);
 
