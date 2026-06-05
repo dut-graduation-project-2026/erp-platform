@@ -51,6 +51,10 @@ public class Product {
   @Column(name = "description", columnDefinition = "TEXT")
   String description;
 
+  @Column(name = "is_archived", nullable = false)
+  @Builder.Default
+  Boolean isArchived = false;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "organization_id", nullable = false)
   Organization organization;

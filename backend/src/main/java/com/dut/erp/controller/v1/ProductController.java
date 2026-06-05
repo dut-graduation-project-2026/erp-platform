@@ -1,6 +1,7 @@
 package com.dut.erp.controller.v1;
 
 import com.dut.erp.dto.request.PaginationRequest;
+import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpsertProductRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.ProductBaseResponse;
@@ -18,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -93,6 +95,22 @@ public class ProductController {
       @Valid @RequestBody UpsertProductRequest request,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(productService.updateProduct(organizationId, id, request));
+  }
+
+  @PatchMapping("/{id}/archive-status")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('products:write', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<ProductResponse> updateProductArchiveStatus(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID id,
+      @Valid @RequestBody UpdateArchiveStatusRequest request,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(
+        productService.updateProductArchiveStatus(organizationId, id, request.isArchived()));
   }
 
   @DeleteMapping("/{id}")

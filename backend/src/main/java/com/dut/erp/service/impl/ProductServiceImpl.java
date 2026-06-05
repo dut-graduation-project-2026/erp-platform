@@ -14,7 +14,6 @@ import com.dut.erp.mapper.ProductMapper;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.service.ProductService;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -90,7 +89,7 @@ public class ProductServiceImpl implements ProductService {
         Product.builder()
             .organization(organization)
             .name(request.name())
-            .price(new BigDecimal(request.price()))
+            .price(request.price())
             .description(request.description())
             .build();
 
@@ -106,11 +105,22 @@ public class ProductServiceImpl implements ProductService {
     Product product = findProductByIdAndOrganizationId(productId, organizationId);
 
     product.setName(request.name());
-    product.setPrice(new BigDecimal(request.price()));
+    product.setPrice(request.price());
     product.setDescription(request.description());
 
     product = productRepository.save(product);
     log.info("Updated product {} in organization {}", productId, organizationId);
+    return productMapper.toResponse(product);
+  }
+
+  @Override
+  @Transactional
+  public ProductResponse updateProductArchiveStatus(
+      UUID organizationId, UUID productId, Boolean isArchived) {
+    Product product = findProductByIdAndOrganizationId(productId, organizationId);
+    product.setIsArchived(isArchived);
+    product = productRepository.save(product);
+    log.info("Updated archive status for product {} in organization {}", productId, organizationId);
     return productMapper.toResponse(product);
   }
 

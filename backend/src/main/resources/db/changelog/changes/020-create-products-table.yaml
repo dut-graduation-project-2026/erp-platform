@@ -30,6 +30,12 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
+                  name: is_archived
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
                   name: description
                   type: TEXT
               - column:

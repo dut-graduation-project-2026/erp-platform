@@ -1,7 +1,7 @@
 package com.dut.erp.service;
 
 import com.dut.erp.dto.request.CreatePartnerRequest;
-import com.dut.erp.dto.request.UpdatePartnerArchiveStatusRequest;
+import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
 import com.dut.erp.dto.response.PartnerResponse;
 import java.util.List;
@@ -54,7 +54,7 @@ public interface PartnerService {
    * @return the updated PartnerResponse
    */
   PartnerResponse updatePartnerArchiveStatus(
-      UUID organizationId, UUID partnerId, UpdatePartnerArchiveStatusRequest request);
+      UUID organizationId, UUID partnerId, UpdateArchiveStatusRequest request);
 
   /**
    * Deletes a partner by its ID within the specified organization.
