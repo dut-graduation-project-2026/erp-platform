@@ -4,6 +4,7 @@ import com.dut.erp.dto.request.CreatePartnerRequest;
 import com.dut.erp.dto.request.PartnerContactRequest;
 import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
+import com.dut.erp.dto.response.PartnerBaseResponse;
 import com.dut.erp.dto.response.PartnerResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Partner;
@@ -81,10 +82,10 @@ public class PartnerServiceImpl implements PartnerService {
   }
 
   @Override
-  public List<PartnerResponse> getPartners(UUID organizationId) {
+  public List<PartnerBaseResponse> getPartners(UUID organizationId) {
     findOrganizationById(organizationId);
     return partnerRepository.findAllByOrganizationId(organizationId).stream()
-        .map(partnerMapper::toPartnerResponse)
+        .map(partnerMapper::toPartnerBaseResponse)
         .toList();
   }
 

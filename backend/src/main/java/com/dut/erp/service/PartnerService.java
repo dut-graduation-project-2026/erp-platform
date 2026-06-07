@@ -3,6 +3,7 @@ package com.dut.erp.service;
 import com.dut.erp.dto.request.CreatePartnerRequest;
 import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
+import com.dut.erp.dto.response.PartnerBaseResponse;
 import com.dut.erp.dto.response.PartnerResponse;
 import java.util.List;
 import java.util.UUID;
@@ -22,9 +23,9 @@ public interface PartnerService {
    * Retrieves all partners belonging to the specified organization.
    *
    * @param organizationId the UUID of the organization
-   * @return list of PartnerResponse objects
+   * @return list of PartnerBaseResponse objects
    */
-  List<PartnerResponse> getPartners(UUID organizationId);
+  List<PartnerBaseResponse> getPartners(UUID organizationId);
 
   /**
    * Retrieves a single partner by ID within the specified organization.
