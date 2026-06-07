@@ -3,7 +3,6 @@ databaseChangeLog:
       id: 026-init-leads-module-and-permissions
       author: halwins
       changes:
-        # Seed Leads Module
         - insert:
             tableName: erp_modules
             columns:
@@ -20,7 +19,6 @@ databaseChangeLog:
                   name: description
                   value: Lead management system.
 
-        # Seed Leads Permissions
         - insert:
             tableName: permissions
             columns:
