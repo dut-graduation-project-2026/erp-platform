@@ -1,0 +1,95 @@
+databaseChangeLog:
+  - changeSet:
+      id: 028-create-taxes-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: taxes
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_taxes
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: computation
+                  type: VARCHAR(50)
+                  defaultValue: PERCENTAGE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: DECIMAL(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: is_archived
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addForeignKeyConstraint:
+            constraintName: fk_taxes_organization
+            baseTableName: taxes
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_taxes_created_by
+            baseTableName: taxes
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_taxes_updated_by
+            baseTableName: taxes
+            baseColumnNames: updated_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - createIndex:
+            tableName: taxes
+            indexName: idx_taxes_organization_id
+            columns:
+              - column:
+                  name: organization_id
+        - createIndex:
+            tableName: taxes
+            indexName: idx_taxes_organization_is_archived
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: is_archived
