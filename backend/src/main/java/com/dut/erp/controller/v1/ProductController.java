@@ -9,7 +9,6 @@ import com.dut.erp.dto.response.ProductResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.ProductService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -45,7 +44,7 @@ public class ProductController {
       """)
   public ResponseEntity<PagedEntityResponse<ProductBaseResponse>> getProducts(
       @PathVariable UUID organizationId,
-      @RequestParam(required = false) @Size(max = 30) String search,
+      @RequestParam(required = false) String search,
       @RequestParam(defaultValue = "false") Boolean isArchived,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {

@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-create-sale-team-members-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: sale_team_members
+            columns:
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sale_team_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: sale_team_members
+            columnNames: user_id, sale_team_id
+            constraintName: pk_sale_team_members
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_team_members_user
+            baseTableName: sale_team_members
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_sale_team_members_sale_team
+            baseTableName: sale_team_members
+            baseColumnNames: sale_team_id
+            referencedTableName: sale_teams
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE

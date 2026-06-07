@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-init-sale-teams-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Sale Teams
+              - column:
+                  name: code
+                  value: sale_teams
+              - column:
+                  name: description
+                  value: Sale team management system.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_teams:select
+              - column:
+                  name: code
+                  value: sale_teams:select
+              - column:
+                  name: description
+                  value: Allow selecting and listing sale teams.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_teams')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_teams:read
+              - column:
+                  name: code
+                  value: sale_teams:read
+              - column:
+                  name: description
+                  value: Allow reading sale team details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_teams')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_teams:write
+              - column:
+                  name: code
+                  value: sale_teams:write
+              - column:
+                  name: description
+                  value: Allow writing/updating and archiving sale teams.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_teams')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_teams:create
+              - column:
+                  name: code
+                  value: sale_teams:create
+              - column:
+                  name: description
+                  value: Allow creating new sale teams.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_teams')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: sale_teams:delete
+              - column:
+                  name: code
+                  value: sale_teams:delete
+              - column:
+                  name: description
+                  value: Allow deleting sale teams.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'sale_teams')
