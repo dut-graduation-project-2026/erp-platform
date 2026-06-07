@@ -88,7 +88,7 @@ public class SaleTeamController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('sale_teams:select', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('sale_teams:read', #organizationId, #userDetails)
       """)
   public ResponseEntity<PagedEntityResponse<SaleTeamBaseResponse>> getSaleTeams(
       @PathVariable UUID organizationId,
@@ -106,7 +106,7 @@ public class SaleTeamController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('sale_teams:read', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('sale_teams:select', #organizationId, #userDetails)
       """)
   public ResponseEntity<SaleTeamResponse> getSaleTeamById(
       @PathVariable UUID organizationId,

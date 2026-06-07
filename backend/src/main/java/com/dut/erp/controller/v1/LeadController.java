@@ -76,7 +76,7 @@ public class LeadController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('leads:select', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('leads:read', #organizationId, #userDetails)
       """)
   public ResponseEntity<PagedEntityResponse<LeadBaseResponse>> getLeads(
       @PathVariable UUID organizationId,
@@ -101,7 +101,7 @@ public class LeadController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('leads:read', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('leads:select', #organizationId, #userDetails)
       """)
   public ResponseEntity<LeadResponse> getLeadById(
       @PathVariable UUID organizationId,

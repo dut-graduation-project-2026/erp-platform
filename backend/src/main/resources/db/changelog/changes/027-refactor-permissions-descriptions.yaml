@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 027-refactor-permissions-descriptions
+      author: halwins
+      changes:
+        - update:
+            tableName: permissions
+            columns:
+              - column:
+                  name: description
+                  value: Allow reading and listing products.
+            where: code = 'products:read'
+        - update:
+            tableName: permissions
+            columns:
+              - column:
+                  name: description
+                  value: Allow selecting and viewing product details.
+            where: code = 'products:select'
+
+        - update:
+            tableName: permissions
+            columns:
+              - column:
+                  name: description
+                  value: Allow reading and listing partners.
+            where: code = 'partners:read'
+        - update:
+            tableName: permissions
+            columns:
+              - column:
+                  name: description
+                  value: Allow selecting and viewing partner details.
+            where: code = 'partners:select'
+
+        - update:
+            tableName: permissions
+            columns:
+              - column:
+                  name: description
+                  value: Allow reading and listing sale teams.
+            where: code = 'sale_teams:read'
+        - update:
+            tableName: permissions
+            columns:
+              - column:
+                  name: description
+                  value: Allow selecting and viewing sale team details.
+            where: code = 'sale_teams:select'
+
+        - update:
+            tableName: permissions
+            columns:
+              - column:
+                  name: description
+                  value: Allow reading and listing roles.
+            where: code = 'roles:read'
+        - update:
+            tableName: permissions
+            columns:
+              - column:
+                  name: description
+                  value: Allow selecting and viewing role details.
+            where: code = 'roles:select'
