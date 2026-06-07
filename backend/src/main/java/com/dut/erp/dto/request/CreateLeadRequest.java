@@ -1,5 +1,7 @@
 package com.dut.erp.dto.request;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,9 +19,14 @@ public record CreateLeadRequest(
         String email,
     @Size(max = 50, message = "Phone cannot exceed 50 characters") String phone,
     @Size(max = 255, message = "Address cannot exceed 255 characters") String address,
-    @Size(max = 255, message = "Description cannot exceed 255 characters") String description,
-    @NotNull(message = "Expected revenue cannot be null") BigDecimal expectedRevenue,
-    @NotNull(message = "Probability cannot be null") BigDecimal probability,
+    @Size(max = 2000, message = "Notes cannot exceed 2000 characters") String notes,
+    @NotNull(message = "Expected revenue cannot be null")
+        @DecimalMin(value = "0.0", message = "Expected revenue must be at least 0")
+        BigDecimal expectedRevenue,
+    @NotNull(message = "Probability cannot be null")
+        @DecimalMin(value = "0.0", message = "Probability must be at least 0")
+        @DecimalMax(value = "100.0", message = "Probability cannot exceed 100")
+        BigDecimal probability,
     @NotNull(message = "Sale Team ID cannot be null") UUID saleTeamId,
     UUID salePersonId,
     UUID partnerId) {}

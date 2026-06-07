@@ -112,7 +112,7 @@ public class LeadServiceImpl implements LeadService {
             .email(request.email())
             .phone(request.phone())
             .address(request.address())
-            .notes(request.description())
+            .notes(request.notes())
             .expectedRevenue(request.expectedRevenue())
             .stage(LeadStage.NEW)
             .probability(request.probability())
