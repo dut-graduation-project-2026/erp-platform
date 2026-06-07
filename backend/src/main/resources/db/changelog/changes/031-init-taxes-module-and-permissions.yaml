@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 031-init-taxes-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Taxes
+              - column:
+                  name: code
+                  value: taxes
+              - column:
+                  name: description
+                  value: Taxes configurations and rates management system.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: taxes:select
+              - column:
+                  name: code
+                  value: taxes:select
+              - column:
+                  name: description
+                  value: Allow selecting taxes in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: taxes:read
+              - column:
+                  name: code
+                  value: taxes:read
+              - column:
+                  name: description
+                  value: Allow reading taxes information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: taxes:write
+              - column:
+                  name: code
+                  value: taxes:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing taxes data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: taxes:create
+              - column:
+                  name: code
+                  value: taxes:create
+              - column:
+                  name: description
+                  value: Allow creating new taxes.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: taxes:delete
+              - column:
+                  name: code
+                  value: taxes:delete
+              - column:
+                  name: description
+                  value: Allow deleting taxes.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
