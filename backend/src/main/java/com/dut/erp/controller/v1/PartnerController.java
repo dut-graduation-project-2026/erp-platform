@@ -3,6 +3,7 @@ package com.dut.erp.controller.v1;
 import com.dut.erp.dto.request.CreatePartnerRequest;
 import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
+import com.dut.erp.dto.response.PartnerBaseResponse;
 import com.dut.erp.dto.response.PartnerResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.PartnerService;
@@ -76,10 +77,10 @@ public class PartnerController {
         and
         @securityAuthService.hasPermission('partners:read', #organizationId, #userDetails)
       """)
-  public ResponseEntity<List<PartnerResponse>> getPartners(
+  public ResponseEntity<List<PartnerBaseResponse>> getPartners(
       @PathVariable UUID organizationId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    List<PartnerResponse> responses = partnerService.getPartners(organizationId);
+    List<PartnerBaseResponse> responses = partnerService.getPartners(organizationId);
     return ResponseEntity.ok(responses);
   }
 

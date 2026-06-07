@@ -1,0 +1,118 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-create-leads-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: leads
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_leads
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tax_code
+                  type: VARCHAR(50)
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+              - column:
+                  name: phone
+                  type: VARCHAR(50)
+              - column:
+                  name: address
+                  type: VARCHAR(255)
+              - column:
+                  name: notes
+                  type: TEXT
+              - column:
+                  name: expected_revenue
+                  type: DECIMAL(15, 2)
+              - column:
+                  name: stage
+                  type: VARCHAR(50)
+              - column:
+                  name: probability
+                  type: DECIMAL(5, 2)
+              - column:
+                  name: sale_person_id
+                  type: UUID
+              - column:
+                  name: sale_team_id
+                  type: UUID
+              - column:
+                  name: partner_id
+                  type: UUID
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addForeignKeyConstraint:
+            constraintName: fk_leads_organization
+            baseTableName: leads
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_leads_sale_person
+            baseTableName: leads
+            baseColumnNames: sale_person_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_leads_sale_team
+            baseTableName: leads
+            baseColumnNames: sale_team_id
+            referencedTableName: sale_teams
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_leads_partner
+            baseTableName: leads
+            baseColumnNames: partner_id
+            referencedTableName: partners
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_leads_created_by
+            baseTableName: leads
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_leads_updated_by
+            baseTableName: leads
+            baseColumnNames: updated_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE

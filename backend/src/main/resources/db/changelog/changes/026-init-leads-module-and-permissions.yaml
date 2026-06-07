@@ -1,0 +1,113 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-init-leads-module-and-permissions
+      author: halwins
+      changes:
+        # Seed Leads Module
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Leads
+              - column:
+                  name: code
+                  value: leads
+              - column:
+                  name: description
+                  value: Lead management system.
+
+        # Seed Leads Permissions
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: leads:read
+              - column:
+                  name: code
+                  value: leads:read
+              - column:
+                  name: description
+                  value: Allow reading and listing leads.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: leads:select
+              - column:
+                  name: code
+                  value: leads:select
+              - column:
+                  name: description
+                  value: Allow selecting and viewing lead details.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: leads:create
+              - column:
+                  name: code
+                  value: leads:create
+              - column:
+                  name: description
+                  value: Allow creating new leads.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: leads:write
+              - column:
+                  name: code
+                  value: leads:write
+              - column:
+                  name: description
+                  value: Allow writing/updating leads.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: leads:delete
+              - column:
+                  name: code
+                  value: leads:delete
+              - column:
+                  name: description
+                  value: Allow deleting leads.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')

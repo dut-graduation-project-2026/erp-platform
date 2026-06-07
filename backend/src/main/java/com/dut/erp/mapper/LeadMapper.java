@@ -1,8 +1,8 @@
 package com.dut.erp.mapper;
 
-import com.dut.erp.dto.response.PartnerBaseResponse;
-import com.dut.erp.dto.response.PartnerResponse;
-import com.dut.erp.entity.Partner;
+import com.dut.erp.dto.response.LeadBaseResponse;
+import com.dut.erp.dto.response.LeadResponse;
+import com.dut.erp.entity.Lead;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;
@@ -12,11 +12,11 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
     componentModel = "spring",
     nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
     nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-    uses = {UserMapper.class, PartnerContactMapper.class})
-public interface PartnerMapper {
+    uses = {UserMapper.class, SaleTeamMapper.class, PartnerMapper.class})
+public interface LeadMapper {
 
   @Mapping(source = "organization.id", target = "organizationId")
-  PartnerResponse toPartnerResponse(Partner entity);
+  LeadResponse toResponse(Lead entity);
 
-  PartnerBaseResponse toPartnerBaseResponse(Partner entity);
+  LeadBaseResponse toBaseResponse(Lead entity);
 }

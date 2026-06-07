@@ -40,7 +40,7 @@ public class ProductController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('products:select', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('products:read', #organizationId, #userDetails)
       """)
   public ResponseEntity<PagedEntityResponse<ProductBaseResponse>> getProducts(
       @PathVariable UUID organizationId,
@@ -58,7 +58,7 @@ public class ProductController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('products:read', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('products:select', #organizationId, #userDetails)
       """)
   public ResponseEntity<ProductResponse> getProductById(
       @PathVariable UUID organizationId,

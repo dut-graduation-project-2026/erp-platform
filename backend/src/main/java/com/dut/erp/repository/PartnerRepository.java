@@ -24,9 +24,9 @@ public interface PartnerRepository extends JpaRepository<Partner, UUID> {
       """
       SELECT p FROM Partner p
       LEFT JOIN FETCH p.contacts
-      WHERE p.id = :partnerId
+      WHERE p.id = :id
       AND p.organization.id = :organizationId
       """)
   Optional<Partner> findByIdAndOrganizationId(
-      @Param("partnerId") UUID partnerId, @Param("organizationId") UUID organizationId);
+      @Param("id") UUID id, @Param("organizationId") UUID organizationId);
 }
