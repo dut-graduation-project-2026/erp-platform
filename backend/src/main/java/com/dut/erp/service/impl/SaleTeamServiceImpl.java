@@ -104,20 +104,16 @@ public class SaleTeamServiceImpl implements SaleTeamService {
     Organization organization = findOrganizationById(organizationId);
 
     if (saleTeamRepository.existsByOrganizationIdAndName(organizationId, request.name())) {
-      throw new ResourceAlreadyExistsException("Sale team name already exists within this organization");
+      throw new ResourceAlreadyExistsException(
+          "Sale team name already exists within this organization");
     }
 
-    User leader = null;
-    if (request.leaderId() != null) {
-      if (!userRepository.existsByIdAndOrganizationId(request.leaderId(), organizationId)) {
-        throw new BadRequestException("Leader does not belong to the organization");
-      }
-      leader = findUserById(request.leaderId());
-    }
+    User leader = findUserById(request.leaderId());
 
     Set<User> members = new HashSet<>();
     if (request.memberIds() != null && !request.memberIds().isEmpty()) {
-      List<User> orgMembers = userRepository.findAllByIdInAndOrganizationId(request.memberIds(), organizationId);
+      List<User> orgMembers =
+          userRepository.findAllByIdInAndOrganizationId(request.memberIds(), organizationId);
       if (orgMembers.size() != request.memberIds().size()) {
         throw new BadRequestException("One or more members do not belong to the organization");
       }
@@ -147,8 +143,10 @@ public class SaleTeamServiceImpl implements SaleTeamService {
       UUID organizationId, UUID id, UpdateSaleTeamRequest request) {
     SaleTeam saleTeam = findSaleTeamByIdAndOrganizationId(id, organizationId);
 
-    if (saleTeamRepository.existsByOrganizationIdAndNameAndIdNot(organizationId, request.name(), id)) {
-      throw new ResourceAlreadyExistsException("Sale team name already exists within this organization");
+    if (saleTeamRepository.existsByOrganizationIdAndNameAndIdNot(
+        organizationId, request.name(), id)) {
+      throw new ResourceAlreadyExistsException(
+          "Sale team name already exists within this organization");
     }
 
     if (request.leaderId() != null) {
@@ -161,7 +159,8 @@ public class SaleTeamServiceImpl implements SaleTeamService {
 
     Set<User> members = new HashSet<>();
     if (request.memberIds() != null && !request.memberIds().isEmpty()) {
-      List<User> orgMembers = userRepository.findAllByIdInAndOrganizationId(request.memberIds(), organizationId);
+      List<User> orgMembers =
+          userRepository.findAllByIdInAndOrganizationId(request.memberIds(), organizationId);
       if (orgMembers.size() != request.memberIds().size()) {
         throw new BadRequestException("One or more members do not belong to the organization");
       }
