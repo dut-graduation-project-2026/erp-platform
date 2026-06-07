@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 032-init-orders-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Orders
+              - column:
+                  name: code
+                  value: orders
+              - column:
+                  name: description
+                  value: Sales orders and quotation management system.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: orders:select
+              - column:
+                  name: code
+                  value: orders:select
+              - column:
+                  name: description
+                  value: Allow selecting orders in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: orders:read
+              - column:
+                  name: code
+                  value: orders:read
+              - column:
+                  name: description
+                  value: Allow reading orders information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: orders:write
+              - column:
+                  name: code
+                  value: orders:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing orders data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: orders:create
+              - column:
+                  name: code
+                  value: orders:create
+              - column:
+                  name: description
+                  value: Allow creating new orders.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: orders:delete
+              - column:
+                  name: code
+                  value: orders:delete
+              - column:
+                  name: description
+                  value: Allow deleting orders.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')

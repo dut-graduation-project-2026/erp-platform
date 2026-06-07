@@ -20,14 +20,14 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Entity
-@Table(name = "order_lines")
+@Table(name = "order_items")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderLine {
+public class OrderItem {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
