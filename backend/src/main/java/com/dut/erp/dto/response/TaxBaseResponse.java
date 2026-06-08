@@ -7,4 +7,4 @@ import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record TaxBaseResponse(
-    UUID id, String name, TaxComputation computation, BigDecimal amount, Boolean isArchived) {}
+    UUID id, String name, TaxComputation computation, BigDecimal amount, boolean isArchived) {}
