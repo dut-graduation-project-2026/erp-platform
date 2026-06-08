@@ -31,11 +31,7 @@ databaseChangeLog:
                   type: VARCHAR(100)
                   constraints:
                     nullable: false
-              - column:
-                  name: order_date
-                  type: TIMESTAMP
-                  constraints:
-                    nullable: false
+                    unique: true
               - column:
                   name: status
                   type: VARCHAR(50)

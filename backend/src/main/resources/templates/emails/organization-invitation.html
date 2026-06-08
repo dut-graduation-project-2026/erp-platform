@@ -365,21 +365,19 @@
         </div>
 
         <!-- Footer -->
+        <!-- Footer -->
         <div class="footer">
             <p>
-                This email was sent to
-                <strong th:text="${recipientEmail}">user</strong>
-                regarding your activity on DUT ERP.
+                This quotation was issued by
+                <strong th:text="${organizationName}">DUT ERP</strong>.
             </p>
 
             <p>
-                © 2026 DUT ERP. All rights reserved.
+                For any questions regarding this quotation, please contact our sales team.
             </p>
 
             <p>
-                <a href="#">Help Center</a>
-                <span class="footer-divider">•</span>
-                <a href="#">Privacy Policy</a>
+                © 2026 <span th:text="${organizationName}">DUT ERP</span>. All rights reserved.
             </p>
         </div>
     </div>

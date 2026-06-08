@@ -61,11 +61,8 @@ public class Order {
   @JoinColumn(name = "lead_id")
   Lead lead;
 
-  @Column(name = "order_number", nullable = false, length = 100)
+  @Column(name = "order_number", nullable = false, length = 100, unique = true)
   String orderNumber;
-
-  @Column(name = "order_date", nullable = false)
-  Instant orderDate;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 50)
