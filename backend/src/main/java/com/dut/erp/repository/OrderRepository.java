@@ -32,6 +32,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   Optional<Order> findShallowByIdAndOrganizationId(
       @Param("id") UUID id, @Param("organizationId") UUID organizationId);
 
+  /** Lookup that fetches the lead to avoid N+1 query when updating status. */
+  @Query(
+      """
+      SELECT o FROM Order o
+      LEFT JOIN FETCH o.lead
+      WHERE o.id = :id AND o.organization.id = :organizationId
+      """)
+  Optional<Order> findWithLeadByIdAndOrganizationId(
+      @Param("id") UUID id, @Param("organizationId") UUID organizationId);
+
   // --- Quotations (status = DRAFT) ---
   @Query(
       """

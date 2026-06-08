@@ -18,7 +18,6 @@ import com.dut.erp.mapper.InvoiceMapper;
 import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.service.InvoiceService;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -65,6 +64,15 @@ public class InvoiceServiceImpl implements InvoiceService {
       throw new BadRequestException("Cannot create invoice from a DRAFT order");
     }
 
+    boolean hasActivePaymentInvoice =
+        invoiceRepository.existsByOrderIdAndStatusIn(
+            request.orderId(), List.of(InvoiceStatus.PAID, InvoiceStatus.PARTIAL_PAID));
+    if (hasActivePaymentInvoice) {
+      throw new BadRequestException(
+          "Cannot create invoice because a PAID or PARTIAL_PAID invoice already exists for this"
+              + " order");
+    }
+
     String invoiceNumber = generateUniqueInvoiceNumber(organizationId);
     Instant now = Instant.now();
     Instant dueDate = request.dueDate() != null ? request.dueDate() : now.plus(30, ChronoUnit.DAYS);
@@ -77,7 +85,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             .invoiceNumber(invoiceNumber)
             .dueDate(dueDate)
             .totalAmount(order.getTotalAmount())
-            .paidAmount(BigDecimal.ZERO)
+            .paidAmount(order.getTotalAmount())
             .status(InvoiceStatus.DRAFT)
             .build();
 
@@ -102,7 +110,41 @@ public class InvoiceServiceImpl implements InvoiceService {
             .findByIdAndOrganizationId(id, organizationId)
             .orElseThrow(() -> new ResourceNotFoundException("Invoice not found with id: " + id));
 
-    InvoiceStatus newStatus = InvoiceStatus.valueOf(request.status());
+    if (invoice.getOrder() != null && invoice.getOrder().getStatus() == OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+          "Cannot update invoice status when the linked order is CANCELLED");
+    }
+
+    InvoiceStatus currentStatus = invoice.getStatus();
+    InvoiceStatus newStatus = request.status();
+
+    if (currentStatus != newStatus) {
+      if (newStatus == InvoiceStatus.PAID || newStatus == InvoiceStatus.PARTIAL_PAID) {
+        boolean existsOther =
+            invoiceRepository.existsByOrderIdAndStatusInAndIdNot(
+                invoice.getOrder().getId(),
+                List.of(InvoiceStatus.PAID, InvoiceStatus.PARTIAL_PAID),
+                invoice.getId());
+        if (existsOther) {
+          throw new BadRequestException(
+              "Cannot mark invoice as PAID or PARTIAL_PAID because another invoice for this order"
+                  + " is already PAID or PARTIAL_PAID");
+        }
+      }
+      if (currentStatus == InvoiceStatus.PAID) {
+        throw new BadRequestException("Cannot change status of a PAID invoice");
+      }
+      if (currentStatus == InvoiceStatus.CANCELLED) {
+        throw new BadRequestException("Cannot change status of a CANCELLED invoice");
+      }
+      if (currentStatus != InvoiceStatus.DRAFT && newStatus == InvoiceStatus.DRAFT) {
+        throw new BadRequestException("Cannot revert invoice status back to DRAFT");
+      }
+      if (currentStatus == InvoiceStatus.PARTIAL_PAID && newStatus == InvoiceStatus.POSTED) {
+        throw new BadRequestException("Cannot revert status from PARTIAL_PAID back to POSTED");
+      }
+    }
+
     invoice.setStatus(newStatus);
     invoice = invoiceRepository.save(invoice);
 

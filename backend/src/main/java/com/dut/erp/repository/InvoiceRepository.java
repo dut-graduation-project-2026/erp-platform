@@ -74,4 +74,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
   List<Invoice> findAllByIdIn(@Param("ids") List<UUID> ids);
 
   boolean existsByOrganizationIdAndInvoiceNumber(UUID organizationId, String invoiceNumber);
+
+  boolean existsByOrderIdAndStatus(UUID orderId, com.dut.erp.enums.InvoiceStatus status);
+
+  boolean existsByOrderIdAndStatusIn(UUID orderId, java.util.Collection<com.dut.erp.enums.InvoiceStatus> statuses);
+
+  boolean existsByOrderIdAndStatusInAndIdNot(UUID orderId, java.util.Collection<com.dut.erp.enums.InvoiceStatus> statuses, UUID id);
 }

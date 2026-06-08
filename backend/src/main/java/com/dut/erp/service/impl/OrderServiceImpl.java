@@ -8,11 +8,11 @@ import com.dut.erp.dto.request.UpsertOrderRequest;
 import com.dut.erp.dto.response.OrderBaseResponse;
 import com.dut.erp.dto.response.OrderResponse;
 import com.dut.erp.dto.response.PagedEntityResponse;
+import com.dut.erp.entity.Invoice;
 import com.dut.erp.entity.Lead;
 import com.dut.erp.entity.Order;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Partner;
-import com.dut.erp.entity.Invoice;
 import com.dut.erp.enums.InvoiceStatus;
 import com.dut.erp.enums.LeadStage;
 import com.dut.erp.enums.OrderStatus;
@@ -213,7 +213,7 @@ public class OrderServiceImpl implements OrderService {
   @Transactional
   public OrderResponse updateOrderStatus(
       UUID organizationId, UUID id, UpdateOrderStatusRequest request) {
-    Order order = findOrderShallowByIdAndOrganizationId(id, organizationId);
+    Order order = findOrderWithLeadByIdAndOrganizationId(id, organizationId);
 
     // Rule: Once status is COMPLETED, it cannot be updated
     if (order.getStatus() == OrderStatus.COMPLETED) {
@@ -227,21 +227,32 @@ public class OrderServiceImpl implements OrderService {
 
     // Rule: Only when the invoice is PAID can the order be completed/done
     if (request.status() == OrderStatus.COMPLETED) {
-      Invoice invoice = invoiceRepository.findByOrderIdAndOrganizationId(id, organizationId)
-          .orElseThrow(() -> new BadRequestException("Cannot complete order because no invoice has been created for it yet"));
+      Invoice invoice =
+          invoiceRepository
+              .findByOrderIdAndOrganizationId(id, organizationId)
+              .orElseThrow(
+                  () ->
+                      new BadRequestException(
+                          "Cannot complete order because no invoice has been created for it yet"));
       if (invoice.getStatus() != InvoiceStatus.PAID) {
-        throw new BadRequestException("Cannot complete order because the linked invoice is not PAID");
+        throw new BadRequestException(
+            "Cannot complete order because the linked invoice is not PAID");
       }
     }
 
     // Rule: If order is CANCELLED, cancel the linked invoice as well
     if (request.status() == OrderStatus.CANCELLED) {
-      invoiceRepository.findByOrderIdAndOrganizationId(id, organizationId)
-          .ifPresent(invoice -> {
-            invoice.setStatus(InvoiceStatus.CANCELLED);
-            invoiceRepository.save(invoice);
-            log.info("Automatically cancelled invoice {} because order {} was CANCELLED", invoice.getId(), id);
-          });
+      invoiceRepository
+          .findByOrderIdAndOrganizationId(id, organizationId)
+          .ifPresent(
+              invoice -> {
+                invoice.setStatus(InvoiceStatus.CANCELLED);
+                invoiceRepository.save(invoice);
+                log.info(
+                    "Automatically cancelled invoice {} because order {} was CANCELLED",
+                    invoice.getId(),
+                    id);
+              });
     }
 
     order.setStatus(request.status());
@@ -253,7 +264,7 @@ public class OrderServiceImpl implements OrderService {
         organizationId);
 
     // Advance the linked lead's stage when the order reaches a terminal state.
-    // CONFIRMED → WON, CANCELLED → LOST. SENT keeps the lead at PROPOSAL.
+    // CONFIRMED → PROPOSAL, CANCELLED → LOST. SENT → WON, COMPLETED → WON.
     if (order.getLead() != null) {
       LeadStage targetLeadStage =
           switch (request.status()) {
@@ -335,6 +346,12 @@ public class OrderServiceImpl implements OrderService {
   private Order findOrderShallowByIdAndOrganizationId(UUID orderId, UUID organizationId) {
     return orderRepository
         .findShallowByIdAndOrganizationId(orderId, organizationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+  }
+
+  private Order findOrderWithLeadByIdAndOrganizationId(UUID orderId, UUID organizationId) {
+    return orderRepository
+        .findWithLeadByIdAndOrganizationId(orderId, organizationId)
         .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
   }
 
