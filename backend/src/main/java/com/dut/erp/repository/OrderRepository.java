@@ -23,6 +23,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   Optional<Order> findByIdAndOrganizationId(
       @Param("id") UUID id, @Param("organizationId") UUID organizationId);
 
+  /** Lightweight lookup — does NOT fetch the items collection. Use for writes that don't need items. */
+  @Query(
+      """
+      SELECT o FROM Order o
+      WHERE o.id = :id AND o.organization.id = :organizationId
+      """)
+  Optional<Order> findShallowByIdAndOrganizationId(
+      @Param("id") UUID id, @Param("organizationId") UUID organizationId);
+
   // --- Quotations (status = DRAFT) ---
   @Query(
       """

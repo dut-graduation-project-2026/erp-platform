@@ -365,19 +365,20 @@
         </div>
 
         <!-- Footer -->
-        <!-- Footer -->
         <div class="footer">
             <p>
-                This quotation was issued by
+                This invitation was sent by
+                <strong th:text="${inviterName}">John Doe</strong>
+                on behalf of
                 <strong th:text="${organizationName}">DUT ERP</strong>.
             </p>
 
             <p>
-                For any questions regarding this quotation, please contact our sales team.
+                If you did not expect this invitation, you can safely ignore this email.
             </p>
 
             <p>
-                © 2026 <span th:text="${organizationName}">DUT ERP</span>. All rights reserved.
+                © 2026 <strong>DUT ERP</strong>. All rights reserved.
             </p>
         </div>
     </div>

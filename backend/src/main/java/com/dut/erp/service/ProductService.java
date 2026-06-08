@@ -19,7 +19,7 @@ public interface ProductService {
   ProductResponse updateProduct(UUID organizationId, UUID productId, UpsertProductRequest request);
 
   ProductResponse updateProductArchiveStatus(
-      UUID organizationId, UUID productId, Boolean isArchived);
+      UUID organizationId, UUID productId, boolean isArchived);
 
   void deleteProduct(UUID organizationId, UUID productId);
 }

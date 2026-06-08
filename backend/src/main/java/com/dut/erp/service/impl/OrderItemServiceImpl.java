@@ -74,9 +74,6 @@ public class OrderItemServiceImpl implements OrderItemService {
             .build();
 
     orderItem = orderItemRepository.save(orderItem);
-    
-    // Add to order items and recalculate
-    order.getItems().add(orderItem);
     recalculateAndSaveOrderTotal(order);
 
     return orderItemMapper.toResponse(orderItem);
@@ -116,25 +113,22 @@ public class OrderItemServiceImpl implements OrderItemService {
     OrderItem orderItem = findOrderItemByIdAndOrderIdAndOrganizationId(id, orderId, organizationId);
 
     orderItemRepository.delete(orderItem);
-    
-    // Remove from order list and recalculate
-    order.getItems().remove(orderItem);
     recalculateAndSaveOrderTotal(order);
   }
 
   // ---- Private helpers ----
 
   private void recalculateAndSaveOrderTotal(Order order) {
-    BigDecimal total = order.getItems().stream()
-        .map(OrderItem::getSubtotal)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal total = orderItemRepository
+        .sumSubtotalByOrderId(order.getId())
+        .setScale(2, RoundingMode.HALF_UP);
     order.setTotalAmount(total);
     orderRepository.save(order);
   }
 
   private Order findOrderByIdAndOrganizationId(UUID orderId, UUID organizationId) {
     return orderRepository
-        .findByIdAndOrganizationId(orderId, organizationId)
+        .findShallowByIdAndOrganizationId(orderId, organizationId)
         .orElseThrow(
             () ->
                 new ResourceNotFoundException("Order not found with id: " + orderId));

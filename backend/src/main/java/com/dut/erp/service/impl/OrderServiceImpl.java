@@ -10,7 +10,6 @@ import com.dut.erp.dto.response.OrderResponse;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.entity.Lead;
 import com.dut.erp.entity.Order;
-import com.dut.erp.entity.OrderItem;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Partner;
 import com.dut.erp.enums.LeadStage;
@@ -60,8 +59,7 @@ public class OrderServiceImpl implements OrderService {
         PageRequest.of(
             paginationRequest.page() - 1,
             paginationRequest.limit(),
-            SortingConstants.customEntitiesSort(
-                SortField.desc("updatedAt")));
+            SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
 
     Page<UUID> ids =
         (search != null && !search.trim().isEmpty())
@@ -81,8 +79,7 @@ public class OrderServiceImpl implements OrderService {
         PageRequest.of(
             paginationRequest.page() - 1,
             paginationRequest.limit(),
-            SortingConstants.customEntitiesSort(
-                SortField.desc("updatedAt")));
+            SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
 
     Page<UUID> ids =
         (search != null && !search.trim().isEmpty())
@@ -194,7 +191,7 @@ public class OrderServiceImpl implements OrderService {
 
     if (!order.getOrderNumber().equals(newOrderNumber)
         && orderRepository.existsByOrganizationIdAndOrderNumber(organizationId, newOrderNumber)) {
-      throw new IllegalArgumentException("Order number already exists in this organization");
+      throw new BadRequestException("Order number already exists in this organization");
     }
 
     order.setPartner(partner);
@@ -212,7 +209,7 @@ public class OrderServiceImpl implements OrderService {
   @Transactional
   public OrderResponse updateOrderStatus(
       UUID organizationId, UUID id, UpdateOrderStatusRequest request) {
-    Order order = findOrderByIdAndOrganizationId(id, organizationId);
+    Order order = findOrderShallowByIdAndOrganizationId(id, organizationId);
 
     // Rule: Once status changes away from DRAFT, it cannot transition back to DRAFT
     if (order.getStatus() != OrderStatus.DRAFT && request.status() == OrderStatus.DRAFT) {
@@ -226,13 +223,36 @@ public class OrderServiceImpl implements OrderService {
         id,
         request.status(),
         organizationId);
+
+    // Advance the linked lead's stage when the order reaches a terminal state.
+    // CONFIRMED → WON, CANCELLED → LOST. SENT keeps the lead at PROPOSAL.
+    if (order.getLead() != null) {
+      LeadStage targetLeadStage =
+          switch (request.status()) {
+            case CONFIRMED -> LeadStage.WON;
+            case CANCELLED -> LeadStage.LOST;
+            default -> null;
+          };
+      if (targetLeadStage != null) {
+        Lead lead = order.getLead();
+        lead.setStage(targetLeadStage);
+        leadRepository.save(lead);
+        log.info(
+            "Advanced lead {} to {} after order {} was {}",
+            lead.getId(),
+            targetLeadStage,
+            id,
+            request.status());
+      }
+    }
+
     return orderMapper.toResponse(order);
   }
 
   @Override
   @Transactional
   public void deleteQuotation(UUID organizationId, UUID id) {
-    Order order = findOrderByIdAndOrganizationId(id, organizationId);
+    Order order = findOrderShallowByIdAndOrganizationId(id, organizationId);
     if (order.getStatus() != OrderStatus.DRAFT) {
       throw new BadRequestException("Only quotations in DRAFT status can be deleted");
     }
@@ -250,7 +270,7 @@ public class OrderServiceImpl implements OrderService {
   private String resolveOrderNumber(String requested, UUID organizationId) {
     if (requested != null && !requested.isBlank()) {
       if (orderRepository.existsByOrganizationIdAndOrderNumber(organizationId, requested)) {
-        throw new IllegalArgumentException("Order number already exists in this organization");
+        throw new BadRequestException("Order number already exists in this organization");
       }
       return requested;
     }
@@ -276,6 +296,15 @@ public class OrderServiceImpl implements OrderService {
   private Order findOrderByIdAndOrganizationId(UUID orderId, UUID organizationId) {
     return orderRepository
         .findByIdAndOrganizationId(orderId, organizationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+  }
+
+  /**
+   * Resolves an order without fetching the items collection — use for writes that don't need items.
+   */
+  private Order findOrderShallowByIdAndOrganizationId(UUID orderId, UUID organizationId) {
+    return orderRepository
+        .findShallowByIdAndOrganizationId(orderId, organizationId)
         .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
   }
 

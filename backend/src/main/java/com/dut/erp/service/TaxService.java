@@ -18,7 +18,7 @@ public interface TaxService {
 
   TaxResponse updateTax(UUID organizationId, UUID taxId, UpsertTaxRequest request);
 
-  TaxResponse updateTaxArchiveStatus(UUID organizationId, UUID taxId, Boolean isArchived);
+  TaxResponse updateTaxArchiveStatus(UUID organizationId, UUID taxId, boolean isArchived);
 
   void deleteTax(UUID organizationId, UUID taxId);
 }

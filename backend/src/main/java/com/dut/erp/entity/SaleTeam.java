@@ -54,7 +54,7 @@ public class SaleTeam {
 
   @Column(name = "is_archived", nullable = false)
   @Builder.Default
-  Boolean isArchived = false;
+  boolean isArchived = false;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "leader_id")

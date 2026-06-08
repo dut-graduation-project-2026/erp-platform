@@ -118,9 +118,9 @@ public class TaxServiceImpl implements TaxService {
   @Override
   @Transactional
   public TaxResponse updateTaxArchiveStatus(
-      UUID organizationId, UUID taxId, Boolean isArchived) {
+      UUID organizationId, UUID taxId, boolean isArchived) {
     Tax tax = findTaxByIdAndOrganizationId(taxId, organizationId);
-    tax.setIsArchived(isArchived);
+    tax.setArchived(isArchived);
     tax = taxRepository.save(tax);
     log.info("Updated archive status for tax {} in organization {}", taxId, organizationId);
     return taxMapper.toResponse(tax);

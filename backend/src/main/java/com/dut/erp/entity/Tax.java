@@ -65,7 +65,7 @@ public class Tax {
 
   @Column(name = "is_archived", nullable = false)
   @Builder.Default
-  Boolean isArchived = false;
+  boolean isArchived = false;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)
