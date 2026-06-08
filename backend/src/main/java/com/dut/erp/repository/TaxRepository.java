@@ -42,6 +42,9 @@ public interface TaxRepository extends JpaRepository<Tax, UUID> {
   @Query(
       """
       SELECT DISTINCT t FROM Tax t
+      LEFT JOIN FETCH t.organization
+      LEFT JOIN FETCH t.createdBy
+      LEFT JOIN FETCH t.updatedBy
       WHERE t.id IN :ids
       """)
   List<Tax> findAllByIdIn(@Param("ids") List<UUID> ids);
