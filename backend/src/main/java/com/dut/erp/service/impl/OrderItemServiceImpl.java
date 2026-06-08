@@ -6,6 +6,8 @@ import com.dut.erp.entity.Order;
 import com.dut.erp.entity.OrderItem;
 import com.dut.erp.entity.Product;
 import com.dut.erp.entity.Tax;
+import com.dut.erp.enums.OrderStatus;
+import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrderItemMapper;
 import com.dut.erp.repository.OrderItemRepository;
@@ -57,6 +59,9 @@ public class OrderItemServiceImpl implements OrderItemService {
       UUID organizationId, UUID orderId, UpsertOrderItemRequest request) {
     log.info("Creating item for order {} in organization {}", orderId, organizationId);
     Order order = findOrderByIdAndOrganizationId(orderId, organizationId);
+    if (order.getStatus() != OrderStatus.DRAFT) {
+      throw new BadRequestException("Order items can only be modified for draft orders");
+    }
     Product product = findProductByIdAndOrganizationId(request.productId(), organizationId);
     Tax tax = request.taxId() != null ? findTaxByIdAndOrganizationId(request.taxId(), organizationId) : null;
 
@@ -85,6 +90,9 @@ public class OrderItemServiceImpl implements OrderItemService {
       UUID organizationId, UUID orderId, UUID id, UpsertOrderItemRequest request) {
     log.info("Updating item {} for order {} in organization {}", id, orderId, organizationId);
     Order order = findOrderByIdAndOrganizationId(orderId, organizationId);
+    if (order.getStatus() != OrderStatus.DRAFT) {
+      throw new BadRequestException("Order items can only be modified for draft orders");
+    }
     OrderItem orderItem = findOrderItemByIdAndOrderIdAndOrganizationId(id, orderId, organizationId);
     Product product = findProductByIdAndOrganizationId(request.productId(), organizationId);
     Tax tax = request.taxId() != null ? findTaxByIdAndOrganizationId(request.taxId(), organizationId) : null;
@@ -110,6 +118,9 @@ public class OrderItemServiceImpl implements OrderItemService {
   public void deleteOrderItem(UUID organizationId, UUID orderId, UUID id) {
     log.info("Deleting item {} from order {} in organization {}", id, orderId, organizationId);
     Order order = findOrderByIdAndOrganizationId(orderId, organizationId);
+    if (order.getStatus() != OrderStatus.DRAFT) {
+      throw new BadRequestException("Order items can only be modified for draft orders");
+    }
     OrderItem orderItem = findOrderItemByIdAndOrderIdAndOrganizationId(id, orderId, organizationId);
 
     orderItemRepository.delete(orderItem);
