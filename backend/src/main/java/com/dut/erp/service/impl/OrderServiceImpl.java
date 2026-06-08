@@ -12,11 +12,14 @@ import com.dut.erp.entity.Lead;
 import com.dut.erp.entity.Order;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Partner;
+import com.dut.erp.entity.Invoice;
+import com.dut.erp.enums.InvoiceStatus;
 import com.dut.erp.enums.LeadStage;
 import com.dut.erp.enums.OrderStatus;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrderMapper;
+import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.LeadRepository;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.OrganizationRepository;
@@ -49,6 +52,7 @@ public class OrderServiceImpl implements OrderService {
   private final OrderRepository orderRepository;
   private final LeadRepository leadRepository;
   private final OrderMapper orderMapper;
+  private final InvoiceRepository invoiceRepository;
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
@@ -211,9 +215,33 @@ public class OrderServiceImpl implements OrderService {
       UUID organizationId, UUID id, UpdateOrderStatusRequest request) {
     Order order = findOrderShallowByIdAndOrganizationId(id, organizationId);
 
+    // Rule: Once status is COMPLETED, it cannot be updated
+    if (order.getStatus() == OrderStatus.COMPLETED) {
+      throw new BadRequestException("Cannot update status of a COMPLETED order");
+    }
+
     // Rule: Once status changes away from DRAFT, it cannot transition back to DRAFT
     if (order.getStatus() != OrderStatus.DRAFT && request.status() == OrderStatus.DRAFT) {
       throw new BadRequestException("Cannot revert an Order back to a DRAFT Quotation");
+    }
+
+    // Rule: Only when the invoice is PAID can the order be completed/done
+    if (request.status() == OrderStatus.COMPLETED) {
+      Invoice invoice = invoiceRepository.findByOrderIdAndOrganizationId(id, organizationId)
+          .orElseThrow(() -> new BadRequestException("Cannot complete order because no invoice has been created for it yet"));
+      if (invoice.getStatus() != InvoiceStatus.PAID) {
+        throw new BadRequestException("Cannot complete order because the linked invoice is not PAID");
+      }
+    }
+
+    // Rule: If order is CANCELLED, cancel the linked invoice as well
+    if (request.status() == OrderStatus.CANCELLED) {
+      invoiceRepository.findByOrderIdAndOrganizationId(id, organizationId)
+          .ifPresent(invoice -> {
+            invoice.setStatus(InvoiceStatus.CANCELLED);
+            invoiceRepository.save(invoice);
+            log.info("Automatically cancelled invoice {} because order {} was CANCELLED", invoice.getId(), id);
+          });
     }
 
     order.setStatus(request.status());
@@ -229,8 +257,10 @@ public class OrderServiceImpl implements OrderService {
     if (order.getLead() != null) {
       LeadStage targetLeadStage =
           switch (request.status()) {
-            case CONFIRMED -> LeadStage.WON;
+            case CONFIRMED -> LeadStage.PROPOSAL;
             case CANCELLED -> LeadStage.LOST;
+            case COMPLETED -> LeadStage.WON;
+            case SENT -> LeadStage.WON;
             default -> null;
           };
       if (targetLeadStage != null) {

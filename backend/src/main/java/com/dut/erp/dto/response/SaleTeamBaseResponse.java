@@ -1,8 +1,7 @@
 package com.dut.erp.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.UUID;
 
-public record SaleTeamBaseResponse(
-    UUID id,
-    String name,
-    Boolean isArchived) {}
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record SaleTeamBaseResponse(UUID id, String name, Boolean isArchived) {}

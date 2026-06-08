@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 034-init-invoices-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Invoices
+              - column:
+                  name: code
+                  value: invoices
+              - column:
+                  name: description
+                  value: Invoices management system.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: invoices:select
+              - column:
+                  name: code
+                  value: invoices:select
+              - column:
+                  name: description
+                  value: Allow selecting invoices in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'invoices')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: invoices:read
+              - column:
+                  name: code
+                  value: invoices:read
+              - column:
+                  name: description
+                  value: Allow reading invoices information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'invoices')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: invoices:write
+              - column:
+                  name: code
+                  value: invoices:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing invoices data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'invoices')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: invoices:create
+              - column:
+                  name: code
+                  value: invoices:create
+              - column:
+                  name: description
+                  value: Allow creating new invoices.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'invoices')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: invoices:delete
+              - column:
+                  name: code
+                  value: invoices:delete
+              - column:
+                  name: description
+                  value: Allow deleting invoices.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'invoices')
