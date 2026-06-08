@@ -9,7 +9,7 @@ import java.util.UUID;
 public record SaleTeamResponse(
     UUID id,
     String name,
-    Boolean isArchived,
+    boolean isArchived,
     UserBaseResponse leader,
     OrganizationBaseResponse organization,
     Set<UserBaseResponse> members,
