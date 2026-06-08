@@ -63,9 +63,13 @@ public class OrderItemServiceImpl implements OrderItemService {
       throw new BadRequestException("Order items can only be modified for draft orders");
     }
     Product product = findProductByIdAndOrganizationId(request.productId(), organizationId);
-    Tax tax = request.taxId() != null ? findTaxByIdAndOrganizationId(request.taxId(), organizationId) : null;
+    Tax tax =
+        request.taxId() != null
+            ? findTaxByIdAndOrganizationId(request.taxId(), organizationId)
+            : null;
 
-    BigDecimal subtotal = request.quantity().multiply(request.unitPrice()).setScale(2, RoundingMode.HALF_UP);
+    BigDecimal subtotal =
+        request.quantity().multiply(request.unitPrice()).setScale(2, RoundingMode.HALF_UP);
 
     OrderItem orderItem =
         OrderItem.builder()
@@ -95,9 +99,13 @@ public class OrderItemServiceImpl implements OrderItemService {
     }
     OrderItem orderItem = findOrderItemByIdAndOrderIdAndOrganizationId(id, orderId, organizationId);
     Product product = findProductByIdAndOrganizationId(request.productId(), organizationId);
-    Tax tax = request.taxId() != null ? findTaxByIdAndOrganizationId(request.taxId(), organizationId) : null;
+    Tax tax =
+        request.taxId() != null
+            ? findTaxByIdAndOrganizationId(request.taxId(), organizationId)
+            : null;
 
-    BigDecimal subtotal = request.quantity().multiply(request.unitPrice()).setScale(2, RoundingMode.HALF_UP);
+    BigDecimal subtotal =
+        request.quantity().multiply(request.unitPrice()).setScale(2, RoundingMode.HALF_UP);
 
     orderItem.setProduct(product);
     orderItem.setTax(tax);
@@ -106,7 +114,7 @@ public class OrderItemServiceImpl implements OrderItemService {
     orderItem.setSubtotal(subtotal);
 
     orderItem = orderItemRepository.save(orderItem);
-    
+
     // Recalculate order total
     recalculateAndSaveOrderTotal(order);
 
@@ -130,9 +138,8 @@ public class OrderItemServiceImpl implements OrderItemService {
   // ---- Private helpers ----
 
   private void recalculateAndSaveOrderTotal(Order order) {
-    BigDecimal total = orderItemRepository
-        .sumSubtotalByOrderId(order.getId())
-        .setScale(2, RoundingMode.HALF_UP);
+    BigDecimal total =
+        orderItemRepository.sumSubtotalByOrderId(order.getId()).setScale(2, RoundingMode.HALF_UP);
     order.setTotalAmount(total);
     orderRepository.save(order);
   }
@@ -140,18 +147,14 @@ public class OrderItemServiceImpl implements OrderItemService {
   private Order findOrderByIdAndOrganizationId(UUID orderId, UUID organizationId) {
     return orderRepository
         .findShallowByIdAndOrganizationId(orderId, organizationId)
-        .orElseThrow(
-            () ->
-                new ResourceNotFoundException("Order not found with id: " + orderId));
+        .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
   }
 
   private OrderItem findOrderItemByIdAndOrderIdAndOrganizationId(
       UUID id, UUID orderId, UUID organizationId) {
     return orderItemRepository
         .findByIdAndOrderIdAndOrganizationId(id, orderId, organizationId)
-        .orElseThrow(
-            () ->
-                new ResourceNotFoundException("OrderItem not found with id: " + id));
+        .orElseThrow(() -> new ResourceNotFoundException("OrderItem not found with id: " + id));
   }
 
   private Product findProductByIdAndOrganizationId(UUID productId, UUID organizationId) {
@@ -164,7 +167,6 @@ public class OrderItemServiceImpl implements OrderItemService {
   private Tax findTaxByIdAndOrganizationId(UUID taxId, UUID organizationId) {
     return taxRepository
         .findByIdAndOrganizationId(taxId, organizationId)
-        .orElseThrow(
-            () -> new ResourceNotFoundException("Tax not found with id: " + taxId));
+        .orElseThrow(() -> new ResourceNotFoundException("Tax not found with id: " + taxId));
   }
 }
