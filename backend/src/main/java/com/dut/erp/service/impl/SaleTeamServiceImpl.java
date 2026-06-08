@@ -183,9 +183,9 @@ public class SaleTeamServiceImpl implements SaleTeamService {
   @Override
   @Transactional
   public SaleTeamResponse updateSaleTeamArchiveStatus(
-      UUID organizationId, UUID id, Boolean isArchived) {
+      UUID organizationId, UUID id, boolean isArchived) {
     SaleTeam saleTeam = findSaleTeamByIdAndOrganizationId(id, organizationId);
-    saleTeam.setIsArchived(isArchived);
+    saleTeam.setArchived(isArchived);
     saleTeam = saleTeamRepository.save(saleTeam);
     log.info("Updated archive status for sale team {} in organization {}", id, organizationId);
     return saleTeamMapper.toResponse(saleTeam);

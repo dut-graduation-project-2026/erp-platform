@@ -1,0 +1,125 @@
+databaseChangeLog:
+  - changeSet:
+      id: 029-create-orders-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_orders
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partner_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lead_id
+                  type: UUID
+              - column:
+                  name: order_number
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: DRAFT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: delivery_date
+                  type: TIMESTAMP
+              - column:
+                  name: expiration_date
+                  type: TIMESTAMP
+              - column:
+                  name: total_amount
+                  type: DECIMAL(15,2)
+                  defaultValueNumeric: 0.00
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addUniqueConstraint:
+            constraintName: uk_orders_org_order_number
+            tableName: orders
+            columnNames: organization_id, order_number
+        - addForeignKeyConstraint:
+            constraintName: fk_orders_organization
+            baseTableName: orders
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_orders_partner
+            baseTableName: orders
+            baseColumnNames: partner_id
+            referencedTableName: partners
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_orders_lead
+            baseTableName: orders
+            baseColumnNames: lead_id
+            referencedTableName: leads
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_orders_created_by
+            baseTableName: orders
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_orders_updated_by
+            baseTableName: orders
+            baseColumnNames: updated_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_organization_id
+            columns:
+              - column:
+                  name: organization_id
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_partner_id
+            columns:
+              - column:
+                  name: partner_id
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_lead_id
+            columns:
+              - column:
+                  name: lead_id

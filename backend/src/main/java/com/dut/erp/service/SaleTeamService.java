@@ -22,7 +22,7 @@ public interface SaleTeamService {
 
   SaleTeamResponse updateSaleTeam(UUID organizationId, UUID id, UpdateSaleTeamRequest request);
 
-  SaleTeamResponse updateSaleTeamArchiveStatus(UUID organizationId, UUID id, Boolean isArchived);
+  SaleTeamResponse updateSaleTeamArchiveStatus(UUID organizationId, UUID id, boolean isArchived);
 
   void deleteSaleTeam(UUID organizationId, UUID id);
 }

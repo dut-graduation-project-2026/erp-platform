@@ -367,19 +367,18 @@
         <!-- Footer -->
         <div class="footer">
             <p>
-                This email was sent to
-                <strong th:text="${recipientEmail}">user</strong>
-                regarding your activity on DUT ERP.
+                This invitation was sent by
+                <strong th:text="${inviterName}">John Doe</strong>
+                on behalf of
+                <strong th:text="${organizationName}">DUT ERP</strong>.
             </p>
 
             <p>
-                © 2026 DUT ERP. All rights reserved.
+                If you did not expect this invitation, you can safely ignore this email.
             </p>
 
             <p>
-                <a href="#">Help Center</a>
-                <span class="footer-divider">•</span>
-                <a href="#">Privacy Policy</a>
+                © 2026 <strong>DUT ERP</strong>. All rights reserved.
             </p>
         </div>
     </div>

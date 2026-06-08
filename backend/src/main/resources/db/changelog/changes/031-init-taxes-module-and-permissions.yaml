@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 026-init-leads-module-and-permissions
+      id: 031-init-taxes-module-and-permissions
       author: halwins
       changes:
         - insert:
@@ -11,13 +11,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: Leads
+                  value: Taxes
               - column:
                   name: code
-                  value: leads
+                  value: taxes
               - column:
                   name: description
-                  value: Lead management system.
+                  value: Taxes configurations and rates management system.
 
         - insert:
             tableName: permissions
@@ -27,16 +27,17 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:read
+                  value: taxes:select
               - column:
                   name: code
-                  value: leads:read
+                  value: taxes:select
               - column:
                   name: description
-                  value: Allow reading and listing leads.
+                  value: Allow selecting taxes in lookups and filters.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
+
         - insert:
             tableName: permissions
             columns:
@@ -45,16 +46,17 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:select
+                  value: taxes:read
               - column:
                   name: code
-                  value: leads:select
+                  value: taxes:read
               - column:
                   name: description
-                  value: Allow selecting and viewing lead details.
+                  value: Allow reading taxes information.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
+
         - insert:
             tableName: permissions
             columns:
@@ -63,16 +65,17 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:create
+                  value: taxes:write
               - column:
                   name: code
-                  value: leads:create
+                  value: taxes:write
               - column:
                   name: description
-                  value: Allow creating new leads.
+                  value: Allow writing/updating existing taxes data.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
+
         - insert:
             tableName: permissions
             columns:
@@ -81,16 +84,17 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:write
+                  value: taxes:create
               - column:
                   name: code
-                  value: leads:write
+                  value: taxes:create
               - column:
                   name: description
-                  value: Allow writing/updating leads.
+                  value: Allow creating new taxes.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')
+
         - insert:
             tableName: permissions
             columns:
@@ -99,13 +103,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:delete
+                  value: taxes:delete
               - column:
                   name: code
-                  value: leads:delete
+                  value: taxes:delete
               - column:
                   name: description
-                  value: Allow deleting leads.
+                  value: Allow deleting taxes.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'taxes')

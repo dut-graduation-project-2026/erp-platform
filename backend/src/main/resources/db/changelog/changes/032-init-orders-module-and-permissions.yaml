@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 026-init-leads-module-and-permissions
+      id: 032-init-orders-module-and-permissions
       author: halwins
       changes:
         - insert:
@@ -11,13 +11,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: Leads
+                  value: Orders
               - column:
                   name: code
-                  value: leads
+                  value: orders
               - column:
                   name: description
-                  value: Lead management system.
+                  value: Sales orders and quotation management system.
 
         - insert:
             tableName: permissions
@@ -27,16 +27,17 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:read
+                  value: orders:select
               - column:
                   name: code
-                  value: leads:read
+                  value: orders:select
               - column:
                   name: description
-                  value: Allow reading and listing leads.
+                  value: Allow selecting orders in lookups and filters.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')
+
         - insert:
             tableName: permissions
             columns:
@@ -45,16 +46,17 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:select
+                  value: orders:read
               - column:
                   name: code
-                  value: leads:select
+                  value: orders:read
               - column:
                   name: description
-                  value: Allow selecting and viewing lead details.
+                  value: Allow reading orders information.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')
+
         - insert:
             tableName: permissions
             columns:
@@ -63,16 +65,17 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:create
+                  value: orders:write
               - column:
                   name: code
-                  value: leads:create
+                  value: orders:write
               - column:
                   name: description
-                  value: Allow creating new leads.
+                  value: Allow writing/updating existing orders data.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')
+
         - insert:
             tableName: permissions
             columns:
@@ -81,16 +84,17 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:write
+                  value: orders:create
               - column:
                   name: code
-                  value: leads:write
+                  value: orders:create
               - column:
                   name: description
-                  value: Allow writing/updating leads.
+                  value: Allow creating new orders.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')
+
         - insert:
             tableName: permissions
             columns:
@@ -99,13 +103,13 @@ databaseChangeLog:
                   valueComputed: gen_random_uuid()
               - column:
                   name: name
-                  value: leads:delete
+                  value: orders:delete
               - column:
                   name: code
-                  value: leads:delete
+                  value: orders:delete
               - column:
                   name: description
-                  value: Allow deleting leads.
+                  value: Allow deleting orders.
               - column:
                   name: module_id
-                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'leads')
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'orders')

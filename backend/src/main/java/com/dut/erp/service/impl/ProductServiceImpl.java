@@ -116,9 +116,9 @@ public class ProductServiceImpl implements ProductService {
   @Override
   @Transactional
   public ProductResponse updateProductArchiveStatus(
-      UUID organizationId, UUID productId, Boolean isArchived) {
+      UUID organizationId, UUID productId, boolean isArchived) {
     Product product = findProductByIdAndOrganizationId(productId, organizationId);
-    product.setIsArchived(isArchived);
+    product.setArchived(isArchived);
     product = productRepository.save(product);
     log.info("Updated archive status for product {} in organization {}", productId, organizationId);
     return productMapper.toResponse(product);
