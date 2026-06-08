@@ -61,7 +61,7 @@ public class Order {
   @JoinColumn(name = "lead_id")
   Lead lead;
 
-  @Column(name = "order_number", nullable = false, length = 100, unique = true)
+  @Column(name = "order_number", nullable = false, length = 100)
   String orderNumber;
 
   @Enumerated(EnumType.STRING)
