@@ -26,5 +26,8 @@ public interface OrderService {
 
   OrderResponse updateOrderStatus(UUID organizationId, UUID id, UpdateOrderStatusRequest request);
 
+  PagedEntityResponse<OrderBaseResponse> getOrdersByStatus(
+      UUID organizationId, com.dut.erp.enums.OrderStatus status, PaginationRequest paginationRequest);
+
   void deleteQuotation(UUID organizationId, UUID id);
 }

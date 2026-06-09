@@ -55,4 +55,10 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
       WHERE p.id = :id AND p.organization.id = :organizationId
       """)
   Optional<Product> findByIdAndOrganizationId(UUID id, UUID organizationId);
+
+  @Query("""
+      SELECT p FROM Product p
+      WHERE p.organization.id = :organizationId
+      """)
+  List<Product> findAllByOrganizationId(@Param("organizationId") UUID organizationId);
 }

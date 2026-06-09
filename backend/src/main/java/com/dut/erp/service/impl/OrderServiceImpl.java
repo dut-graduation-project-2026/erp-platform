@@ -13,18 +13,23 @@ import com.dut.erp.entity.Lead;
 import com.dut.erp.entity.Order;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Partner;
+import com.dut.erp.enums.DocumentStatus;
+import com.dut.erp.enums.DocumentType;
 import com.dut.erp.enums.InvoiceStatus;
 import com.dut.erp.enums.LeadStage;
 import com.dut.erp.enums.OrderStatus;
+import com.dut.erp.enums.ReferenceType;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrderMapper;
+import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.LeadRepository;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.service.OrderService;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -53,6 +58,7 @@ public class OrderServiceImpl implements OrderService {
   private final LeadRepository leadRepository;
   private final OrderMapper orderMapper;
   private final InvoiceRepository invoiceRepository;
+  private final InventoryDocumentRepository inventoryDocumentRepository;
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
@@ -90,6 +96,23 @@ public class OrderServiceImpl implements OrderService {
             ? orderRepository.findOrderIdsByOrganizationIdAndSearch(
                 organizationId, search, pageable)
             : orderRepository.findOrderIdsByOrganizationId(organizationId, pageable);
+
+    return getPagedResponseFromIds(ids, pageable);
+  }
+
+  @Override
+  public PagedEntityResponse<OrderBaseResponse> getOrdersByStatus(
+      UUID organizationId, OrderStatus status, PaginationRequest paginationRequest) {
+    log.info("Fetching orders with status {} for organization {}", status, organizationId);
+
+    Pageable pageable =
+        PageRequest.of(
+            paginationRequest.page() - 1,
+            paginationRequest.limit(),
+            SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
+
+    Page<UUID> ids =
+        orderRepository.findIdsByOrganizationIdAndStatus(organizationId, status, pageable);
 
     return getPagedResponseFromIds(ids, pageable);
   }
@@ -262,6 +285,26 @@ public class OrderServiceImpl implements OrderService {
         id,
         request.status(),
         organizationId);
+
+    // If order status is updated to COMPLETED, find the associated ISSUE document and complete it
+    if (request.status() == OrderStatus.COMPLETED) {
+      inventoryDocumentRepository
+          .findByReferenceTypeAndReferenceIdAndDocumentType(
+              ReferenceType.SALES_ORDER, id, DocumentType.ISSUE)
+          .ifPresent(
+              doc -> {
+                if (doc.getDocumentStatus() == DocumentStatus.CONFIRMED) {
+                  doc.setDocumentStatus(DocumentStatus.COMPLETED);
+                  doc.setDateDone(Instant.now());
+                  inventoryDocumentRepository.save(doc);
+                  log.info(
+                      "Automatically completed inventory document {} because order {} was"
+                          + " COMPLETED",
+                      doc.getId(),
+                      id);
+                }
+              });
+    }
 
     // Advance the linked lead's stage when the order reaches a terminal state.
     // CONFIRMED → PROPOSAL, CANCELLED → LOST. SENT → WON, COMPLETED → WON.
