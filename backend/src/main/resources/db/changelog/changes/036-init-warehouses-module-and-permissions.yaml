@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 036-init-warehouses-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Warehouses
+              - column:
+                  name: code
+                  value: warehouses
+              - column:
+                  name: description
+                  value: Warehouse management system.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:select
+              - column:
+                  name: code
+                  value: warehouses:select
+              - column:
+                  name: description
+                  value: Allow selecting warehouses in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'warehouses')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:read
+              - column:
+                  name: code
+                  value: warehouses:read
+              - column:
+                  name: description
+                  value: Allow reading warehouses information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'warehouses')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:write
+              - column:
+                  name: code
+                  value: warehouses:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing warehouses data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'warehouses')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:create
+              - column:
+                  name: code
+                  value: warehouses:create
+              - column:
+                  name: description
+                  value: Allow creating new warehouses.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'warehouses')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: warehouses:delete
+              - column:
+                  name: code
+                  value: warehouses:delete
+              - column:
+                  name: description
+                  value: Allow deleting warehouses.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'warehouses')

@@ -1,0 +1,79 @@
+databaseChangeLog:
+  - changeSet:
+      id: 035-create-warehouse-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: warehouses
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_warehouses
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address
+                  type: VARCHAR(255)
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: UUID
+              - column:
+                  name: updated_by
+                  type: UUID
+        - addForeignKeyConstraint:
+            constraintName: fk_warehouses_organization
+            baseTableName: warehouses
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_warehouses_created_by
+            baseTableName: warehouses
+            baseColumnNames: created_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_warehouses_updated_by
+            baseTableName: warehouses
+            baseColumnNames: updated_by
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
+        - addUniqueConstraint:
+            tableName: warehouses
+            columnNames: organization_id, code
+            constraintName: uq_warehouses_org_code
