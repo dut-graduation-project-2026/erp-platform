@@ -1,6 +1,12 @@
 package com.dut.erp.repository;
 
 import com.dut.erp.entity.Order;
+import com.dut.erp.repository.projection.SalesBySalespersonProjection;
+import com.dut.erp.repository.projection.SalesSummaryProjection;
+import com.dut.erp.repository.projection.RevenueTrendProjection;
+import com.dut.erp.repository.projection.TopCustomerProjection;
+import com.dut.erp.repository.projection.TopProductProjection;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -103,4 +109,161 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   List<Order> findAllByIdIn(@Param("ids") List<UUID> ids);
 
   boolean existsByOrganizationIdAndOrderNumber(UUID organizationId, String orderNumber);
+
+  // --- Sales Analytics Queries ---
+
+  @Query(
+      """
+      SELECT
+          COALESCE(SUM(CASE WHEN o.status <> com.dut.erp.enums.OrderStatus.DRAFT AND o.status <> com.dut.erp.enums.OrderStatus.CANCELLED THEN o.totalAmount ELSE 0 END), 0) AS totalRevenue,
+          COUNT(CASE WHEN o.status <> com.dut.erp.enums.OrderStatus.DRAFT AND o.status <> com.dut.erp.enums.OrderStatus.CANCELLED THEN 1 END) AS totalOrders,
+          COALESCE(AVG(CASE WHEN o.status <> com.dut.erp.enums.OrderStatus.DRAFT AND o.status <> com.dut.erp.enums.OrderStatus.CANCELLED THEN o.totalAmount END), 0) AS averageOrderValue,
+          COUNT(CASE WHEN o.status = com.dut.erp.enums.OrderStatus.COMPLETED THEN 1 END) AS completedOrders,
+          COUNT(CASE WHEN o.status = com.dut.erp.enums.OrderStatus.CANCELLED THEN 1 END) AS cancelledOrders
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+        AND o.createdAt >= :startDate
+        AND o.createdAt <= :endDate
+      """)
+  SalesSummaryProjection getSalesSummary(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
+  @Query(
+      value =
+          """
+          SELECT
+              TO_CHAR(o.created_at, 'YYYY-MM-DD') AS dateVal,
+              SUM(o.total_amount) AS revenue,
+              COUNT(o.id) AS orderCount
+          FROM orders o
+          WHERE o.organization_id = :organizationId
+            AND o.status <> 'DRAFT' AND o.status <> 'CANCELLED'
+            AND o.created_at >= :startDate
+            AND o.created_at <= :endDate
+          GROUP BY TO_CHAR(o.created_at, 'YYYY-MM-DD')
+          ORDER BY dateVal ASC
+          """,
+      nativeQuery = true)
+  List<RevenueTrendProjection> getDailyRevenueTrend(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
+  @Query(
+      value =
+          """
+          SELECT
+              TO_CHAR(DATE_TRUNC('week', o.created_at), 'YYYY-MM-DD') AS dateVal,
+              SUM(o.total_amount) AS revenue,
+              COUNT(o.id) AS orderCount
+          FROM orders o
+          WHERE o.organization_id = :organizationId
+            AND o.status <> 'DRAFT' AND o.status <> 'CANCELLED'
+            AND o.created_at >= :startDate
+            AND o.created_at <= :endDate
+          GROUP BY DATE_TRUNC('week', o.created_at)
+          ORDER BY DATE_TRUNC('week', o.created_at) ASC
+          """,
+      nativeQuery = true)
+  List<RevenueTrendProjection> getWeeklyRevenueTrend(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
+  @Query(
+      value =
+          """
+          SELECT
+              TO_CHAR(DATE_TRUNC('month', o.created_at), 'YYYY-MM') AS dateVal,
+              SUM(o.total_amount) AS revenue,
+              COUNT(o.id) AS orderCount
+          FROM orders o
+          WHERE o.organization_id = :organizationId
+            AND o.status <> 'DRAFT' AND o.status <> 'CANCELLED'
+            AND o.created_at >= :startDate
+            AND o.created_at <= :endDate
+          GROUP BY DATE_TRUNC('month', o.created_at)
+          ORDER BY DATE_TRUNC('month', o.created_at) ASC
+          """,
+      nativeQuery = true)
+  List<RevenueTrendProjection> getMonthlyRevenueTrend(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
+  @Query(
+      value =
+          """
+          SELECT
+              p.id AS partnerId,
+              p.name AS partnerName,
+              SUM(o.total_amount) AS totalSpend,
+              COUNT(o.id) AS orderCount
+          FROM orders o
+          JOIN partners p ON o.partner_id = p.id
+          WHERE o.organization_id = :organizationId
+            AND o.status <> 'DRAFT' AND o.status <> 'CANCELLED'
+            AND o.created_at >= :startDate
+            AND o.created_at <= :endDate
+          GROUP BY p.id, p.name
+          ORDER BY totalSpend DESC
+          LIMIT :limitVal
+          """,
+      nativeQuery = true)
+  List<TopCustomerProjection> getTopCustomers(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate,
+      @Param("limitVal") int limitVal);
+
+  @Query(
+      value =
+          """
+          SELECT
+              pr.id AS productId,
+              pr.name AS productName,
+              SUM(oi.subtotal) AS totalRevenue,
+              SUM(oi.quantity) AS quantitySold
+          FROM order_items oi
+          JOIN orders o ON oi.order_id = o.id
+          JOIN products pr ON oi.product_id = pr.id
+          WHERE o.organization_id = :organizationId
+            AND o.status <> 'DRAFT' AND o.status <> 'CANCELLED'
+            AND o.created_at >= :startDate
+            AND o.created_at <= :endDate
+          GROUP BY pr.id, pr.name
+          ORDER BY totalRevenue DESC
+          LIMIT :limitVal
+          """,
+      nativeQuery = true)
+  List<TopProductProjection> getTopProducts(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate,
+      @Param("limitVal") int limitVal);
+
+  @Query(
+      value =
+          """
+          SELECT
+              u.id AS salespersonId,
+              CONCAT(u.first_name, ' ', u.last_name) AS salespersonName,
+              SUM(o.total_amount) AS totalRevenue,
+              COUNT(o.id) AS orderCount
+          FROM orders o
+          JOIN users u ON o.created_by = u.id
+          WHERE o.organization_id = :organizationId
+            AND o.status <> 'DRAFT' AND o.status <> 'CANCELLED'
+            AND o.created_at >= :startDate
+            AND o.created_at <= :endDate
+          GROUP BY u.id, u.first_name, u.last_name
+          ORDER BY totalRevenue DESC
+          """,
+      nativeQuery = true)
+  List<SalesBySalespersonProjection> getSalesBySalesperson(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
 }
