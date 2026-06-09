@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 038-create-warehouse-staff-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: warehouse_staff
+            columns:
+              - column:
+                  name: warehouse_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: warehouse_staff
+            columnNames: warehouse_id, user_id
+            constraintName: pk_warehouse_staff
+        - addForeignKeyConstraint:
+            constraintName: fk_warehouse_staff_warehouse
+            baseTableName: warehouse_staff
+            baseColumnNames: warehouse_id
+            referencedTableName: warehouses
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_warehouse_staff_user
+            baseTableName: warehouse_staff
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE

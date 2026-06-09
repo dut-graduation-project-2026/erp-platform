@@ -9,5 +9,6 @@ public record WarehouseBaseResponse(
     String code,
     String name,
     String address,
-    boolean isActive
+    boolean isActive,
+    UserBaseResponse manager
 ) {}
