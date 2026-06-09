@@ -39,12 +39,12 @@ public class InventoryBalanceServiceImpl implements InventoryBalanceService {
 
   @Override
   public PagedEntityResponse<InventoryBalanceBaseResponse> getBalancesByWarehouse(
-      UUID organizationId,
-      UUID warehouseId,
-      String search,
-      PaginationRequest paginationRequest) {
+      UUID organizationId, UUID warehouseId, String search, PaginationRequest paginationRequest) {
 
-    log.info("Fetching inventory balances for warehouse {} in organization {}", warehouseId, organizationId);
+    log.info(
+        "Fetching inventory balances for warehouse {} in organization {}",
+        warehouseId,
+        organizationId);
 
     // Verify warehouse belongs to the organization
     validateWarehouseBelongsToOrg(warehouseId, organizationId);
@@ -53,11 +53,13 @@ public class InventoryBalanceServiceImpl implements InventoryBalanceService {
         PageRequest.of(
             paginationRequest.page() - 1,
             paginationRequest.limit(),
-            SortingConstants.customEntitiesSort(SortField.asc("product.name"), SortField.asc("updatedAt")));
+            SortingConstants.customEntitiesSort(
+                SortField.asc("product.name"), SortField.asc("updatedAt")));
 
     Page<UUID> ids =
         (search != null && !search.trim().isEmpty())
-            ? inventoryBalanceRepository.findIdsByWarehouseIdAndSearch(warehouseId, search, pageable)
+            ? inventoryBalanceRepository.findIdsByWarehouseIdAndSearch(
+                warehouseId, search, pageable)
             : inventoryBalanceRepository.findIdsByWarehouseId(warehouseId, pageable);
 
     if (ids.isEmpty()) {
@@ -65,7 +67,7 @@ public class InventoryBalanceServiceImpl implements InventoryBalanceService {
     }
 
     Map<UUID, InventoryBalance> balanceMap =
-        inventoryBalanceRepository.findAllByIdIn(ids.getContent()).stream()
+        inventoryBalanceRepository.findAllByIdsWithProduct(ids.getContent()).stream()
             .collect(Collectors.toMap(InventoryBalance::getId, Function.identity()));
 
     List<InventoryBalanceBaseResponse> responses =
@@ -82,8 +84,11 @@ public class InventoryBalanceServiceImpl implements InventoryBalanceService {
   public InventoryBalanceResponse getBalanceById(
       UUID organizationId, UUID warehouseId, UUID balanceId) {
 
-    log.info("Fetching inventory balance {} for warehouse {} in organization {}",
-        balanceId, warehouseId, organizationId);
+    log.info(
+        "Fetching inventory balance {} for warehouse {} in organization {}",
+        balanceId,
+        warehouseId,
+        organizationId);
 
     // Verify warehouse belongs to the organization
     validateWarehouseBelongsToOrg(warehouseId, organizationId);
@@ -92,8 +97,9 @@ public class InventoryBalanceServiceImpl implements InventoryBalanceService {
         inventoryBalanceRepository
             .findByIdAndWarehouseId(balanceId, warehouseId)
             .orElseThrow(
-                () -> new ResourceNotFoundException(
-                    "Inventory balance not found with id: " + balanceId));
+                () ->
+                    new ResourceNotFoundException(
+                        "Inventory balance not found with id: " + balanceId));
 
     return inventoryBalanceMapper.toResponse(balance);
   }
@@ -102,7 +108,8 @@ public class InventoryBalanceServiceImpl implements InventoryBalanceService {
 
   private void validateWarehouseBelongsToOrg(UUID warehouseId, UUID organizationId) {
     if (!warehouseRepository.existsByOrganizationIdAndIdInternal(organizationId, warehouseId)) {
-      throw new ResourceNotFoundException("Warehouse not found with id: " + warehouseId);
+      throw new ResourceNotFoundException(
+          "Warehouse " + warehouseId + " does not belong to organization " + organizationId);
     }
   }
 }

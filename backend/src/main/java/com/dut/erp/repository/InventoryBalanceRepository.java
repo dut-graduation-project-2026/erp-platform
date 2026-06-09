@@ -16,35 +16,38 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
 
   // ---- Paginated ID list for list-view queries ----
 
-  @Query("""
+  @Query(
+      """
       SELECT ib.id FROM InventoryBalance ib
+      JOIN ib.product p
       WHERE ib.warehouse.id = :warehouseId
       """)
-  Page<UUID> findIdsByWarehouseId(
-      @Param("warehouseId") UUID warehouseId, Pageable pageable);
+  Page<UUID> findIdsByWarehouseId(@Param("warehouseId") UUID warehouseId, Pageable pageable);
 
-  @Query("""
+  @Query(
+      """
       SELECT ib.id FROM InventoryBalance ib
+      JOIN ib.product p
       WHERE ib.warehouse.id = :warehouseId
-        AND LOWER(ib.product.name) LIKE LOWER(CONCAT('%', :search, '%'))
+        AND LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
       """)
   Page<UUID> findIdsByWarehouseIdAndSearch(
-      @Param("warehouseId") UUID warehouseId,
-      @Param("search") String search,
-      Pageable pageable);
+      @Param("warehouseId") UUID warehouseId, @Param("search") String search, Pageable pageable);
 
   // ---- Fetch-join queries for hydrating paginated results ----
 
-  @Query("""
+  @Query(
+      """
       SELECT ib FROM InventoryBalance ib
       JOIN FETCH ib.product
       WHERE ib.id IN :ids
       """)
-  List<InventoryBalance> findAllByIdIn(@Param("ids") List<UUID> ids);
+  List<InventoryBalance> findAllByIdsWithProduct(@Param("ids") List<UUID> ids);
 
   // ---- Single-record lookups ----
 
-  @Query("""
+  @Query(
+      """
       SELECT ib FROM InventoryBalance ib
       JOIN FETCH ib.warehouse
       JOIN FETCH ib.product
@@ -54,14 +57,4 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
       @Param("id") UUID id, @Param("warehouseId") UUID warehouseId);
 
   Optional<InventoryBalance> findByWarehouseIdAndProductId(UUID warehouseId, UUID productId);
-
-  // ---- Bulk helpers (used when seeding / adjusting) ----
-
-  @Query("""
-      SELECT ib FROM InventoryBalance ib
-      JOIN FETCH ib.warehouse
-      JOIN FETCH ib.product
-      WHERE ib.product.id = :productId
-      """)
-  List<InventoryBalance> findAllByProductId(@Param("productId") UUID productId);
 }
