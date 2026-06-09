@@ -8,9 +8,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -54,9 +59,33 @@ public class Warehouse {
   @Column(name = "address", length = 255)
   String address;
 
+  @Column(name = "description", columnDefinition = "TEXT")
+  String description;
+
   @Column(name = "is_active", nullable = false)
   @Builder.Default
   Boolean isActive = Boolean.TRUE;
+
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "manager_id")
+  User manager;
+
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "warehouse_staff",
+      joinColumns = @JoinColumn(name = "warehouse_id"),
+      inverseJoinColumns = @JoinColumn(name = "user_id")
+  )
+  @Builder.Default
+  List<User> staff = new ArrayList<>();
+
+  @Column(name = "maximum_capacity", precision = 30, scale = 10)
+  BigDecimal maximumCapacity;
+
+  @Column(name = "used_capacity", precision = 30, scale = 10)
+  @Builder.Default
+  BigDecimal usedCapacity = BigDecimal.ZERO;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)

@@ -14,8 +14,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface WarehouseRepository extends JpaRepository<Warehouse, UUID> {
 
-  @Query(
-      """
+  @Query("""
       SELECT w.id
       FROM Warehouse w
       WHERE w.organization.id = :organizationId
@@ -23,17 +22,18 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, UUID> {
   Page<UUID> findIdsByOrganizationId(
       @Param("organizationId") UUID organizationId, Pageable pageable);
 
-  @Query(
-      """
+  @Query("""
       SELECT DISTINCT w FROM Warehouse w
+      LEFT JOIN FETCH w.manager
       WHERE w.id IN :ids
       """)
   List<Warehouse> findAllByIdIn(@Param("ids") List<UUID> ids);
 
-  @Query(
-      """
+  @Query("""
       SELECT w FROM Warehouse w
       LEFT JOIN FETCH w.organization
+      LEFT JOIN FETCH w.manager
+      LEFT JOIN FETCH w.staff
       LEFT JOIN FETCH w.createdBy
       LEFT JOIN FETCH w.updatedBy
       WHERE w.id = :id AND w.organization.id = :organizationId

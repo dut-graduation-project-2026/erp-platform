@@ -1,7 +1,13 @@
 package com.dut.erp.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 
 public record CreateWarehouseRequest(
     @NotBlank(message = "Name cannot be blank")
@@ -13,5 +19,17 @@ public record CreateWarehouseRequest(
     String code,
 
     @Size(max = 255, message = "Address cannot exceed 255 characters")
-    String address
+    String address,
+
+    String description,
+
+    @NotNull(message = "Maximum capacity is required")
+    @Positive(message = "Maximum capacity must be a positive number")
+    BigDecimal maximumCapacity,
+
+    @NotEmpty(message = "Staff list cannot be empty")
+    List<UUID> staffIds,
+
+    @NotNull(message = "Manager is required")
+    UUID managerId
 ) {}

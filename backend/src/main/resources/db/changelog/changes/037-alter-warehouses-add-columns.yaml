@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 037-alter-warehouses-add-columns
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: warehouses
+            columns:
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: manager_id
+                  type: UUID
+              - column:
+                  name: maximum_capacity
+                  type: DECIMAL(30, 10)
+              - column:
+                  name: used_capacity
+                  type: DECIMAL(30, 10)
+                  defaultValueNumeric: 0.00
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_warehouses_manager
+            baseTableName: warehouses
+            baseColumnNames: manager_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+            onUpdate: CASCADE
