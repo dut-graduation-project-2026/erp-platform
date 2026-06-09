@@ -10,9 +10,6 @@ databaseChangeLog:
                   name: description
                   type: TEXT
               - column:
-                  name: contact_person_id
-                  type: UUID
-              - column:
                   name: manager_id
                   type: UUID
               - column:
@@ -21,17 +18,9 @@ databaseChangeLog:
               - column:
                   name: used_capacity
                   type: DECIMAL(30, 10)
-                  defaultValueNumeric: 0
+                  defaultValueNumeric: 0.00
                   constraints:
                     nullable: false
-        - addForeignKeyConstraint:
-            constraintName: fk_warehouses_contact_person
-            baseTableName: warehouses
-            baseColumnNames: contact_person_id
-            referencedTableName: users
-            referencedColumnNames: id
-            onDelete: SET NULL
-            onUpdate: CASCADE
         - addForeignKeyConstraint:
             constraintName: fk_warehouses_manager
             baseTableName: warehouses

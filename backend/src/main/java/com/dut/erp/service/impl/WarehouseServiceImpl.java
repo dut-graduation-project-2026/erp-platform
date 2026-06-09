@@ -102,7 +102,10 @@ public class WarehouseServiceImpl implements WarehouseService {
     UUID managerId = request.managerId();
     validateManagerInStaff(managerId, request.staffIds());
 
-    User manager = findUserInList(staff, managerId);
+    User manager = staff.stream()
+        .filter(u -> u.getId().equals(managerId))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("Manager resolved but not found in staff list"));
 
     Warehouse warehouse =
         Warehouse.builder()
@@ -141,7 +144,10 @@ public class WarehouseServiceImpl implements WarehouseService {
     UUID managerId = request.managerId();
     validateManagerInStaff(managerId, request.staffIds());
 
-    User manager = findUserInList(staff, managerId);
+    User manager = staff.stream()
+        .filter(u -> u.getId().equals(managerId))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("Manager resolved but not found in staff list"));
 
     if (request.isActive() != null) {
       warehouse.setIsActive(request.isActive());
@@ -209,15 +215,5 @@ public class WarehouseServiceImpl implements WarehouseService {
       throw new BadRequestException(
           "Manager (id: " + managerId + ") must be included in the staff list.");
     }
-  }
-
-  /**
-   * Finds a User in the resolved staff list by ID.
-   */
-  private User findUserInList(List<User> staff, UUID userId) {
-    return staff.stream()
-        .filter(u -> u.getId().equals(userId))
-        .findFirst()
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
   }
 }

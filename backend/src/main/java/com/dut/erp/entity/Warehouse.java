@@ -66,9 +66,6 @@ public class Warehouse {
   @Builder.Default
   Boolean isActive = Boolean.TRUE;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "contact_person_id")
-  User contactPerson;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "manager_id")
