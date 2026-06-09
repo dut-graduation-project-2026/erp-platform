@@ -8,6 +8,10 @@ public record UpdateWarehouseRequest(
     @Size(max = 255, message = "Name cannot exceed 255 characters")
     String name,
 
+    @NotBlank(message = "Code cannot be blank")
+    @Size(max = 50, message = "Code cannot exceed 50 characters")
+    String code,
+
     @Size(max = 255, message = "Address cannot exceed 255 characters")
     String address,
 

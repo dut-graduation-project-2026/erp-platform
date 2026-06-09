@@ -37,7 +37,7 @@ public class WarehouseController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('warehouses:select', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('warehouses:read', #organizationId, #userDetails)
       """)
   public ResponseEntity<PagedEntityResponse<WarehouseBaseResponse>> getWarehouses(
       @PathVariable UUID organizationId,
@@ -51,7 +51,7 @@ public class WarehouseController {
       """
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
         and
-        @securityAuthService.hasPermission('warehouses:read', #organizationId, #userDetails)
+        @securityAuthService.hasPermission('warehouses:select', #organizationId, #userDetails)
       """)
   public ResponseEntity<WarehouseResponse> getWarehouseById(
       @PathVariable UUID organizationId,

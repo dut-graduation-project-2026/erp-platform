@@ -111,10 +111,16 @@ public class WarehouseServiceImpl implements WarehouseService {
     log.info("Updating warehouse {} in organization {}", warehouseId, organizationId);
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
 
+    if (warehouseRepository.existsByOrganizationIdAndCodeAndIdNot(organizationId, request.code(), warehouseId)) {
+      throw new ResourceAlreadyExistsException(
+          "Warehouse with code " + request.code() + " already exists in this organization.");
+    }
+
     if (request.isActive() != null) {
       warehouse.setIsActive(request.isActive());
     }
     warehouse.setName(request.name());
+    warehouse.setCode(request.code());
     warehouse.setAddress(request.address());
 
     warehouse = warehouseRepository.save(warehouse);
