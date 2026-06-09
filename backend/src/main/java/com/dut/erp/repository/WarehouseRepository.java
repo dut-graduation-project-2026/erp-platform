@@ -41,7 +41,20 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, UUID> {
   Optional<Warehouse> findByIdAndOrganizationId(
       @Param("id") UUID id, @Param("organizationId") UUID organizationId);
 
+  @Query("""
+      SELECT w FROM Warehouse w
+      WHERE w.organization.id = :organizationId
+      """)
+  List<Warehouse> findAllByOrganizationId(@Param("organizationId") UUID organizationId);
+
   boolean existsByOrganizationIdAndCode(UUID organizationId, String code);
 
   boolean existsByOrganizationIdAndCodeAndIdNot(UUID organizationId, String code, UUID id);
+
+  @Query("""
+      SELECT COUNT(w) > 0 FROM Warehouse w
+      WHERE w.id = :id AND w.organization.id = :organizationId
+      """)
+  boolean existsByOrganizationIdAndIdInternal(
+      @Param("organizationId") UUID organizationId, @Param("id") UUID id);
 }

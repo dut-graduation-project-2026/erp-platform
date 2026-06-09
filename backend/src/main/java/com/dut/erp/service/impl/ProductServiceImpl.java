@@ -7,12 +7,16 @@ import com.dut.erp.dto.request.UpsertProductRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.ProductBaseResponse;
 import com.dut.erp.dto.response.ProductResponse;
+import com.dut.erp.entity.InventoryBalance;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Product;
+import com.dut.erp.entity.Warehouse;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.ProductMapper;
+import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.ProductRepository;
+import com.dut.erp.repository.WarehouseRepository;
 import com.dut.erp.service.ProductService;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +41,8 @@ public class ProductServiceImpl implements ProductService {
 
   private final OrganizationRepository organizationRepository;
   private final ProductRepository productRepository;
+  private final WarehouseRepository warehouseRepository;
+  private final InventoryBalanceRepository inventoryBalanceRepository;
   private final ProductMapper productMapper;
 
   @Override
@@ -95,6 +101,22 @@ public class ProductServiceImpl implements ProductService {
 
     product = productRepository.save(product);
     log.info("Created product {} in organization {}", product.getId(), organizationId);
+
+    // Seed a zero-quantity InventoryBalance for every warehouse in the organization
+    List<Warehouse> warehouses = warehouseRepository.findAllByOrganizationId(organizationId);
+    if (!warehouses.isEmpty()) {
+      final Product savedProduct = product;
+      List<InventoryBalance> balances = warehouses.stream()
+          .map(warehouse -> InventoryBalance.builder()
+              .warehouse(warehouse)
+              .product(savedProduct)
+              .build())
+          .collect(Collectors.toList());
+      inventoryBalanceRepository.saveAll(balances);
+      log.info("Seeded {} inventory balance(s) for product {} across warehouses",
+          balances.size(), savedProduct.getId());
+    }
+
     return productMapper.toResponse(product);
   }
 
