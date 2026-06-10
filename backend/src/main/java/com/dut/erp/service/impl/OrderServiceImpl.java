@@ -8,6 +8,8 @@ import com.dut.erp.dto.request.UpsertOrderRequest;
 import com.dut.erp.dto.response.OrderBaseResponse;
 import com.dut.erp.dto.response.OrderResponse;
 import com.dut.erp.dto.response.PagedEntityResponse;
+import com.dut.erp.entity.InventoryBalance;
+import com.dut.erp.entity.InventoryDocumentLine;
 import com.dut.erp.entity.Invoice;
 import com.dut.erp.entity.Lead;
 import com.dut.erp.entity.Order;
@@ -22,8 +24,6 @@ import com.dut.erp.enums.ReferenceType;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrderMapper;
-import com.dut.erp.entity.InventoryBalance;
-import com.dut.erp.entity.InventoryDocumentLine;
 import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.repository.InvoiceRepository;
@@ -32,7 +32,6 @@ import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.service.OrderService;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -248,11 +247,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // Rule: Sales module can only set status to DRAFT, CONFIRMED, CANCELLED, or COMPLETED
-    if (request.status() != OrderStatus.DRAFT &&
-        request.status() != OrderStatus.CONFIRMED &&
-        request.status() != OrderStatus.CANCELLED &&
-        request.status() != OrderStatus.COMPLETED) {
-      throw new BadRequestException("Sales module is not allowed to manually update status to " + request.status());
+    if (request.status() != OrderStatus.DRAFT
+        && request.status() != OrderStatus.CONFIRMED
+        && request.status() != OrderStatus.CANCELLED
+        && request.status() != OrderStatus.COMPLETED) {
+      throw new BadRequestException(
+          "Sales module is not allowed to manually update status to " + request.status());
     }
 
     // Rule: Transition to COMPLETED is only allowed if current status is SENT and invoice is PAID
@@ -261,26 +261,34 @@ public class OrderServiceImpl implements OrderService {
         throw new BadRequestException("Only delivered orders (SENT status) can be completed");
       }
 
-      Invoice invoice = invoiceRepository
-          .findByOrderIdAndOrganizationId(id, organizationId)
-          .orElseThrow(() -> new BadRequestException(
-              "Cannot complete order because no invoice has been created for it yet"));
+      Invoice invoice =
+          invoiceRepository
+              .findByOrderIdAndOrganizationId(id, organizationId)
+              .orElseThrow(
+                  () ->
+                      new BadRequestException(
+                          "Cannot complete order because no invoice has been created for it yet"));
 
       if (invoice.getStatus() != InvoiceStatus.PAID) {
-        throw new BadRequestException("Cannot complete order because the linked invoice is not PAID");
+        throw new BadRequestException(
+            "Cannot complete order because the linked invoice is not PAID");
       }
     }
 
     // Rule: If current status is WAITING_FOR_STOCK, Sales team can only cancel it
-    if (order.getStatus() == OrderStatus.WAITING_FOR_STOCK && request.status() != OrderStatus.CANCELLED) {
-      throw new BadRequestException("Cannot manually update order status in WAITING_FOR_STOCK state unless cancelling. Status is managed by Warehouse.");
+    if (order.getStatus() == OrderStatus.WAITING_FOR_STOCK
+        && request.status() != OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+          "Cannot manually update order status in WAITING_FOR_STOCK state unless cancelling. Status"
+              + " is managed by Warehouse.");
     }
 
     // Rule: If current status is SENT, Sales team can only cancel or complete it
-    if (order.getStatus() == OrderStatus.SENT &&
-        request.status() != OrderStatus.COMPLETED &&
-        request.status() != OrderStatus.CANCELLED) {
-      throw new BadRequestException("Delivered orders (SENT status) can only be completed or cancelled");
+    if (order.getStatus() == OrderStatus.SENT
+        && request.status() != OrderStatus.COMPLETED
+        && request.status() != OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+          "Delivered orders (SENT status) can only be completed or cancelled");
     }
 
     // Rule: Once status changes away from DRAFT, it cannot transition back to DRAFT
@@ -303,28 +311,38 @@ public class OrderServiceImpl implements OrderService {
               });
 
       // Cancel warehouse document and revert stock if it was confirmed
-      inventoryDocumentRepository.findByReferenceTypeAndReferenceIdAndDocumentType(
-          ReferenceType.SALES_ORDER, id, DocumentType.ISSUE)
-          .ifPresent(doc -> {
-            if (doc.getDocumentStatus() != DocumentStatus.COMPLETED &&
-                doc.getDocumentStatus() != DocumentStatus.CANCELLED) {
-              
-              if (doc.getDocumentStatus() == DocumentStatus.CONFIRMED) {
-                // Revert stock moves
-                for (InventoryDocumentLine tx : doc.getLines()) {
-                  InventoryBalance balance = inventoryBalanceRepository
-                      .findByWarehouseIdAndProductId(doc.getWarehouse().getId(), tx.getProduct().getId())
-                      .orElseThrow(() -> new ResourceNotFoundException("Inventory balance not found"));
-                  balance.setQuantity(balance.getQuantity().add(tx.getQuantity()));
-                  inventoryBalanceRepository.save(balance);
+      inventoryDocumentRepository
+          .findByReferenceTypeAndReferenceIdAndDocumentType(
+              ReferenceType.SALES_ORDER, id, DocumentType.ISSUE)
+          .ifPresent(
+              doc -> {
+                if (doc.getDocumentStatus() != DocumentStatus.COMPLETED
+                    && doc.getDocumentStatus() != DocumentStatus.CANCELLED) {
+
+                  if (doc.getDocumentStatus() == DocumentStatus.CONFIRMED) {
+                    // Revert stock moves
+                    for (InventoryDocumentLine tx : doc.getLines()) {
+                      InventoryBalance balance =
+                          inventoryBalanceRepository
+                              .findByWarehouseIdAndProductId(
+                                  doc.getWarehouse().getId(), tx.getProduct().getId())
+                              .orElseThrow(
+                                  () ->
+                                      new ResourceNotFoundException("Inventory balance not found"));
+                      balance.setQuantity(balance.getQuantity().add(tx.getQuantity()));
+                      inventoryBalanceRepository.save(balance);
+                    }
+                  }
+
+                  doc.setDocumentStatus(DocumentStatus.CANCELLED);
+                  inventoryDocumentRepository.save(doc);
+                  log.info(
+                      "Automatically cancelled inventory document {} because order {} was"
+                          + " CANCELLED",
+                      doc.getId(),
+                      id);
                 }
-              }
-              
-              doc.setDocumentStatus(DocumentStatus.CANCELLED);
-              inventoryDocumentRepository.save(doc);
-              log.info("Automatically cancelled inventory document {} because order {} was CANCELLED", doc.getId(), id);
-            }
-          });
+              });
     }
 
     order.setStatus(request.status());
