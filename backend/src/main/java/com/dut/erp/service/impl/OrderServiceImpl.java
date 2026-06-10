@@ -22,6 +22,9 @@ import com.dut.erp.enums.ReferenceType;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrderMapper;
+import com.dut.erp.entity.Warehouse;
+import com.dut.erp.repository.WarehouseRepository;
+import com.dut.erp.service.SalesOrderIntegrationService;
 import com.dut.erp.entity.InventoryBalance;
 import com.dut.erp.entity.InventoryDocumentLine;
 import com.dut.erp.repository.InventoryBalanceRepository;
@@ -63,6 +66,8 @@ public class OrderServiceImpl implements OrderService {
   private final InvoiceRepository invoiceRepository;
   private final InventoryDocumentRepository inventoryDocumentRepository;
   private final InventoryBalanceRepository inventoryBalanceRepository;
+  private final WarehouseRepository warehouseRepository;
+  private final SalesOrderIntegrationService salesOrderIntegrationService;
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
@@ -327,6 +332,7 @@ public class OrderServiceImpl implements OrderService {
           });
     }
 
+    OrderStatus oldStatus = order.getStatus();
     order.setStatus(request.status());
     order = orderRepository.save(order);
     log.info(
@@ -334,6 +340,10 @@ public class OrderServiceImpl implements OrderService {
         id,
         request.status(),
         organizationId);
+
+    if (oldStatus != OrderStatus.CONFIRMED && request.status() == OrderStatus.CONFIRMED) {
+      salesOrderIntegrationService.handleOrderConfirmation(order, request.warehouseId());
+    }
 
     // Advance the linked lead's stage when the order reaches a terminal state.
     // CONFIRMED → PROPOSAL, CANCELLED → LOST, COMPLETED → WON.

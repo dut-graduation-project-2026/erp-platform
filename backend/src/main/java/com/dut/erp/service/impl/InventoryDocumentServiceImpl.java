@@ -36,6 +36,7 @@ import com.dut.erp.enums.InvoiceStatus;
 import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.WarehouseRepository;
 import com.dut.erp.service.InventoryDocumentService;
+import com.dut.erp.service.COGSValuationEngine;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -68,6 +69,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   private final OrderRepository orderRepository;
   private final ReplenishmentRequestRepository replenishmentRequestRepository;
   private final InvoiceRepository invoiceRepository;
+  private final COGSValuationEngine cogsValuationEngine;
 
   @Override
   @Transactional
@@ -419,6 +421,9 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         deductBalance(negativeMoves, doc.getWarehouse().getId());
       }
     }
+
+    // Calculate COGS and initialize remaining quantities
+    cogsValuationEngine.calculateCOGS(doc);
 
     doc.setDocumentStatus(DocumentStatus.COMPLETED);
     doc.setDateDone(Instant.now());

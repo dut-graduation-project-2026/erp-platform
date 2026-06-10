@@ -55,6 +55,11 @@ public class Product {
   @Builder.Default
   boolean isArchived = false;
 
+  @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+  @Column(name = "cogs_method", nullable = false, length = 50)
+  @Builder.Default
+  com.dut.erp.enums.CogsMethod cogsMethod = com.dut.erp.enums.CogsMethod.FIFO;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "organization_id", nullable = false)
   Organization organization;

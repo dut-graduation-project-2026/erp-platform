@@ -12,6 +12,7 @@ public record ProductResponse(
     String description,
     BigDecimal price,
     boolean isArchived,
+    com.dut.erp.enums.CogsMethod cogsMethod,
     OrganizationBaseResponse organization,
     Instant createdAt,
     Instant updatedAt,

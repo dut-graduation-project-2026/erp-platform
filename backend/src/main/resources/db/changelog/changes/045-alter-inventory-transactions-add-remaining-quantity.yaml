@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 045-alter-inventory-transactions-add-remaining-quantity
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: inventory_transactions
+            columns:
+              - column:
+                  name: remaining_quantity
+                  type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

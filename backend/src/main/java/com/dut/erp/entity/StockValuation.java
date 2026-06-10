@@ -1,7 +1,11 @@
 package com.dut.erp.entity;
 
+import com.dut.erp.enums.CogsMethod;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -18,16 +23,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "inventory_transactions")
+@Table(name = "stock_valuations")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class InventoryDocumentLine {
+@EntityListeners(AuditingEntityListener.class)
+public class StockValuation {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -35,26 +43,27 @@ public class InventoryDocumentLine {
   UUID id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "inventory_document_id", nullable = false)
-  InventoryDocument inventoryDocument;
+  @JoinColumn(name = "inventory_document_line_id", nullable = false)
+  InventoryDocumentLine inventoryDocumentLine;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "product_id", nullable = false)
   Product product;
 
   @Column(name = "quantity", nullable = false, precision = 15, scale = 4)
-  @Builder.Default
-  BigDecimal quantity = BigDecimal.ZERO;
+  BigDecimal quantity;
 
   @Column(name = "unit_cost", nullable = false, precision = 15, scale = 4)
-  @Builder.Default
-  BigDecimal unitCost = BigDecimal.ZERO;
+  BigDecimal unitCost;
 
-  @Column(name = "valuation", nullable = false, precision = 15, scale = 4)
-  @Builder.Default
-  BigDecimal valuation = BigDecimal.ZERO;
+  @Column(name = "total_valuation", nullable = false, precision = 15, scale = 4)
+  BigDecimal totalValuation;
 
-  @Column(name = "remaining_quantity", nullable = false, precision = 15, scale = 4)
-  @Builder.Default
-  BigDecimal remainingQuantity = BigDecimal.ZERO;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "method", nullable = false, length = 50)
+  CogsMethod method;
+
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  Instant createdAt;
 }
