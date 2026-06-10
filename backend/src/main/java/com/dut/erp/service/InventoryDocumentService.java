@@ -12,12 +12,14 @@ public interface InventoryDocumentService {
   InventoryDocumentResponse createDocument(
       UUID organizationId, UUID warehouseId, CreateInventoryDocumentRequest request);
 
-  InventoryDocumentResponse claimOrder(UUID organizationId, UUID warehouseId, UUID orderId);
+  InventoryDocumentResponse createIssueDocumentFromOrder(UUID organizationId, UUID warehouseId, UUID orderId);
 
   PagedEntityResponse<InventoryDocumentBaseResponse> getDocuments(
       UUID organizationId, UUID warehouseId, String search, PaginationRequest paginationRequest);
 
   InventoryDocumentResponse getDocumentById(UUID organizationId, UUID warehouseId, UUID documentId);
+
+  InventoryDocumentResponse confirmDocument(UUID organizationId, UUID warehouseId, UUID documentId);
 
   InventoryDocumentResponse completeDocument(UUID organizationId, UUID warehouseId, UUID documentId);
 

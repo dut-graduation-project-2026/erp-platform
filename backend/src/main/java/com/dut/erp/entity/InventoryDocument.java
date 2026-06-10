@@ -88,7 +88,7 @@ public class InventoryDocument {
 
   @Builder.Default
   @OneToMany(mappedBy = "inventoryDocument", cascade = CascadeType.ALL, orphanRemoval = true)
-  List<InventoryTransaction> stockMoves = new ArrayList<>();
+  List<InventoryDocumentLine> lines = new ArrayList<>();
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)

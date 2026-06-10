@@ -36,12 +36,12 @@ public class InventoryDocumentController {
         and
         @securityAuthService.hasPermission('warehouses:write', #organizationId, #userDetails)
       """)
-  public ResponseEntity<InventoryDocumentResponse> claimOrder(
+  public ResponseEntity<InventoryDocumentResponse> createIssueDocumentFromOrder(
       @PathVariable UUID organizationId,
       @PathVariable UUID warehouseId,
       @PathVariable UUID orderId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    return ResponseEntity.ok(inventoryDocumentService.claimOrder(organizationId, warehouseId, orderId));
+    return ResponseEntity.ok(inventoryDocumentService.createIssueDocumentFromOrder(organizationId, warehouseId, orderId));
   }
 
   @GetMapping("/documents")
@@ -71,6 +71,20 @@ public class InventoryDocumentController {
       @PathVariable UUID documentId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(inventoryDocumentService.getDocumentById(organizationId, warehouseId, documentId));
+  }
+
+  @PostMapping("/documents/{documentId}/confirm")
+  @PreAuthorize("""
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('warehouses:write', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<InventoryDocumentResponse> confirmDocument(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID warehouseId,
+      @PathVariable UUID documentId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(inventoryDocumentService.confirmDocument(organizationId, warehouseId, documentId));
   }
 
   @PostMapping("/documents/{documentId}/complete")

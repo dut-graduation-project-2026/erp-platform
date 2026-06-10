@@ -5,9 +5,11 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record InventoryTransactionResponse(
+public record InventoryDocumentLineResponse(
     UUID id,
     UUID productId,
     String productName,
-    BigDecimal quantity
+    BigDecimal quantity,
+    BigDecimal unitCost,
+    BigDecimal valuation
 ) {}

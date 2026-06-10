@@ -11,6 +11,7 @@ import com.dut.erp.entity.InventoryDocument;
 import com.dut.erp.entity.ReplenishmentRequest;
 import com.dut.erp.entity.Warehouse;
 import com.dut.erp.enums.DocumentStatus;
+import com.dut.erp.enums.ReplenishmentStatus;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.repository.InventoryDocumentRepository;
@@ -66,7 +67,7 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
         .warehouse(warehouse)
         .inventoryDocument(doc)
         .notes(request.notes())
-        .status("OPEN")
+        .status(ReplenishmentStatus.OPEN)
         .build();
 
     req = replenishmentRequestRepository.save(req);
@@ -115,7 +116,7 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
         req.getInventoryDocument().getId(),
         req.getInventoryDocument().getName(),
         req.getNotes(),
-        req.getStatus(),
+        req.getStatus().name(),
         req.getCreatedAt(),
         createdByResp
     );

@@ -27,7 +27,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class InventoryTransaction {
+public class InventoryDocumentLine {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -45,4 +45,12 @@ public class InventoryTransaction {
   @Column(name = "quantity", nullable = false, precision = 15, scale = 4)
   @Builder.Default
   BigDecimal quantity = BigDecimal.ZERO;
+
+  @Column(name = "unit_cost", nullable = false, precision = 15, scale = 4)
+  @Builder.Default
+  BigDecimal unitCost = BigDecimal.ZERO;
+
+  @Column(name = "valuation", nullable = false, precision = 15, scale = 4)
+  @Builder.Default
+  BigDecimal valuation = BigDecimal.ZERO;
 }

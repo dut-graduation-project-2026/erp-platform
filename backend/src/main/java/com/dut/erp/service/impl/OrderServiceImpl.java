@@ -23,7 +23,7 @@ import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrderMapper;
 import com.dut.erp.entity.InventoryBalance;
-import com.dut.erp.entity.InventoryTransaction;
+import com.dut.erp.entity.InventoryDocumentLine;
 import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.repository.InvoiceRepository;
@@ -311,7 +311,7 @@ public class OrderServiceImpl implements OrderService {
               
               if (doc.getDocumentStatus() == DocumentStatus.CONFIRMED) {
                 // Revert stock moves
-                for (InventoryTransaction tx : doc.getStockMoves()) {
+                for (InventoryDocumentLine tx : doc.getLines()) {
                   InventoryBalance balance = inventoryBalanceRepository
                       .findByWarehouseIdAndProductId(doc.getWarehouse().getId(), tx.getProduct().getId())
                       .orElseThrow(() -> new ResourceNotFoundException("Inventory balance not found"));

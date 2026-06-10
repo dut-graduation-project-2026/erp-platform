@@ -12,7 +12,7 @@ public record CreateInventoryDocumentRequest(
     @NotNull(message = "Document type is required")
     DocumentType documentType,
 
-    UUID sourceWarehouseId,
+    UUID transferSourceWarehouseId,
 
     Instant scheduledDate,
 

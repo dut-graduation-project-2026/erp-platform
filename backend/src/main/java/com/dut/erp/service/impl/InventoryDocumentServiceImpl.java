@@ -3,28 +3,31 @@ package com.dut.erp.service.impl;
 import com.dut.erp.constant.SortingConstants;
 import com.dut.erp.dto.common.SortField;
 import com.dut.erp.dto.request.CreateInventoryDocumentRequest;
+import com.dut.erp.dto.request.InventoryDocumentItemRequest;
 import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.response.InventoryDocumentBaseResponse;
 import com.dut.erp.dto.response.InventoryDocumentResponse;
-import com.dut.erp.dto.response.InventoryTransactionResponse;
+import com.dut.erp.dto.response.InventoryDocumentLineResponse;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.UserBaseResponse;
 import com.dut.erp.entity.InventoryBalance;
 import com.dut.erp.entity.InventoryDocument;
-import com.dut.erp.entity.InventoryTransaction;
+import com.dut.erp.entity.InventoryDocumentLine;
 import com.dut.erp.entity.Order;
 import com.dut.erp.entity.OrderItem;
 import com.dut.erp.entity.Product;
+import com.dut.erp.entity.ReplenishmentRequest;
 import com.dut.erp.entity.Warehouse;
 import com.dut.erp.enums.DocumentStatus;
 import com.dut.erp.enums.DocumentType;
 import com.dut.erp.enums.OrderStatus;
 import com.dut.erp.enums.ReferenceType;
+import com.dut.erp.enums.ReplenishmentStatus;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.InventoryDocumentRepository;
-import com.dut.erp.repository.InventoryTransactionRepository;
+import com.dut.erp.repository.InventoryDocumentLineRepository;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.repository.ReplenishmentRequestRepository;
@@ -60,7 +63,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   private final WarehouseRepository warehouseRepository;
   private final ProductRepository productRepository;
   private final InventoryDocumentRepository inventoryDocumentRepository;
-  private final InventoryTransactionRepository inventoryTransactionRepository;
+  private final InventoryDocumentLineRepository inventoryDocumentLineRepository;
   private final InventoryBalanceRepository inventoryBalanceRepository;
   private final OrderRepository orderRepository;
   private final ReplenishmentRequestRepository replenishmentRequestRepository;
@@ -71,17 +74,45 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   public InventoryDocumentResponse createDocument(
       UUID organizationId, UUID warehouseId, CreateInventoryDocumentRequest request) {
     log.info("Creating manual inventory document of type {} in warehouse {}", request.documentType(), warehouseId);
+
+    // Validate quantities based on document type
+    for (var item : request.items()) {
+      if (request.documentType() == DocumentType.ADJUSTMENT) {
+        if (item.quantity().compareTo(BigDecimal.ZERO) == 0) {
+          throw new BadRequestException("Quantity cannot be zero for ADJUSTMENT");
+        }
+      } else {
+        if (item.quantity().compareTo(BigDecimal.ZERO) <= 0) {
+          throw new BadRequestException("Quantity must be positive for " + request.documentType());
+        }
+      }
+    }
+
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
+
+    // Batch fetch all products in the request to optimize DB calls
+    List<UUID> productIds = request.items().stream()
+        .map(InventoryDocumentItemRequest::productId)
+        .distinct()
+        .collect(Collectors.toList());
+    List<Product> products = productRepository.findAllByIdInAndOrganizationId(productIds, organizationId);
+    if (products.size() < productIds.size()) {
+      List<UUID> foundIds = products.stream().map(Product::getId).toList();
+      List<UUID> missingIds = productIds.stream().filter(id -> !foundIds.contains(id)).toList();
+      throw new ResourceNotFoundException("Product(s) not found or not in organization: " + missingIds);
+    }
+    Map<UUID, Product> productMap = products.stream()
+        .collect(Collectors.toMap(Product::getId, Function.identity()));
 
     Warehouse sourceWarehouse = null;
     if (request.documentType() == DocumentType.TRANSFER_IN || request.documentType() == DocumentType.TRANSFER_OUT) {
-      if (request.sourceWarehouseId() == null) {
+      if (request.transferSourceWarehouseId() == null) {
         throw new BadRequestException("Source/Destination warehouse is required for TRANSFER document type");
       }
-      if (request.sourceWarehouseId().equals(warehouseId)) {
+      if (request.transferSourceWarehouseId().equals(warehouseId)) {
         throw new BadRequestException("Source and destination warehouses cannot be the same");
       }
-      sourceWarehouse = findWarehouseByIdAndOrganizationId(request.sourceWarehouseId(), organizationId);
+      sourceWarehouse = findWarehouseByIdAndOrganizationId(request.transferSourceWarehouseId(), organizationId);
 
       Warehouse sourceWh;
       Warehouse destWh;
@@ -105,17 +136,18 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
           .notes(request.notes())
           .build();
 
-      List<InventoryTransaction> movesIn = new ArrayList<>();
+      List<InventoryDocumentLine> linesIn = new ArrayList<>();
       for (var item : request.items()) {
-        Product product = productRepository.findByIdAndOrganizationId(item.productId(), organizationId)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + item.productId()));
-        movesIn.add(InventoryTransaction.builder()
+        Product product = productMap.get(item.productId());
+        linesIn.add(InventoryDocumentLine.builder()
             .inventoryDocument(docIn)
             .product(product)
             .quantity(item.quantity())
+            .unitCost(product.getPrice())
+            .valuation(item.quantity().multiply(product.getPrice()))
             .build());
       }
-      docIn.setStockMoves(movesIn);
+      docIn.setLines(linesIn);
       InventoryDocument savedDocIn = inventoryDocumentRepository.save(docIn);
 
       // Create docOut (Outbound Transfer at source warehouse)
@@ -131,17 +163,18 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
           .notes(request.notes())
           .build();
 
-      List<InventoryTransaction> movesOut = new ArrayList<>();
+      List<InventoryDocumentLine> linesOut = new ArrayList<>();
       for (var item : request.items()) {
-        Product product = productRepository.findByIdAndOrganizationId(item.productId(), organizationId)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + item.productId()));
-        movesOut.add(InventoryTransaction.builder()
+        Product product = productMap.get(item.productId());
+        linesOut.add(InventoryDocumentLine.builder()
             .inventoryDocument(docOut)
             .product(product)
             .quantity(item.quantity())
+            .unitCost(product.getPrice())
+            .valuation(item.quantity().multiply(product.getPrice()))
             .build());
       }
-      docOut.setStockMoves(movesOut);
+      docOut.setLines(linesOut);
       InventoryDocument savedDocOut = inventoryDocumentRepository.save(docOut);
 
       // Link docIn back to docOut
@@ -166,19 +199,20 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         .notes(request.notes())
         .build();
 
-    List<InventoryTransaction> moves = request.items().stream()
+    List<InventoryDocumentLine> lines = request.items().stream()
         .map(item -> {
-          Product product = productRepository.findByIdAndOrganizationId(item.productId(), organizationId)
-              .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + item.productId()));
-          return InventoryTransaction.builder()
+          Product product = productMap.get(item.productId());
+          return InventoryDocumentLine.builder()
               .inventoryDocument(doc)
               .product(product)
               .quantity(item.quantity())
+              .unitCost(product.getPrice())
+              .valuation(item.quantity().multiply(product.getPrice()))
               .build();
         })
         .collect(Collectors.toList());
 
-    doc.setStockMoves(moves);
+    doc.setLines(lines);
     InventoryDocument savedDoc = inventoryDocumentRepository.save(doc);
 
     return mapToResponse(savedDoc);
@@ -186,8 +220,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
   @Override
   @Transactional
-  public InventoryDocumentResponse claimOrder(UUID organizationId, UUID warehouseId, UUID orderId) {
-    log.info("Claiming sales order {} for warehouse {}", orderId, warehouseId);
+  public InventoryDocumentResponse createIssueDocumentFromOrder(UUID organizationId, UUID warehouseId, UUID orderId) {
+    log.info("Creating issue document from sales order {} for warehouse {}", orderId, warehouseId);
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
 
     Order order = orderRepository.findById(orderId)
@@ -218,22 +252,34 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         .scheduledDate(Instant.now())
         .build();
 
-    List<InventoryTransaction> moves = new ArrayList<>();
+    List<InventoryDocumentLine> lines = new ArrayList<>();
     for (OrderItem item : order.getItems()) {
-      moves.add(InventoryTransaction.builder()
+      BigDecimal productPrice = item.getProduct().getPrice();
+      lines.add(InventoryDocumentLine.builder()
           .inventoryDocument(doc)
           .product(item.getProduct())
           .quantity(item.getQuantity())
+          .unitCost(productPrice)
+          .valuation(item.getQuantity().multiply(productPrice))
           .build());
     }
-    doc.setStockMoves(moves);
+    doc.setLines(lines);
 
     // Stock check
+    List<UUID> productIds = lines.stream()
+        .map(tx -> tx.getProduct().getId())
+        .collect(Collectors.toList());
+    List<InventoryBalance> balances = inventoryBalanceRepository
+        .findAllByWarehouseIdAndProductIdIn(warehouseId, productIds);
+    Map<UUID, InventoryBalance> balanceMap = balances.stream()
+        .collect(Collectors.toMap(ib -> ib.getProduct().getId(), Function.identity()));
+
     boolean isSufficient = true;
-    for (InventoryTransaction tx : moves) {
-      InventoryBalance balance = inventoryBalanceRepository
-          .findByWarehouseIdAndProductId(warehouseId, tx.getProduct().getId())
-          .orElseThrow(() -> new ResourceNotFoundException("Inventory balance not found for product: " + tx.getProduct().getName()));
+    for (InventoryDocumentLine tx : lines) {
+      InventoryBalance balance = balanceMap.get(tx.getProduct().getId());
+      if (balance == null) {
+        throw new ResourceNotFoundException("Inventory balance not found for product: " + tx.getProduct().getName());
+      }
       if (balance.getQuantity().compareTo(tx.getQuantity()) < 0) {
         isSufficient = false;
       }
@@ -241,7 +287,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
     if (isSufficient) {
       doc.setDocumentStatus(DocumentStatus.CONFIRMED);
-      deductBalance(moves, warehouseId);
+      deductBalance(lines, warehouseId);
       order.setStatus(OrderStatus.SENT);
     } else {
       doc.setDocumentStatus(DocumentStatus.WAITING_FOR_STOCK);
@@ -310,31 +356,35 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
   @Override
   @Transactional
+  public InventoryDocumentResponse confirmDocument(UUID organizationId, UUID warehouseId, UUID documentId) {
+    log.info("Confirming document {} for warehouse {}", documentId, warehouseId);
+    InventoryDocument doc = inventoryDocumentRepository.findByIdAndWarehouseId(documentId, warehouseId)
+        .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
+
+    confirmDocumentInternal(doc);
+    return mapToResponse(doc);
+  }
+
+  @Override
+  @Transactional
   public InventoryDocumentResponse completeDocument(UUID organizationId, UUID warehouseId, UUID documentId) {
     log.info("Completing document {} for warehouse {}", documentId, warehouseId);
     InventoryDocument doc = inventoryDocumentRepository.findByIdAndWarehouseId(documentId, warehouseId)
         .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
-
-    if (doc.getDocumentStatus() == DocumentStatus.DRAFT) {
-      confirmDocumentInternal(doc);
-    }
-
-    if (doc.getDocumentStatus() == DocumentStatus.WAITING_FOR_STOCK) {
-      throw new BadRequestException("Cannot complete document in WAITING_FOR_STOCK status");
-    }
 
     if (doc.getDocumentStatus() == DocumentStatus.COMPLETED) {
       return mapToResponse(doc);
     }
 
     if (doc.getDocumentStatus() != DocumentStatus.CONFIRMED) {
-      throw new BadRequestException("Document must be in CONFIRMED status to be completed");
+      throw new BadRequestException("Document must be in CONFIRMED status to be completed. Current status: " + doc.getDocumentStatus());
     }
 
+    boolean hasPositiveAdjustment = false;
     if (doc.getDocumentType() == DocumentType.RECEIPT) {
-      addBalance(doc.getStockMoves(), doc.getWarehouse().getId());
+      addBalance(doc.getLines(), doc.getWarehouse().getId());
     } else if (doc.getDocumentType() == DocumentType.TRANSFER_IN) {
-      addBalance(doc.getStockMoves(), doc.getWarehouse().getId());
+      addBalance(doc.getLines(), doc.getWarehouse().getId());
     } else if (doc.getDocumentType() == DocumentType.TRANSFER_OUT) {
       // Outbound Transfer: No addition of stock (stock was already deducted when confirmed).
       // BUT we must automatically confirm/transition the inbound document to CONFIRMED!
@@ -346,13 +396,37 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
           }
         });
       }
+    } else if (doc.getDocumentType() == DocumentType.ADJUSTMENT) {
+      List<InventoryDocumentLine> positiveMoves = new ArrayList<>();
+      List<InventoryDocumentLine> negativeMoves = new ArrayList<>();
+      for (InventoryDocumentLine tx : doc.getLines()) {
+        if (tx.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
+          positiveMoves.add(tx);
+        } else if (tx.getQuantity().compareTo(BigDecimal.ZERO) < 0) {
+          negativeMoves.add(InventoryDocumentLine.builder()
+              .product(tx.getProduct())
+              .quantity(tx.getQuantity().negate())
+              .unitCost(tx.getUnitCost())
+              .valuation(tx.getQuantity().negate().multiply(tx.getUnitCost()))
+              .build());
+        }
+      }
+      if (!positiveMoves.isEmpty()) {
+        addBalance(positiveMoves, doc.getWarehouse().getId());
+        hasPositiveAdjustment = true;
+      }
+      if (!negativeMoves.isEmpty()) {
+        deductBalance(negativeMoves, doc.getWarehouse().getId());
+      }
     }
 
     doc.setDocumentStatus(DocumentStatus.COMPLETED);
     doc.setDateDone(Instant.now());
     doc = inventoryDocumentRepository.save(doc);
 
-    if (doc.getDocumentType() == DocumentType.RECEIPT || doc.getDocumentType() == DocumentType.TRANSFER_IN) {
+    if (doc.getDocumentType() == DocumentType.RECEIPT || 
+        doc.getDocumentType() == DocumentType.TRANSFER_IN || 
+        (doc.getDocumentType() == DocumentType.ADJUSTMENT && hasPositiveAdjustment)) {
       reevaluateWaitingDocuments(doc.getWarehouse().getId());
     }
 
@@ -372,10 +446,10 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
     if (doc.getDocumentStatus() == DocumentStatus.CONFIRMED) {
       if (doc.getDocumentType() == DocumentType.ISSUE) {
-        addBalance(doc.getStockMoves(), doc.getWarehouse().getId());
+        addBalance(doc.getLines(), doc.getWarehouse().getId());
       } else if (doc.getDocumentType() == DocumentType.TRANSFER_OUT) {
         // Revert stock to the source warehouse
-        addBalance(doc.getStockMoves(), doc.getWarehouse().getId());
+        addBalance(doc.getLines(), doc.getWarehouse().getId());
       }
     }
 
@@ -396,7 +470,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     if (doc.getReferenceType() == ReferenceType.SALES_ORDER) {
       Order order = orderRepository.findById(doc.getReferenceId())
           .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found"));
-      order.setStatus(OrderStatus.DRAFT);
+      order.setStatus(OrderStatus.CONFIRMED);
       orderRepository.save(order);
     }
 
@@ -421,35 +495,77 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     return prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
   }
 
-  private void deductBalance(List<InventoryTransaction> transactions, UUID warehouseId) {
-    for (InventoryTransaction tx : transactions) {
-      InventoryBalance balance = inventoryBalanceRepository
-          .findByWarehouseIdAndProductId(warehouseId, tx.getProduct().getId())
-          .orElseThrow(() -> new ResourceNotFoundException("Inventory balance not found for product: " + tx.getProduct().getName()));
+  private void deductBalance(List<InventoryDocumentLine> transactions, UUID warehouseId) {
+    if (transactions.isEmpty()) {
+      return;
+    }
+    List<UUID> productIds = transactions.stream()
+        .map(tx -> tx.getProduct().getId())
+        .distinct()
+        .collect(Collectors.toList());
+
+    List<InventoryBalance> balances = inventoryBalanceRepository
+        .findAllByWarehouseIdAndProductIdIn(warehouseId, productIds);
+
+    Map<UUID, InventoryBalance> balanceMap = balances.stream()
+        .collect(Collectors.toMap(ib -> ib.getProduct().getId(), Function.identity()));
+
+    for (InventoryDocumentLine tx : transactions) {
+      UUID productId = tx.getProduct().getId();
+      InventoryBalance balance = balanceMap.get(productId);
+      if (balance == null) {
+        throw new ResourceNotFoundException("Inventory balance not found for product: " + tx.getProduct().getName());
+      }
 
       if (balance.getQuantity().compareTo(tx.getQuantity()) < 0) {
         throw new BadRequestException("Insufficient stock for product: " + tx.getProduct().getName());
       }
       balance.setQuantity(balance.getQuantity().subtract(tx.getQuantity()));
-      inventoryBalanceRepository.save(balance);
     }
+    inventoryBalanceRepository.saveAll(balances);
   }
 
-  private void addBalance(List<InventoryTransaction> transactions, UUID warehouseId) {
-    for (InventoryTransaction tx : transactions) {
-      InventoryBalance balance = inventoryBalanceRepository
-          .findByWarehouseIdAndProductId(warehouseId, tx.getProduct().getId())
-          .orElseGet(() -> {
-            Warehouse wh = warehouseRepository.findById(warehouseId).orElseThrow();
-            return InventoryBalance.builder()
-                .warehouse(wh)
-                .product(tx.getProduct())
-                .quantity(BigDecimal.ZERO)
-                .build();
-          });
-      balance.setQuantity(balance.getQuantity().add(tx.getQuantity()));
-      inventoryBalanceRepository.save(balance);
+  private void addBalance(List<InventoryDocumentLine> transactions, UUID warehouseId) {
+    if (transactions.isEmpty()) {
+      return;
     }
+    List<UUID> productIds = transactions.stream()
+        .map(tx -> tx.getProduct().getId())
+        .distinct()
+        .collect(Collectors.toList());
+
+    List<InventoryBalance> balances = inventoryBalanceRepository
+        .findAllByWarehouseIdAndProductIdIn(warehouseId, productIds);
+
+    Map<UUID, InventoryBalance> balanceMap = balances.stream()
+        .collect(Collectors.toMap(ib -> ib.getProduct().getId(), Function.identity()));
+
+    Warehouse warehouse = null;
+    List<InventoryBalance> newBalances = new ArrayList<>();
+
+    for (InventoryDocumentLine tx : transactions) {
+      UUID productId = tx.getProduct().getId();
+      InventoryBalance balance = balanceMap.get(productId);
+      if (balance == null) {
+        if (warehouse == null) {
+          warehouse = warehouseRepository.findById(warehouseId)
+              .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found: " + warehouseId));
+        }
+        balance = InventoryBalance.builder()
+            .warehouse(warehouse)
+            .product(tx.getProduct())
+            .quantity(BigDecimal.ZERO)
+            .build();
+        balanceMap.put(productId, balance);
+        newBalances.add(balance);
+      }
+      balance.setQuantity(balance.getQuantity().add(tx.getQuantity()));
+    }
+
+    if (!newBalances.isEmpty()) {
+      balances.addAll(newBalances);
+    }
+    inventoryBalanceRepository.saveAll(balances);
   }
 
   private void confirmDocumentInternal(InventoryDocument doc) {
@@ -462,6 +578,16 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
       inventoryDocumentRepository.save(doc);
     } else if (doc.getDocumentType() == DocumentType.ISSUE || doc.getDocumentType() == DocumentType.TRANSFER_IN || doc.getDocumentType() == DocumentType.TRANSFER_OUT) {
       if (doc.getDocumentType() == DocumentType.TRANSFER_IN) {
+        // Enforce transfer sequence safety: TRANSFER_IN can only be confirmed if TRANSFER_OUT is COMPLETED
+        if (doc.getReferenceId() == null) {
+          throw new BadRequestException("Inbound transfer is missing reference to outbound transfer");
+        }
+        InventoryDocument docOut = inventoryDocumentRepository.findById(doc.getReferenceId())
+            .orElseThrow(() -> new ResourceNotFoundException("Outbound transfer document not found: " + doc.getReferenceId()));
+        if (docOut.getDocumentStatus() != DocumentStatus.COMPLETED) {
+          throw new BadRequestException("Cannot confirm inbound transfer before the outbound transfer is completed");
+        }
+
         // Inbound transfers just become CONFIRMED without stock check/deduction
         doc.setDocumentStatus(DocumentStatus.CONFIRMED);
         inventoryDocumentRepository.save(doc);
@@ -470,11 +596,20 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
       UUID stockWarehouseId = doc.getWarehouse().getId();
 
+      List<UUID> productIds = doc.getLines().stream()
+          .map(tx -> tx.getProduct().getId())
+          .collect(Collectors.toList());
+      List<InventoryBalance> balances = inventoryBalanceRepository
+          .findAllByWarehouseIdAndProductIdIn(stockWarehouseId, productIds);
+      Map<UUID, InventoryBalance> balanceMap = balances.stream()
+          .collect(Collectors.toMap(ib -> ib.getProduct().getId(), Function.identity()));
+
       boolean isSufficient = true;
-      for (InventoryTransaction tx : doc.getStockMoves()) {
-        InventoryBalance balance = inventoryBalanceRepository
-            .findByWarehouseIdAndProductId(stockWarehouseId, tx.getProduct().getId())
-            .orElseThrow(() -> new ResourceNotFoundException("Inventory balance not found for product: " + tx.getProduct().getName()));
+      for (InventoryDocumentLine tx : doc.getLines()) {
+        InventoryBalance balance = balanceMap.get(tx.getProduct().getId());
+        if (balance == null) {
+          throw new ResourceNotFoundException("Inventory balance not found for product: " + tx.getProduct().getName());
+        }
         if (balance.getQuantity().compareTo(tx.getQuantity()) < 0) {
           isSufficient = false;
         }
@@ -483,7 +618,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
       if (isSufficient) {
         doc.setDocumentStatus(DocumentStatus.CONFIRMED);
         inventoryDocumentRepository.save(doc);
-        deductBalance(doc.getStockMoves(), stockWarehouseId);
+        deductBalance(doc.getLines(), stockWarehouseId);
       } else {
         doc.setDocumentStatus(DocumentStatus.WAITING_FOR_STOCK);
         inventoryDocumentRepository.save(doc);
@@ -497,16 +632,31 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   private void reevaluateWaitingDocuments(UUID warehouseId) {
     List<InventoryDocument> waitingDocs = inventoryDocumentRepository
         .findAllByWarehouseIdAndDocumentStatus(warehouseId, DocumentStatus.WAITING_FOR_STOCK);
+    if (waitingDocs.isEmpty()) {
+      return;
+    }
+
+    List<UUID> productIds = waitingDocs.stream()
+        .flatMap(doc -> doc.getLines().stream())
+        .map(tx -> tx.getProduct().getId())
+        .distinct()
+        .collect(Collectors.toList());
+
+    List<InventoryBalance> balances = inventoryBalanceRepository
+        .findAllByWarehouseIdAndProductIdIn(warehouseId, productIds);
+    Map<UUID, InventoryBalance> balanceMap = balances.stream()
+        .collect(Collectors.toMap(ib -> ib.getProduct().getId(), Function.identity()));
+
+    List<InventoryDocument> updatedDocs = new ArrayList<>();
+    List<Order> updatedOrders = new ArrayList<>();
+    List<ReplenishmentRequest> updatedReplenishments = new ArrayList<>();
+    boolean anyDeducted = false;
 
     for (InventoryDocument doc : waitingDocs) {
-      UUID stockWarehouseId = doc.getWarehouse().getId();
-
       boolean isSufficient = true;
-      for (InventoryTransaction tx : doc.getStockMoves()) {
-        InventoryBalance balance = inventoryBalanceRepository
-            .findByWarehouseIdAndProductId(stockWarehouseId, tx.getProduct().getId())
-            .orElseThrow(() -> new ResourceNotFoundException("Inventory balance not found"));
-        if (balance.getQuantity().compareTo(tx.getQuantity()) < 0) {
+      for (InventoryDocumentLine tx : doc.getLines()) {
+        InventoryBalance balance = balanceMap.get(tx.getProduct().getId());
+        if (balance == null || balance.getQuantity().compareTo(tx.getQuantity()) < 0) {
           isSufficient = false;
           break;
         }
@@ -514,33 +664,53 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
       if (isSufficient) {
         doc.setDocumentStatus(DocumentStatus.CONFIRMED);
-        inventoryDocumentRepository.save(doc);
+        updatedDocs.add(doc);
 
-        deductBalance(doc.getStockMoves(), stockWarehouseId);
+        // In-memory stock deduction
+        for (InventoryDocumentLine tx : doc.getLines()) {
+          InventoryBalance balance = balanceMap.get(tx.getProduct().getId());
+          balance.setQuantity(balance.getQuantity().subtract(tx.getQuantity()));
+        }
+        anyDeducted = true;
 
         if (doc.getReferenceType() == ReferenceType.SALES_ORDER) {
           Order order = orderRepository.findById(doc.getReferenceId())
               .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found"));
           order.setStatus(OrderStatus.SENT);
-          orderRepository.save(order);
+          updatedOrders.add(order);
         }
 
         replenishmentRequestRepository.findByInventoryDocumentId(doc.getId())
             .ifPresent(req -> {
-              req.setStatus("RESOLVED");
-              replenishmentRequestRepository.save(req);
+              req.setStatus(ReplenishmentStatus.RESOLVED);
+              updatedReplenishments.add(req);
             });
       }
+    }
+
+    if (anyDeducted) {
+      inventoryBalanceRepository.saveAll(balances);
+    }
+    if (!updatedDocs.isEmpty()) {
+      inventoryDocumentRepository.saveAll(updatedDocs);
+    }
+    if (!updatedOrders.isEmpty()) {
+      orderRepository.saveAll(updatedOrders);
+    }
+    if (!updatedReplenishments.isEmpty()) {
+      replenishmentRequestRepository.saveAll(updatedReplenishments);
     }
   }
 
   private InventoryDocumentResponse mapToResponse(InventoryDocument doc) {
-    List<InventoryTransactionResponse> moves = doc.getStockMoves().stream()
-        .map(move -> new InventoryTransactionResponse(
+    List<InventoryDocumentLineResponse> lines = doc.getLines().stream()
+        .map(move -> new InventoryDocumentLineResponse(
             move.getId(),
             move.getProduct().getId(),
             move.getProduct().getName(),
-            move.getQuantity()))
+            move.getQuantity(),
+            move.getUnitCost(),
+            move.getValuation()))
         .collect(Collectors.toList());
 
     UserBaseResponse createdByResp = doc.getCreatedBy() != null
@@ -565,7 +735,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         doc.getNotes(),
         doc.getScheduledDate(),
         doc.getDateDone(),
-        moves,
+        lines,
         doc.getCreatedAt(),
         doc.getUpdatedAt(),
         createdByResp,

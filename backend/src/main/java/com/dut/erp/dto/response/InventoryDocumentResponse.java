@@ -23,7 +23,7 @@ public record InventoryDocumentResponse(
     String notes,
     Instant scheduledDate,
     Instant dateDone,
-    List<InventoryTransactionResponse> stockMoves,
+    List<InventoryDocumentLineResponse> lines,
     Instant createdAt,
     Instant updatedAt,
     UserBaseResponse createdBy,
