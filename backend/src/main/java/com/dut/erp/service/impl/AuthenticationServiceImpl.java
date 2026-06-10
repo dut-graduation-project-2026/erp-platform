@@ -5,14 +5,24 @@ import com.dut.erp.dto.jwt.TokenPair;
 import com.dut.erp.dto.request.LoginRequest;
 import com.dut.erp.dto.request.RegisterRequest;
 import com.dut.erp.dto.response.AuthResponse;
+import com.dut.erp.dto.request.ForgotPasswordRequest;
+import com.dut.erp.dto.request.ResetPasswordRequest;
+import com.dut.erp.dto.request.SendMailRequest;
+import com.dut.erp.entity.PasswordResetToken;
 import com.dut.erp.entity.User;
+import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceAlreadyExistsException;
+import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.exception.UnauthorizedAccessException;
 import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.InvalidatedAccessTokenRepository;
+import com.dut.erp.repository.PasswordResetTokenRepository;
 import com.dut.erp.repository.RefreshTokenRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.service.AuthenticationService;
+import com.dut.erp.service.MailSenderService;
+import com.dut.erp.service.MailTemplateService;
+import java.time.Duration;
 import com.dut.erp.util.CookieUtils;
 import com.dut.erp.util.JwtUtils;
 import io.jsonwebtoken.Claims;
@@ -41,6 +51,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   private final PasswordEncoder passwordEncoder;
   private final RefreshTokenRepository refreshTokenRepository;
   private final InvalidatedAccessTokenRepository invalidatedAccessTokenRepository;
+  private final PasswordResetTokenRepository passwordResetTokenRepository;
+  private final MailSenderService mailSenderService;
+  private final MailTemplateService mailTemplateService;
 
   @Override
   @Transactional
@@ -226,5 +239,79 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     log.debug("Generated tokens for userId: {}", user.getId());
 
     return new TokenPair(accessToken, refreshToken.token());
+  }
+
+  @Override
+  @Transactional
+  public void sendForgotPasswordEmail(ForgotPasswordRequest request) {
+    log.info("Password reset request received for email: {}", request.email());
+
+    User user =
+        userRepository
+            .findByEmail(request.email())
+            .orElseThrow(
+                () -> {
+                  log.warn("Password reset failed: user not found for email: {}", request.email());
+                  return new ResourceNotFoundException("User not found with email: " + request.email());
+                });
+
+    // Revoke existing reset tokens
+    passwordResetTokenRepository.deleteByUser(user);
+
+    // Create a new reset token
+    String token = UUID.randomUUID().toString();
+    Instant expiresAt = Instant.now().plus(Duration.ofHours(1));
+
+    PasswordResetToken resetToken =
+        PasswordResetToken.builder()
+            .user(user)
+            .token(token)
+            .expiresAt(expiresAt)
+            .build();
+
+    passwordResetTokenRepository.save(resetToken);
+
+    // Generate email content
+    String content = mailTemplateService.generateForgotPasswordEmailContent(user.getEmail(), token, expiresAt);
+
+    SendMailRequest mailRequest =
+        new SendMailRequest(
+            user.getEmail(),
+            "Reset Your Password - DUT ERP",
+            content,
+            true);
+
+    // Send the email
+    mailSenderService.sendMail(mailRequest);
+    log.info("Password reset email sent to {}", user.getEmail());
+  }
+
+  @Override
+  @Transactional
+  public void resetPassword(ResetPasswordRequest request) {
+    log.info("Password reset attempt with token: {}", request.token());
+
+    PasswordResetToken resetToken =
+        passwordResetTokenRepository
+            .findByToken(request.token())
+            .orElseThrow(
+                () -> {
+                  log.warn("Password reset failed: token not found");
+                  return new BadRequestException("Invalid or expired password reset token.");
+                });
+
+    if (resetToken.getExpiresAt().isBefore(Instant.now())) {
+      log.warn("Password reset failed: token expired");
+      passwordResetTokenRepository.delete(resetToken);
+      throw new BadRequestException("Invalid or expired password reset token.");
+    }
+
+    User user = resetToken.getUser();
+    user.setPassword(passwordEncoder.encode(request.newPassword()));
+    userRepository.save(user);
+
+    // Revoke token after successful use
+    passwordResetTokenRepository.deleteByUser(user);
+    log.info("Password reset successfully for user: {}", user.getEmail());
   }
 }
