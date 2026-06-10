@@ -4,5 +4,6 @@ public enum DocumentType {
   RECEIPT,
   ISSUE,
   ADJUSTMENT,
-  TRANSFER
+  TRANSFER_IN,
+  TRANSFER_OUT
 }

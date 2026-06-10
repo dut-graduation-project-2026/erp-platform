@@ -80,13 +80,6 @@ public class Warehouse {
   @Builder.Default
   List<User> staff = new ArrayList<>();
 
-  @Column(name = "maximum_capacity", precision = 30, scale = 10)
-  BigDecimal maximumCapacity;
-
-  @Column(name = "used_capacity", precision = 30, scale = 10)
-  @Builder.Default
-  BigDecimal usedCapacity = BigDecimal.ZERO;
-
   @CreatedDate
   @Column(name = "created_at", updatable = false)
   Instant createdAt;

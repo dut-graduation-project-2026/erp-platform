@@ -120,7 +120,6 @@ public class WarehouseServiceImpl implements WarehouseService {
             .code(request.code())
             .address(request.address())
             .description(request.description())
-            .maximumCapacity(request.maximumCapacity())
             .isActive(Boolean.TRUE)
             .staff(staff)
             .manager(manager)
@@ -178,7 +177,6 @@ public class WarehouseServiceImpl implements WarehouseService {
     warehouse.setCode(request.code());
     warehouse.setAddress(request.address());
     warehouse.setDescription(request.description());
-    warehouse.setMaximumCapacity(request.maximumCapacity());
     warehouse.setStaff(staff);
     warehouse.setManager(manager);
 

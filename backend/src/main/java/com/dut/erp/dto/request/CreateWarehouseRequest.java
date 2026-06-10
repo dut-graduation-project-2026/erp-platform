@@ -23,10 +23,6 @@ public record CreateWarehouseRequest(
 
     String description,
 
-    @NotNull(message = "Maximum capacity is required")
-    @Positive(message = "Maximum capacity must be a positive number")
-    BigDecimal maximumCapacity,
-
     @NotEmpty(message = "Staff list cannot be empty")
     List<UUID> staffIds,
 

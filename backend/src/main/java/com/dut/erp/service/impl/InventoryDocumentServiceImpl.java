@@ -28,6 +28,9 @@ import com.dut.erp.repository.InventoryTransactionRepository;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.repository.ReplenishmentRequestRepository;
+import com.dut.erp.entity.Invoice;
+import com.dut.erp.enums.InvoiceStatus;
+import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.WarehouseRepository;
 import com.dut.erp.service.InventoryDocumentService;
 import java.math.BigDecimal;
@@ -61,6 +64,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   private final InventoryBalanceRepository inventoryBalanceRepository;
   private final OrderRepository orderRepository;
   private final ReplenishmentRequestRepository replenishmentRequestRepository;
+  private final InvoiceRepository invoiceRepository;
 
   @Override
   @Transactional
@@ -70,14 +74,85 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
 
     Warehouse sourceWarehouse = null;
-    if (request.documentType() == DocumentType.TRANSFER) {
+    if (request.documentType() == DocumentType.TRANSFER_IN || request.documentType() == DocumentType.TRANSFER_OUT) {
       if (request.sourceWarehouseId() == null) {
-        throw new BadRequestException("Source warehouse is required for TRANSFER document type");
+        throw new BadRequestException("Source/Destination warehouse is required for TRANSFER document type");
       }
       if (request.sourceWarehouseId().equals(warehouseId)) {
         throw new BadRequestException("Source and destination warehouses cannot be the same");
       }
       sourceWarehouse = findWarehouseByIdAndOrganizationId(request.sourceWarehouseId(), organizationId);
+
+      Warehouse sourceWh;
+      Warehouse destWh;
+      if (request.documentType() == DocumentType.TRANSFER_IN) {
+        destWh = warehouse;
+        sourceWh = sourceWarehouse;
+      } else {
+        sourceWh = warehouse;
+        destWh = sourceWarehouse;
+      }
+
+      // Create docIn (Inbound Transfer at destination warehouse)
+      InventoryDocument docIn = InventoryDocument.builder()
+          .warehouse(destWh)
+          .sourceWarehouse(sourceWh)
+          .name(generateDocumentName(DocumentType.TRANSFER_IN))
+          .documentType(DocumentType.TRANSFER_IN)
+          .referenceType(ReferenceType.MANUAL)
+          .documentStatus(DocumentStatus.DRAFT)
+          .scheduledDate(request.scheduledDate())
+          .notes(request.notes())
+          .build();
+
+      List<InventoryTransaction> movesIn = new ArrayList<>();
+      for (var item : request.items()) {
+        Product product = productRepository.findByIdAndOrganizationId(item.productId(), organizationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + item.productId()));
+        movesIn.add(InventoryTransaction.builder()
+            .inventoryDocument(docIn)
+            .product(product)
+            .quantity(item.quantity())
+            .build());
+      }
+      docIn.setStockMoves(movesIn);
+      InventoryDocument savedDocIn = inventoryDocumentRepository.save(docIn);
+
+      // Create docOut (Outbound Transfer at source warehouse)
+      InventoryDocument docOut = InventoryDocument.builder()
+          .warehouse(sourceWh)
+          .sourceWarehouse(destWh)
+          .name(generateDocumentName(DocumentType.TRANSFER_OUT))
+          .documentType(DocumentType.TRANSFER_OUT)
+          .referenceType(ReferenceType.MANUAL)
+          .referenceId(savedDocIn.getId()) // Link to docIn
+          .documentStatus(DocumentStatus.DRAFT)
+          .scheduledDate(request.scheduledDate())
+          .notes(request.notes())
+          .build();
+
+      List<InventoryTransaction> movesOut = new ArrayList<>();
+      for (var item : request.items()) {
+        Product product = productRepository.findByIdAndOrganizationId(item.productId(), organizationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + item.productId()));
+        movesOut.add(InventoryTransaction.builder()
+            .inventoryDocument(docOut)
+            .product(product)
+            .quantity(item.quantity())
+            .build());
+      }
+      docOut.setStockMoves(movesOut);
+      InventoryDocument savedDocOut = inventoryDocumentRepository.save(docOut);
+
+      // Link docIn back to docOut
+      savedDocIn.setReferenceId(savedDocOut.getId());
+      savedDocIn = inventoryDocumentRepository.save(savedDocIn);
+
+      if (request.documentType() == DocumentType.TRANSFER_IN) {
+        return mapToResponse(savedDocIn);
+      } else {
+        return mapToResponse(savedDocOut);
+      }
     }
 
     InventoryDocument doc = InventoryDocument.builder()
@@ -257,62 +332,27 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     }
 
     if (doc.getDocumentType() == DocumentType.RECEIPT) {
-      BigDecimal totalIncomingQty = doc.getStockMoves().stream()
-          .map(InventoryTransaction::getQuantity)
-          .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-      Warehouse wh = doc.getWarehouse();
-      BigDecimal currentUsed = wh.getUsedCapacity() != null ? wh.getUsedCapacity() : BigDecimal.ZERO;
-      BigDecimal maxCap = wh.getMaximumCapacity() != null ? wh.getMaximumCapacity() : BigDecimal.ZERO;
-
-      boolean isOverCapacity = currentUsed.compareTo(maxCap) > 0;
-      if (!isOverCapacity && currentUsed.add(totalIncomingQty).compareTo(maxCap) > 0) {
-        boolean hasWaiting = inventoryDocumentRepository
-            .findAllByWarehouseIdAndDocumentStatus(wh.getId(), DocumentStatus.WAITING_FOR_STOCK)
-            .stream().anyMatch(d -> d.getDocumentType() == DocumentType.ISSUE || d.getDocumentType() == DocumentType.TRANSFER);
-
-        if (!hasWaiting) {
-          throw new BadRequestException("Warehouse maximum capacity exceeded. Action rejected.");
-        }
+      addBalance(doc.getStockMoves(), doc.getWarehouse().getId());
+    } else if (doc.getDocumentType() == DocumentType.TRANSFER_IN) {
+      addBalance(doc.getStockMoves(), doc.getWarehouse().getId());
+    } else if (doc.getDocumentType() == DocumentType.TRANSFER_OUT) {
+      // Outbound Transfer: No addition of stock (stock was already deducted when confirmed).
+      // BUT we must automatically confirm/transition the inbound document to CONFIRMED!
+      if (doc.getReferenceId() != null) {
+        inventoryDocumentRepository.findById(doc.getReferenceId()).ifPresent(docIn -> {
+          if (docIn.getDocumentStatus() == DocumentStatus.DRAFT) {
+            docIn.setDocumentStatus(DocumentStatus.CONFIRMED);
+            inventoryDocumentRepository.save(docIn);
+          }
+        });
       }
-
-      addBalance(doc.getStockMoves(), wh.getId());
-
-    } else if (doc.getDocumentType() == DocumentType.TRANSFER) {
-      BigDecimal totalIncomingQty = doc.getStockMoves().stream()
-          .map(InventoryTransaction::getQuantity)
-          .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-      Warehouse wh = doc.getWarehouse();
-      BigDecimal currentUsed = wh.getUsedCapacity() != null ? wh.getUsedCapacity() : BigDecimal.ZERO;
-      BigDecimal maxCap = wh.getMaximumCapacity() != null ? wh.getMaximumCapacity() : BigDecimal.ZERO;
-
-      boolean isOverCapacity = currentUsed.compareTo(maxCap) > 0;
-      if (!isOverCapacity && currentUsed.add(totalIncomingQty).compareTo(maxCap) > 0) {
-        boolean hasWaiting = inventoryDocumentRepository
-            .findAllByWarehouseIdAndDocumentStatus(wh.getId(), DocumentStatus.WAITING_FOR_STOCK)
-            .stream().anyMatch(d -> d.getDocumentType() == DocumentType.ISSUE || d.getDocumentType() == DocumentType.TRANSFER);
-
-        if (!hasWaiting) {
-          throw new BadRequestException("Warehouse maximum capacity exceeded. Action rejected.");
-        }
-      }
-
-      addBalance(doc.getStockMoves(), wh.getId());
     }
 
     doc.setDocumentStatus(DocumentStatus.COMPLETED);
     doc.setDateDone(Instant.now());
     doc = inventoryDocumentRepository.save(doc);
 
-    if (doc.getReferenceType() == ReferenceType.SALES_ORDER) {
-      Order order = orderRepository.findById(doc.getReferenceId())
-          .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found"));
-      order.setStatus(OrderStatus.COMPLETED);
-      orderRepository.save(order);
-    }
-
-    if (doc.getDocumentType() == DocumentType.RECEIPT || doc.getDocumentType() == DocumentType.TRANSFER) {
+    if (doc.getDocumentType() == DocumentType.RECEIPT || doc.getDocumentType() == DocumentType.TRANSFER_IN) {
       reevaluateWaitingDocuments(doc.getWarehouse().getId());
     }
 
@@ -333,13 +373,25 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     if (doc.getDocumentStatus() == DocumentStatus.CONFIRMED) {
       if (doc.getDocumentType() == DocumentType.ISSUE) {
         addBalance(doc.getStockMoves(), doc.getWarehouse().getId());
-      } else if (doc.getDocumentType() == DocumentType.TRANSFER) {
-        addBalance(doc.getStockMoves(), doc.getSourceWarehouse().getId());
+      } else if (doc.getDocumentType() == DocumentType.TRANSFER_OUT) {
+        // Revert stock to the source warehouse
+        addBalance(doc.getStockMoves(), doc.getWarehouse().getId());
       }
     }
 
     doc.setDocumentStatus(DocumentStatus.CANCELLED);
     doc = inventoryDocumentRepository.save(doc);
+
+    // Cancel linked transfer document if applicable
+    if ((doc.getDocumentType() == DocumentType.TRANSFER_IN || doc.getDocumentType() == DocumentType.TRANSFER_OUT) && doc.getReferenceId() != null) {
+      inventoryDocumentRepository.findById(doc.getReferenceId()).ifPresent(linkedDoc -> {
+        if (linkedDoc.getDocumentStatus() != DocumentStatus.COMPLETED && 
+            linkedDoc.getDocumentStatus() != DocumentStatus.CANCELLED) {
+          linkedDoc.setDocumentStatus(DocumentStatus.CANCELLED);
+          inventoryDocumentRepository.save(linkedDoc);
+        }
+      });
+    }
 
     if (doc.getReferenceType() == ReferenceType.SALES_ORDER) {
       Order order = orderRepository.findById(doc.getReferenceId())
@@ -363,7 +415,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
       case RECEIPT -> "WH-IN-";
       case ISSUE -> "WH-OUT-";
       case ADJUSTMENT -> "WH-ADJ-";
-      case TRANSFER -> "WH-TRA-";
+      case TRANSFER_IN -> "WH-TRA-IN-";
+      case TRANSFER_OUT -> "WH-TRA-OUT-";
     };
     return prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
   }
@@ -379,15 +432,6 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
       }
       balance.setQuantity(balance.getQuantity().subtract(tx.getQuantity()));
       inventoryBalanceRepository.save(balance);
-
-      Warehouse warehouse = balance.getWarehouse();
-      BigDecimal currentUsed = warehouse.getUsedCapacity() != null ? warehouse.getUsedCapacity() : BigDecimal.ZERO;
-      BigDecimal newCapacity = currentUsed.subtract(tx.getQuantity());
-      if (newCapacity.compareTo(BigDecimal.ZERO) < 0) {
-        newCapacity = BigDecimal.ZERO;
-      }
-      warehouse.setUsedCapacity(newCapacity);
-      warehouseRepository.save(warehouse);
     }
   }
 
@@ -405,11 +449,6 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
           });
       balance.setQuantity(balance.getQuantity().add(tx.getQuantity()));
       inventoryBalanceRepository.save(balance);
-
-      Warehouse warehouse = balance.getWarehouse();
-      BigDecimal currentUsed = warehouse.getUsedCapacity() != null ? warehouse.getUsedCapacity() : BigDecimal.ZERO;
-      warehouse.setUsedCapacity(currentUsed.add(tx.getQuantity()));
-      warehouseRepository.save(warehouse);
     }
   }
 
@@ -421,10 +460,15 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     if (doc.getDocumentType() == DocumentType.RECEIPT) {
       doc.setDocumentStatus(DocumentStatus.CONFIRMED);
       inventoryDocumentRepository.save(doc);
-    } else if (doc.getDocumentType() == DocumentType.ISSUE || doc.getDocumentType() == DocumentType.TRANSFER) {
-      UUID stockWarehouseId = (doc.getDocumentType() == DocumentType.TRANSFER)
-          ? doc.getSourceWarehouse().getId()
-          : doc.getWarehouse().getId();
+    } else if (doc.getDocumentType() == DocumentType.ISSUE || doc.getDocumentType() == DocumentType.TRANSFER_IN || doc.getDocumentType() == DocumentType.TRANSFER_OUT) {
+      if (doc.getDocumentType() == DocumentType.TRANSFER_IN) {
+        // Inbound transfers just become CONFIRMED without stock check/deduction
+        doc.setDocumentStatus(DocumentStatus.CONFIRMED);
+        inventoryDocumentRepository.save(doc);
+        return;
+      }
+
+      UUID stockWarehouseId = doc.getWarehouse().getId();
 
       boolean isSufficient = true;
       for (InventoryTransaction tx : doc.getStockMoves()) {
@@ -455,9 +499,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         .findAllByWarehouseIdAndDocumentStatus(warehouseId, DocumentStatus.WAITING_FOR_STOCK);
 
     for (InventoryDocument doc : waitingDocs) {
-      UUID stockWarehouseId = (doc.getDocumentType() == DocumentType.TRANSFER)
-          ? doc.getSourceWarehouse().getId()
-          : doc.getWarehouse().getId();
+      UUID stockWarehouseId = doc.getWarehouse().getId();
 
       boolean isSufficient = true;
       for (InventoryTransaction tx : doc.getStockMoves()) {

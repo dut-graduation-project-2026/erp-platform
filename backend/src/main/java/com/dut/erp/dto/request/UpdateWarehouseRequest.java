@@ -23,10 +23,6 @@ public record UpdateWarehouseRequest(
 
     String description,
 
-    @NotNull(message = "Maximum capacity is required")
-    @Positive(message = "Maximum capacity must be a positive number")
-    BigDecimal maximumCapacity,
-
     Boolean isActive,
 
     @NotEmpty(message = "Staff list cannot be empty")
