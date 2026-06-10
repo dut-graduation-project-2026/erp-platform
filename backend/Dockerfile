@@ -1,8 +1,13 @@
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine
+
 WORKDIR /app
 
-ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} app.jar
+RUN addgroup -S spring && adduser -S spring -G spring
+
+COPY target/*.jar app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+USER spring:spring
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
