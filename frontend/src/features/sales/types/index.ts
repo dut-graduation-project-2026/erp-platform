@@ -67,7 +67,29 @@ export interface SaleOrder {
   // legacy alias used in the old UI
   code?: string;
   partner?: SalePartner;
-  lead?: { id: string; name: string };
+  lead?: {
+    id: string;
+    name: string;
+    taxCode?: string;
+    email?: string;
+    phone?: string;
+    expectedRevenue?: number;
+    stage?: string;
+    probability?: number;
+    salePerson?: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+    };
+    saleTeam?: {
+      id: string;
+      name: string;
+    };
+    partner?: SalePartner;
+    createdAt?: string;
+    updatedAt?: string;
+  };
   status: OrderStatus;
   deliveryDate?: string;
   expirationDate?: string;
@@ -75,6 +97,22 @@ export interface SaleOrder {
   items?: OrderItem[];
   createdAt?: string;
   updatedAt?: string;
+  organization?: {
+    id: string;
+    name: string;
+  };
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  updatedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
   // Legacy fields used in old SaleOrderForm UI
   orderDate?: string;
   lines?: OrderItem[];
@@ -97,5 +135,22 @@ export interface SaleInvoice {
   paidAmount: number;
   amountDue?: number;
   createdAt?: string;
+  updatedAt?: string;
+  organization?: {
+    id: string;
+    name: string;
+  };
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  updatedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
 }
 

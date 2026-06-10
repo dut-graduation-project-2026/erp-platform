@@ -5,7 +5,7 @@ import { OrderItem, Product, SaleOrder, SaleTax } from '../types';
 import { Button } from '@/components/ui/button';
 import { ORDER_STATUS, TAX_COMPUTATION } from '@/config/constants';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, ChevronRight, Save, CheckCircle, XCircle, Receipt } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, Save, CheckCircle, XCircle, Receipt, Building, Mail, Phone, User, Calendar, ArrowLeft, Clock, Activity, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -238,6 +238,19 @@ export function SaleOrderForm({ order, orgId }: Props) {
 
   const canWrite = order?.id ? hasPermission(PERMISSIONS.ORDERS.WRITE) : hasPermission(PERMISSIONS.ORDERS.CREATE);
 
+  const isReadOnly = (localStatus === 'CONFIRMED' || localStatus === 'CANCELLED' || localStatus === 'COMPLETED') && order;
+
+  if (isReadOnly && order) {
+    return (
+      <SaleOrderReadOnlyView
+        order={order}
+        orgId={orgId}
+        localStatus={localStatus}
+        handleCreateInvoice={handleCreateInvoice}
+      />
+    );
+  }
+
   return (
     <div className="h-full flex flex-col font-['Segoe_UI'] bg-[#f8f8f8]">
       {/* Breadcrumb bar */}
@@ -287,164 +300,629 @@ export function SaleOrderForm({ order, orgId }: Props) {
         </div>
       </div>
 
-      {/* Form body */}
+      {/* Main scrolling content area */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_3px_rgba(0,0,0,0.12)]">
-
-          {/* Header fields */}
-          <div className="p-6 grid grid-cols-2 gap-8 border-b border-[#e0e0e0]">
-            <div>
-              <label className="block text-[13px] font-[600] text-[#242424] mb-1">
-                CRM Lead <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={leadId}
-                onChange={(e) => setLeadId(e.target.value)}
-                disabled={localStatus !== 'DRAFT'}
-                className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 text-[14px] focus:outline-none focus:border-[#0066cc]"
-              >
-                <option value="">-- Select Lead --</option>
-                {leads.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
-              <p className="text-[11px] text-[#898989] mt-1">
-                The customer is resolved automatically from the linked lead.
-              </p>
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          {/* Left: Odoo-style central document sheet (2/3 width) */}
+          <div className="lg:col-span-2 bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_4px_16px_rgba(0,0,0,0.05)] p-8 md:p-12">
+            
+            {/* Header block inside sheet */}
+            <div className="mb-8">
+              <span className="text-[12px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">
+                Quotation
+              </span>
+              <h1 className="text-[28px] font-[700] text-[#111111] leading-none mb-1">
+                {orderNumber || order?.orderNumber || order?.code || 'New Quotation'}
+              </h1>
+              {order?.organization && (
+                <div className="text-[13px] text-[#898989] mt-2">
+                  Organization: <span className="text-[#242424] font-medium">{order.organization.name}</span>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-[13px] font-[600] text-[#242424] mb-1">Order Number</label>
-              <Input
-                value={orderNumber}
-                onChange={(e) => setOrderNumber(e.target.value)}
-                placeholder="Auto-generated if blank"
-                disabled={localStatus !== 'DRAFT'}
-                className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-              />
+            {/* Key-Value metadata fields in 2 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 pb-8 border-b border-[#e0e0e0]">
+              {/* Left Column: CRM Lead / Customer info */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#898989] mb-1.5 uppercase tracking-wider">
+                    CRM Lead <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={leadId}
+                    onChange={(e) => setLeadId(e.target.value)}
+                    disabled={localStatus !== 'DRAFT'}
+                    className="h-9 w-full border border-[#d0d0d0] hover:border-[#a0a0a0] focus:border-[#0066cc] rounded-[4px] px-3 text-[13px] outline-none bg-white transition-colors"
+                  >
+                    <option value="">-- Select Lead --</option>
+                    {leads.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                  <p className="text-[11px] text-[#898989] mt-1 italic">
+                    Customer is resolved automatically from the linked lead.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#898989] mb-1.5 uppercase tracking-wider">Order Number</label>
+                  <Input
+                    value={orderNumber}
+                    onChange={(e) => setOrderNumber(e.target.value)}
+                    placeholder="Auto-generated if blank"
+                    disabled={localStatus !== 'DRAFT'}
+                    className="h-9 border-[#d0d0d0] hover:border-[#a0a0a0] focus:border-[#0066cc] rounded-[4px] text-[13px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: Dates */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#898989] mb-1.5 uppercase tracking-wider">Delivery Date</label>
+                  <Input
+                    type="date"
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    disabled={localStatus !== 'DRAFT'}
+                    className="h-9 border-[#d0d0d0] hover:border-[#a0a0a0] focus:border-[#0066cc] rounded-[4px] text-[13px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#898989] mb-1.5 uppercase tracking-wider">Expiration Date</label>
+                  <Input
+                    type="date"
+                    value={expirationDate}
+                    onChange={(e) => setExpirationDate(e.target.value)}
+                    disabled={localStatus !== 'DRAFT'}
+                    className="h-9 border-[#d0d0d0] hover:border-[#a0a0a0] focus:border-[#0066cc] rounded-[4px] text-[13px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-[13px] font-[600] text-[#242424] mb-1">Delivery Date</label>
-              <Input
-                type="date"
-                value={deliveryDate}
-                onChange={(e) => setDeliveryDate(e.target.value)}
-                disabled={localStatus !== 'DRAFT'}
-                className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-              />
+            {/* Tab header */}
+            <div className="mt-8 border-b border-[#e0e0e0] flex space-x-6 text-[14px]">
+              <button className="border-b-2 border-[#0066cc] pb-2 font-[600] text-[#0066cc]">
+                Order Lines
+              </button>
+              <button className="pb-2 text-[#898989] hover:text-[#242424] cursor-not-allowed" disabled>
+                Other Info
+              </button>
             </div>
 
-            <div>
-              <label className="block text-[13px] font-[600] text-[#242424] mb-1">Expiration Date</label>
-              <Input
-                type="date"
-                value={expirationDate}
-                onChange={(e) => setExpirationDate(e.target.value)}
-                disabled={localStatus !== 'DRAFT'}
-                className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-              />
-            </div>
-          </div>
-
-          {/* Order lines table */}
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-[#f8f8f8]">
-                <tr>
-                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-b border-[#e0e0e0] w-[220px]">Product</th>
-                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-b border-[#e0e0e0] w-[160px]">Tax</th>
-                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-b border-[#e0e0e0] w-[100px] text-right">Qty</th>
-                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-b border-[#e0e0e0] w-[150px] text-right">Unit Price</th>
-                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-b border-[#e0e0e0] w-[150px] text-right">Subtotal</th>
-                  {localStatus === 'DRAFT' && <th className="border-b border-[#e0e0e0] w-[50px]" />}
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((line, idx) => (
-                  <tr key={idx} className="border-b border-[#e0e0e0] hover:bg-[#f0f4ff] bg-white group">
-                    <td className="px-2 py-2">
-                      <select
-                        value={line.productId}
-                        onChange={(e) => handleLineChange(idx, 'productId', e.target.value)}
-                        disabled={localStatus !== 'DRAFT'}
-                        className="w-full h-8 text-[13px] border border-transparent hover:border-[#d0d0d0] focus:border-[#0066cc] rounded px-1 outline-none bg-transparent"
-                      >
-                        <option value="">-- Select --</option>
-                        {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                    </td>
-                    <td className="px-2 py-2">
-                      <select
-                        value={line.taxId}
-                        onChange={(e) => handleLineChange(idx, 'taxId', e.target.value)}
-                        disabled={localStatus !== 'DRAFT'}
-                        className="w-full h-8 text-[13px] border border-transparent hover:border-[#d0d0d0] focus:border-[#0066cc] rounded px-1 outline-none bg-transparent"
-                      >
-                        <option value="">None</option>
-                        {taxes.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name} ({t.amount}{t.computation === 'PERCENTAGE' ? '%' : '₫'})
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-2 py-2">
-                      <input
-                        type="number" min={0.0001}
-                        value={line.quantity}
-                        onChange={(e) => handleLineChange(idx, 'quantity', Number(e.target.value))}
-                        disabled={localStatus !== 'DRAFT'}
-                        className="w-full h-8 text-[13px] text-right border border-transparent hover:border-[#d0d0d0] focus:border-[#0066cc] rounded px-2 outline-none bg-transparent"
-                      />
-                    </td>
-                    <td className="px-2 py-2">
-                      <input
-                        type="number" min={0}
-                        value={line.unitPrice}
-                        onChange={(e) => handleLineChange(idx, 'unitPrice', Number(e.target.value))}
-                        disabled={localStatus !== 'DRAFT'}
-                        className="w-full h-8 text-[13px] text-right font-mono border border-transparent hover:border-[#d0d0d0] focus:border-[#0066cc] rounded px-2 outline-none bg-transparent"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-[13px] text-[#242424] text-right font-mono font-[500]">
-                      ₫{(line.quantity * line.unitPrice).toLocaleString()}
-                    </td>
-                    {localStatus === 'DRAFT' && (
-                      <td className="px-4 py-3 text-right">
-                        <button onClick={() => handleRemoveLine(idx)} className="text-[#898989] hover:text-[#dc3545] opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+            {/* Order lines table */}
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#e0e0e0] text-[13px] font-[600] text-[#242424]">
+                    <th className="py-3 pr-4 w-[240px]">Product</th>
+                    <th className="py-3 px-4 w-[180px]">Tax</th>
+                    <th className="py-3 px-4 w-[100px] text-right">Qty</th>
+                    <th className="py-3 px-4 w-[150px] text-right">Unit Price</th>
+                    <th className="py-3 pl-4 w-[150px] text-right">Subtotal</th>
+                    {localStatus === 'DRAFT' && <th className="py-3 pl-2 w-[40px]" />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((line, idx) => (
+                    <tr key={idx} className="border-b border-[#f0f0f0] text-[13px] text-[#242424] hover:bg-[#fafafa] group">
+                      <td className="py-2 pr-4">
+                        <select
+                          value={line.productId}
+                          onChange={(e) => handleLineChange(idx, 'productId', e.target.value)}
+                          disabled={localStatus !== 'DRAFT'}
+                          className="w-full h-8 text-[13px] border border-[#d0d0d0] rounded px-1 outline-none bg-white focus:border-[#0066cc]"
+                        >
+                          <option value="">-- Select --</option>
+                          {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
                       </td>
-                    )}
-                  </tr>
-                ))}
-                {localStatus === 'DRAFT' && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-3 bg-white">
-                      <Button variant="ghost" onClick={handleAddLine} className="text-[#0066cc] h-8 px-2 hover:bg-[#f0f4ff] text-[13px] font-[600]">
-                        <Plus className="w-4 h-4 mr-1" />Add a product
-                      </Button>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      <td className="py-2 px-4">
+                        <select
+                          value={line.taxId}
+                          onChange={(e) => handleLineChange(idx, 'taxId', e.target.value)}
+                          disabled={localStatus !== 'DRAFT'}
+                          className="w-full h-8 text-[13px] border border-[#d0d0d0] rounded px-1 outline-none bg-white focus:border-[#0066cc]"
+                        >
+                          <option value="">None</option>
+                          {taxes.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name} ({t.amount}{t.computation === 'PERCENTAGE' ? '%' : '₫'})
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-2 px-4">
+                        <input
+                          type="number" min={0.0001}
+                          value={line.quantity}
+                          onChange={(e) => handleLineChange(idx, 'quantity', Number(e.target.value))}
+                          disabled={localStatus !== 'DRAFT'}
+                          className="w-full h-8 text-[13px] text-right border border-[#d0d0d0] rounded px-2 outline-none bg-white focus:border-[#0066cc]"
+                        />
+                      </td>
+                      <td className="py-2 px-4">
+                        <input
+                          type="number" min={0}
+                          value={line.unitPrice}
+                          onChange={(e) => handleLineChange(idx, 'unitPrice', Number(e.target.value))}
+                          disabled={localStatus !== 'DRAFT'}
+                          className="w-full h-8 text-[13px] text-right font-mono border border-[#d0d0d0] rounded px-2 outline-none bg-white focus:border-[#0066cc]"
+                        />
+                      </td>
+                      <td className="py-2 pl-4 text-right font-mono font-[600] text-[#0066cc]">
+                        ₫{(line.quantity * line.unitPrice).toLocaleString()}
+                      </td>
+                      {localStatus === 'DRAFT' && (
+                        <td className="py-2 pl-2 text-right">
+                          <button onClick={() => handleRemoveLine(idx)} className="text-[#898989] hover:text-[#dc3545] opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                  {localStatus === 'DRAFT' && (
+                    <tr>
+                      <td colSpan={6} className="py-4 bg-white">
+                        <Button variant="ghost" onClick={handleAddLine} className="text-[#0066cc] h-8 px-2 hover:bg-[#f0f4ff] text-[13px] font-[600]">
+                          <Plus className="w-4 h-4 mr-1" />Add a product
+                        </Button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Totals Section */}
+            <div className="mt-6 flex justify-end">
+              <div className="w-full max-w-[320px] space-y-2 text-[14px]">
+                <div className="flex justify-between">
+                  <span className="text-[#898989]">Untaxed Amount</span>
+                  <span className="font-mono text-[#242424]">₫{netTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between border-b border-dashed border-[#e0e0e0] pb-2">
+                  <span className="text-[#898989]">Taxes</span>
+                  <span className="font-mono text-[#242424]">₫{taxTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="font-[700] text-[#111111] text-[16px]">Total</span>
+                  <span className="font-[700] text-[#0066cc] text-[20px] font-mono">
+                    ₫{grandTotal.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          {/* Totals */}
-          <div className="p-6 flex justify-end bg-[#fafafa] rounded-b-[4px]">
-            <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-sm p-4 w-full max-w-[320px]">
-              <div className="flex justify-between py-2 border-b border-dashed border-[#e0e0e0]">
-                <span className="text-[13px] text-[#898989]">Untaxed Amount</span>
-                <span className="text-[13px] font-mono">₫{netTotal.toLocaleString()}</span>
+          {/* Right: Chatter Sidebar (1/3 width) */}
+          <div className="space-y-4 lg:sticky lg:top-6">
+            {/* Tabs */}
+            <div className="flex border border-[#e0e0e0] rounded-t-[4px] overflow-hidden bg-[#fafafa]">
+              <button className="flex-1 py-2.5 font-[600] text-[#242424] text-[13px] bg-white border-r border-[#e0e0e0] flex items-center justify-center gap-1.5">
+                <FileText className="w-4 h-4 text-[#898989]" /> Log Note
+              </button>
+              <button className="flex-1 py-2.5 text-[#898989] text-[13px] hover:text-[#242424] flex items-center justify-center gap-1.5 cursor-not-allowed" disabled>
+                <Calendar className="w-4 h-4 text-[#898989]" /> Schedule Activity
+              </button>
+            </div>
+
+            {/* Timeline Content */}
+            <div className="border border-[#e0e0e0] border-t-0 rounded-b-[4px] p-6 bg-[#fcfcfc] space-y-6 relative min-h-[300px]">
+              {/* Vertical line */}
+              <div className="absolute left-[39px] top-6 bottom-6 w-[1px] bg-[#e0e0e0] z-0" />
+
+              {order?.createdAt && (
+                <div className="relative flex items-start z-10 gap-3">
+                  {/* Timeline node: Avatar */}
+                  <div className="w-8 h-8 rounded-full bg-[#0066cc] text-white font-bold flex items-center justify-center text-[12px] shrink-0 shadow-sm">
+                    {order.createdBy?.firstName?.[0] || 'U'}
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center text-[13px] mb-1">
+                      <span className="font-[600] text-[#242424] truncate">
+                        {order.createdBy?.firstName} {order.createdBy?.lastName}
+                      </span>
+                      <span className="text-[11px] text-[#898989] shrink-0">Original</span>
+                    </div>
+                    <div className="bg-white border border-[#e0e0e0] rounded-[4px] p-3 shadow-[0px_1px_2px_rgba(0,0,0,0.02)] text-[13px]">
+                      <p className="text-[#242424] font-medium mb-1">Document Created</p>
+                      <p className="text-[#606060] text-[12px]">
+                        Order <span className="font-mono text-[#0066cc]">{order.orderNumber || order.code}</span> was initialized.
+                      </p>
+                      <div className="text-[10px] text-[#898989] mt-2 font-mono">
+                        {new Date(order.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {order?.updatedAt && order?.updatedBy && (
+                <div className="relative flex items-start z-10 gap-3">
+                  {/* Timeline node: Clock icon in a white circle */}
+                  <div className="w-8 h-8 rounded-full bg-white border border-[#e0e0e0] text-[#898989] flex items-center justify-center shrink-0 shadow-sm">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center text-[13px] mb-1">
+                      <span className="font-[600] text-[#242424] truncate">
+                        {order.updatedBy?.firstName} {order.updatedBy?.lastName}
+                      </span>
+                      <span className="text-[11px] text-[#898989] shrink-0">Recent Update</span>
+                    </div>
+                    <div className="bg-white border border-[#e0e0e0] rounded-[4px] p-3 shadow-[0px_1px_2px_rgba(0,0,0,0.02)] text-[13px]">
+                      <p className="text-[#242424] font-medium mb-1">Document Modified</p>
+                      <p className="text-[#606060] text-[12px]">
+                        Changes saved by <span className="text-[#242424] font-semibold">{order.updatedBy.email}</span>.
+                      </p>
+                      <div className="text-[10px] text-[#898989] mt-2 font-mono">
+                        {new Date(order.updatedAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+interface ReadOnlyProps {
+  order: SaleOrder;
+  orgId: string;
+  localStatus: string;
+  handleCreateInvoice: () => Promise<void>;
+}
+
+function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice }: ReadOnlyProps) {
+  const router = useRouter();
+
+  const formatCurrency = (val: number | undefined) => {
+    return `₫${Number(val ?? 0).toLocaleString()}`;
+  };
+
+  const formatDate = (dateStr: string | undefined) => {
+    if (!dateStr) return '—';
+    try {
+      return dateStr.split('T')[0];
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const netTotal = (order.items ?? []).reduce((s, l) => s + Number(l.quantity) * Number(l.unitPrice), 0);
+  const taxTotal = (order.items ?? []).reduce((s, l) => {
+    const tax = l.tax;
+    if (!tax) return s;
+    const base = Number(l.quantity) * Number(l.unitPrice);
+    return s + (tax.computation === TAX_COMPUTATION.PERCENTAGE ? (base * tax.amount) / 100 : tax.amount);
+  }, 0);
+  const grandTotal = order.totalAmount ?? (netTotal + taxTotal);
+
+  return (
+    <div className="h-full flex flex-col font-['Segoe_UI'] bg-[#f8f8f8]">
+      {/* Odoo status bar */}
+      <div className="bg-white border-b border-[#e0e0e0] h-12 px-6 flex justify-between items-center shrink-0">
+        {/* Left: Action buttons */}
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            className="border-[#d0d0d0] text-[#242424] h-8 px-3 text-[13px] rounded-[4px] bg-white hover:bg-[#f8f8f8]" 
+            onClick={() => router.push(`/dashboard/${orgId}/sales/orders`)}
+          >
+            Back to List
+          </Button>
+          {localStatus === 'CONFIRMED' && (
+            <Button 
+              className="bg-[#0066cc] hover:bg-[#004499] text-white h-8 px-3 text-[13px] rounded-[4px] flex items-center" 
+              onClick={handleCreateInvoice}
+            >
+              <Receipt className="w-4 h-4 mr-1.5" /> Create Invoice
+            </Button>
+          )}
+        </div>
+        
+        {/* Right: Status steps (Odoo style) */}
+        <div className="flex items-center text-[12px] font-[600] text-[#898989]">
+          <div className={cn(
+            "px-3 py-1 flex items-center", 
+            localStatus === 'DRAFT' ? "text-[#0066cc] bg-[#f0f4ff] rounded-[2px]" : ""
+          )}>
+            Draft
+          </div>
+          <span className="mx-1 text-[#e0e0e0]"></span>
+          <div className={cn(
+            "px-3 py-1 flex items-center", 
+            localStatus === 'CONFIRMED' ? "text-[#28a745] bg-[#eafaf1] rounded-[2px]" : ""
+          )}>
+            Sales Order
+          </div>
+          {localStatus === 'CANCELLED' && (
+            <>
+              <span className="mx-1 text-[#e0e0e0]"></span>
+              <div className="px-3 py-1 flex items-center text-[#dc3545] bg-[#fdf2f2] rounded-[2px]">
+                Cancelled
               </div>
-              <div className="flex justify-between py-2 border-b border-dashed border-[#e0e0e0]">
-                <span className="text-[13px] text-[#898989]">Taxes</span>
-                <span className="text-[13px] font-mono">₫{taxTotal.toLocaleString()}</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Main scrolling content area */}
+      <div className="flex-1 overflow-auto p-6">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          {/* Left: Odoo-style central document sheet (2/3 width) */}
+          <div className="lg:col-span-2 bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_4px_16px_rgba(0,0,0,0.05)] p-8 md:p-12">
+            
+            {/* Header block inside sheet */}
+            <div className="mb-8">
+              <span className="text-[12px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">
+                {localStatus === 'DRAFT' ? 'Quotation' : 'Sales Order'}
+              </span>
+              <h1 className="text-[28px] font-[700] text-[#111111] leading-none mb-1">
+                {order.orderNumber || order.code}
+              </h1>
+              {order.organization && (
+                <div className="text-[13px] text-[#898989] mt-2">
+                  Organization: <span className="text-[#242424] font-medium">{order.organization.name}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Key-Value Form Fields in 2 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 pb-8 border-b border-[#e0e0e0]">
+              
+              {/* Left Column: Customer Details */}
+              <div className="space-y-2">
+                <div className="flex text-[14px]">
+                  <span className="w-28 shrink-0 text-[#898989] font-[600]">Customer</span>
+                  <div className="text-[#242424]">
+                    <span className="font-[600]">{order.partner?.name || '—'}</span>
+                    {order.partner?.partnerType && (
+                      <span className="ml-2 bg-[#f0f4ff] text-[#0066cc] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        {order.partner.partnerType}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {order.partner?.taxCode && (
+                  <div className="flex text-[14px]">
+                    <span className="w-28 shrink-0 text-[#898989] font-[600]">Tax Code</span>
+                    <span className="text-[#242424] font-mono">{order.partner.taxCode}</span>
+                  </div>
+                )}
+                {order.partner?.email && (
+                  <div className="flex text-[14px]">
+                    <span className="w-28 shrink-0 text-[#898989] font-[600]">Email</span>
+                    <a href={`mailto:${order.partner.email}`} className="text-[#0066cc] hover:underline">
+                      {order.partner.email}
+                    </a>
+                  </div>
+                )}
+                {order.partner?.phone && (
+                  <div className="flex text-[14px]">
+                    <span className="w-28 shrink-0 text-[#898989] font-[600]">Phone</span>
+                    <span className="text-[#242424]">{order.partner.phone}</span>
+                  </div>
+                )}
+                {order.partner?.address && (
+                  <div className="flex text-[14px]">
+                    <span className="w-28 shrink-0 text-[#898989] font-[600]">Address</span>
+                    <span className="text-[#606060] italic leading-relaxed">{order.partner.address}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between py-3">
-                <span className="text-[16px] font-[700] text-[#242424]">Total</span>
-                <span className="text-[18px] font-[700] text-[#0066cc] font-mono">₫{grandTotal.toLocaleString()}</span>
+
+              {/* Right Column: Dates & CRM details */}
+              <div className="space-y-2">
+                <div className="flex text-[14px]">
+                  <span className="w-36 shrink-0 text-[#898989] font-[600]">Delivery Date</span>
+                  <span className="text-[#242424]">{formatDate(order.deliveryDate)}</span>
+                </div>
+                <div className="flex text-[14px]">
+                  <span className="w-36 shrink-0 text-[#898989] font-[600]">Expiration Date</span>
+                  <span className="text-[#242424]">{formatDate(order.expirationDate)}</span>
+                </div>
+
+                {order.lead && (
+                  <div className="border-t border-dashed border-[#e0e0e0] pt-3 mt-3 space-y-2">
+                    <div className="flex text-[14px]">
+                      <span className="w-36 shrink-0 text-[#898989] font-[600]">CRM Opportunity</span>
+                      <div className="text-[#242424]">
+                        <span className="font-[600]">{order.lead.name}</span>
+                        {order.lead.stage && (
+                          <span className="ml-2 bg-[#eafaf1] text-[#28a745] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-[#d2f4e1]">
+                            {order.lead.stage}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {order.lead.expectedRevenue !== undefined && (
+                      <div className="flex text-[14px]">
+                        <span className="w-36 shrink-0 text-[#898989] font-[600]">Expected Revenue</span>
+                        <span className="text-[#242424] font-mono">{formatCurrency(order.lead.expectedRevenue)}</span>
+                      </div>
+                    )}
+                    {order.lead.probability !== undefined && (
+                      <div className="flex text-[14px]">
+                        <span className="w-36 shrink-0 text-[#898989] font-[600]">Probability</span>
+                        <span className="text-[#242424] font-medium">{order.lead.probability}%</span>
+                      </div>
+                    )}
+                    {order.lead.salePerson && (
+                      <div className="flex text-[14px]">
+                        <span className="w-36 shrink-0 text-[#898989] font-[600]">Salesperson</span>
+                        <span className="text-[#242424]">
+                          {order.lead.salePerson.firstName} {order.lead.salePerson.lastName}
+                          <span className="text-[#898989] text-[12px] ml-1">({order.lead.salePerson.email})</span>
+                        </span>
+                      </div>
+                    )}
+                    {order.lead.saleTeam && (
+                      <div className="flex text-[14px]">
+                        <span className="w-36 shrink-0 text-[#898989] font-[600]">Sales Team</span>
+                        <span className="text-[#242424] font-medium">{order.lead.saleTeam.name}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+
+            </div>
+
+            {/* Tabs header */}
+            <div className="mt-8 border-b border-[#e0e0e0] flex space-x-6 text-[14px]">
+              <button className="border-b-2 border-[#0066cc] pb-2 font-[600] text-[#0066cc]">
+                Order Lines
+              </button>
+              <button className="pb-2 text-[#898989] hover:text-[#242424] cursor-not-allowed" disabled>
+                Other Info
+              </button>
+            </div>
+
+            {/* Line Items Table */}
+            <div className="mt-4">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#e0e0e0] text-[13px] font-[600] text-[#242424]">
+                    <th className="py-3 pr-4">Product</th>
+                    <th className="py-3 px-4 w-[180px]">Tax</th>
+                    <th className="py-3 px-4 w-[100px] text-right">Qty</th>
+                    <th className="py-3 px-4 w-[150px] text-right">Unit Price</th>
+                    <th className="py-3 pl-4 w-[150px] text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(order.items ?? []).map((line, idx) => (
+                    <tr key={idx} className="border-b border-[#f0f0f0] text-[13px] text-[#242424] hover:bg-[#fafafa]">
+                      <td className="py-3 pr-4">
+                        <span className="font-[600]">{line.product?.name ?? '—'}</span>
+                        {line.product?.code && (
+                          <span className="text-[11px] text-[#898989] font-mono block mt-0.5">Code: {line.product.code}</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {line.tax ? (
+                          <span className="bg-[#f0f4ff] text-[#0066cc] text-[11px] px-2 py-0.5 rounded font-[500]">
+                            {line.tax.name}
+                          </span>
+                        ) : (
+                          <span className="text-[#898989] italic">No Tax</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium">{Number(line.quantity).toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right font-mono">{formatCurrency(Number(line.unitPrice))}</td>
+                      <td className="py-3 pl-4 text-right font-mono font-[600] text-[#0066cc]">{formatCurrency(Number(line.subtotal))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {/* Totals Section */}
+              <div className="mt-6 flex justify-end">
+                <div className="w-full max-w-[320px] space-y-2 text-[14px]">
+                  <div className="flex justify-between">
+                    <span className="text-[#898989]">Untaxed Amount</span>
+                    <span className="font-mono text-[#242424]">{formatCurrency(netTotal)}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-dashed border-[#e0e0e0] pb-2">
+                    <span className="text-[#898989]">Taxes</span>
+                    <span className="font-mono text-[#242424]">{formatCurrency(taxTotal)}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="font-[700] text-[#111111] text-[16px]">Total</span>
+                    <span className="font-[700] text-[#0066cc] text-[20px] font-mono">{formatCurrency(grandTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right: Chatter Sidebar (1/3 width) */}
+          <div className="space-y-4 lg:sticky lg:top-6">
+            {/* Tabs */}
+            <div className="flex border border-[#e0e0e0] rounded-t-[4px] overflow-hidden bg-[#fafafa]">
+              <button className="flex-1 py-2.5 font-[600] text-[#242424] text-[13px] bg-white border-r border-[#e0e0e0] flex items-center justify-center gap-1.5">
+                <FileText className="w-4 h-4 text-[#898989]" /> Log Note
+              </button>
+              <button className="flex-1 py-2.5 text-[#898989] text-[13px] hover:text-[#242424] flex items-center justify-center gap-1.5 cursor-not-allowed" disabled>
+                <Calendar className="w-4 h-4 text-[#898989]" /> Schedule Activity
+              </button>
+            </div>
+
+            {/* Timeline Content */}
+            <div className="border border-[#e0e0e0] border-t-0 rounded-b-[4px] p-6 bg-[#fcfcfc] space-y-6 relative min-h-[300px]">
+              {/* Vertical line */}
+              <div className="absolute left-[39px] top-6 bottom-6 w-[1px] bg-[#e0e0e0] z-0" />
+
+              {order.createdAt && (
+                <div className="relative flex items-start z-10 gap-3">
+                  {/* Timeline node: Avatar */}
+                  <div className="w-8 h-8 rounded-full bg-[#0066cc] text-white font-bold flex items-center justify-center text-[12px] shrink-0 shadow-sm">
+                    {order.createdBy?.firstName?.[0] || 'U'}
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center text-[13px] mb-1">
+                      <span className="font-[600] text-[#242424] truncate">
+                        {order.createdBy?.firstName} {order.createdBy?.lastName}
+                      </span>
+                      <span className="text-[11px] text-[#898989] shrink-0">Original</span>
+                    </div>
+                    <div className="bg-white border border-[#e0e0e0] rounded-[4px] p-3 shadow-[0px_1px_2px_rgba(0,0,0,0.02)] text-[13px]">
+                      <p className="text-[#242424] font-medium mb-1">Document Created</p>
+                      <p className="text-[#606060] text-[12px]">
+                        Order <span className="font-mono text-[#0066cc]">{order.orderNumber || order.code}</span> was initialized.
+                      </p>
+                      <div className="text-[10px] text-[#898989] mt-2 font-mono">
+                        {new Date(order.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {order.updatedAt && order.updatedBy && (
+                <div className="relative flex items-start z-10 gap-3">
+                  {/* Timeline node: Clock/Settings icon in a white circle */}
+                  <div className="w-8 h-8 rounded-full bg-white border border-[#e0e0e0] text-[#898989] flex items-center justify-center shrink-0 shadow-sm">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center text-[13px] mb-1">
+                      <span className="font-[600] text-[#242424] truncate">
+                        {order.updatedBy?.firstName} {order.updatedBy?.lastName}
+                      </span>
+                      <span className="text-[11px] text-[#898989] shrink-0">Recent Update</span>
+                    </div>
+                    <div className="bg-white border border-[#e0e0e0] rounded-[4px] p-3 shadow-[0px_1px_2px_rgba(0,0,0,0.02)] text-[13px]">
+                      <p className="text-[#242424] font-medium mb-1">Document Modified</p>
+                      <p className="text-[#606060] text-[12px]">
+                        Changes saved by <span className="text-[#242424] font-semibold">{order.updatedBy.email}</span>.
+                      </p>
+                      <div className="text-[10px] text-[#898989] mt-2 font-mono">
+                        {new Date(order.updatedAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
