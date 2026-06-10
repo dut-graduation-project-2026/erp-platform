@@ -4,13 +4,15 @@ import com.dut.erp.entity.InventoryDocumentLine;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface InventoryDocumentLineRepository extends JpaRepository<InventoryDocumentLine, UUID> {
   List<InventoryDocumentLine> findAllByInventoryDocumentId(UUID inventoryDocumentId);
 
-  @org.springframework.data.jpa.repository.Query("""
+  @Query("""
       SELECT line FROM InventoryDocumentLine line
       JOIN FETCH line.inventoryDocument doc
       WHERE line.product.id = :productId
@@ -19,13 +21,13 @@ public interface InventoryDocumentLineRepository extends JpaRepository<Inventory
         AND (doc.documentType IN (com.dut.erp.enums.DocumentType.RECEIPT, com.dut.erp.enums.DocumentType.TRANSFER_IN)
              OR (doc.documentType = com.dut.erp.enums.DocumentType.ADJUSTMENT AND line.quantity > 0))
         AND line.remainingQuantity > 0
-      ORDER BY doc.dateDone ASC, line.createdAt ASC
+      ORDER BY doc.dateDone ASC, doc.createdAt ASC
       """)
   List<InventoryDocumentLine> findAvailableInboundLayersFifo(
-      @org.springframework.data.repository.query.Param("productId") UUID productId, 
-      @org.springframework.data.repository.query.Param("warehouseId") UUID warehouseId);
+      @Param("productId") UUID productId, 
+      @Param("warehouseId") UUID warehouseId);
 
-  @org.springframework.data.jpa.repository.Query("""
+  @Query("""
       SELECT line FROM InventoryDocumentLine line
       JOIN FETCH line.inventoryDocument doc
       WHERE line.product.id = :productId
@@ -34,9 +36,9 @@ public interface InventoryDocumentLineRepository extends JpaRepository<Inventory
         AND (doc.documentType IN (com.dut.erp.enums.DocumentType.RECEIPT, com.dut.erp.enums.DocumentType.TRANSFER_IN)
              OR (doc.documentType = com.dut.erp.enums.DocumentType.ADJUSTMENT AND line.quantity > 0))
         AND line.remainingQuantity > 0
-      ORDER BY doc.dateDone DESC, line.createdAt DESC
+      ORDER BY doc.dateDone DESC, doc.createdAt DESC
       """)
   List<InventoryDocumentLine> findAvailableInboundLayersLifo(
-      @org.springframework.data.repository.query.Param("productId") UUID productId, 
-      @org.springframework.data.repository.query.Param("warehouseId") UUID warehouseId);
+      @Param("productId") UUID productId, 
+      @Param("warehouseId") UUID warehouseId);
 }
