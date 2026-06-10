@@ -20,7 +20,7 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Entity
-@Table(name = "inventory_transactions")
+@Table(name = "inventory_document_lines")
 @Getter
 @Setter
 @NoArgsConstructor

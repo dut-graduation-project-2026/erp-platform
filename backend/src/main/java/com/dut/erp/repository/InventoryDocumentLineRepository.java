@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface InventoryDocumentLineRepository extends JpaRepository<InventoryDocumentLine, UUID> {
+public interface InventoryDocumentLineRepository
+    extends JpaRepository<InventoryDocumentLine, UUID> {
   List<InventoryDocumentLine> findAllByInventoryDocumentId(UUID inventoryDocumentId);
 }
