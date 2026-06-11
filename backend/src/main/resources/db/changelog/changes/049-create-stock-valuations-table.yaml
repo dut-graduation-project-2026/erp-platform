@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 049-create-stock-valuations-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: stock_valuations
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_stock_valuations
+                    nullable: false
+              - column:
+                  name: inventory_document_line_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: DECIMAL(15, 4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_cost
+                  type: DECIMAL(15, 4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_valuation
+                  type: DECIMAL(15, 4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: method
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_valuations_line
+            baseTableName: stock_valuations
+            baseColumnNames: inventory_document_line_id
+            referencedTableName: inventory_transactions
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_stock_valuations_product
+            baseTableName: stock_valuations
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE

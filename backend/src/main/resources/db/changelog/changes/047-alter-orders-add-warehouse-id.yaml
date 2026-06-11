@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 047-alter-orders-add-warehouse-id
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: warehouse_id
+                  type: UUID
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            constraintName: fk_orders_warehouse
+            baseTableName: orders
+            baseColumnNames: warehouse_id
+            referencedTableName: warehouses
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE

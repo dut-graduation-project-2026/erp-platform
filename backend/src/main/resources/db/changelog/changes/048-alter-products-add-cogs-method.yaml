@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 046-alter-products-add-cogs-method
+      id: 048-alter-products-add-cogs-method
       author: halwins
       changes:
         - addColumn:

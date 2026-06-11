@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 044-init-inventory-transactions-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Inventory Transactions
+              - column:
+                  name: code
+                  value: inventory-transactions
+              - column:
+                  name: description
+                  value: Manage inventory transactions and product movements.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-transactions:select
+              - column:
+                  name: code
+                  value: inventory-transactions:select
+              - column:
+                  name: description
+                  value: Allow selecting inventory transactions in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-transactions')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-transactions:read
+              - column:
+                  name: code
+                  value: inventory-transactions:read
+              - column:
+                  name: description
+                  value: Allow reading inventory transactions information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-transactions')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-transactions:write
+              - column:
+                  name: code
+                  value: inventory-transactions:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing inventory transactions data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-transactions')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-transactions:create
+              - column:
+                  name: code
+                  value: inventory-transactions:create
+              - column:
+                  name: description
+                  value: Allow creating new inventory transactions.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-transactions')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-transactions:delete
+              - column:
+                  name: code
+                  value: inventory-transactions:delete
+              - column:
+                  name: description
+                  value: Allow deleting inventory transactions.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-transactions')

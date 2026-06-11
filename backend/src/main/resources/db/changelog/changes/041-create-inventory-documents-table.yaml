@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 040-create-inventory-documents-table
+      id: 041-create-inventory-documents-table
       author: halwins
       changes:
         - createTable:

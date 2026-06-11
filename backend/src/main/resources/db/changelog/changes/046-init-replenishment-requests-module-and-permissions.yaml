@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 046-init-replenishment-requests-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Replenishment Requests
+              - column:
+                  name: code
+                  value: replenishment-requests
+              - column:
+                  name: description
+                  value: Manage replenishment requests for inventory shortages.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: replenishment-requests:select
+              - column:
+                  name: code
+                  value: replenishment-requests:select
+              - column:
+                  name: description
+                  value: Allow selecting replenishment requests in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'replenishment-requests')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: replenishment-requests:read
+              - column:
+                  name: code
+                  value: replenishment-requests:read
+              - column:
+                  name: description
+                  value: Allow reading replenishment requests information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'replenishment-requests')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: replenishment-requests:write
+              - column:
+                  name: code
+                  value: replenishment-requests:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing replenishment requests data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'replenishment-requests')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: replenishment-requests:create
+              - column:
+                  name: code
+                  value: replenishment-requests:create
+              - column:
+                  name: description
+                  value: Allow creating new replenishment requests.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'replenishment-requests')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: replenishment-requests:delete
+              - column:
+                  name: code
+                  value: replenishment-requests:delete
+              - column:
+                  name: description
+                  value: Allow deleting replenishment requests.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'replenishment-requests')

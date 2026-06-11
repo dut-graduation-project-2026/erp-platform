@@ -1,20 +1,20 @@
 databaseChangeLog:
   - changeSet:
-      id: 047-create-stock-valuations-table
+      id: 043-create-inventory-transactions-table
       author: halwins
       changes:
         - createTable:
-            tableName: stock_valuations
+            tableName: inventory_transactions
             columns:
               - column:
                   name: id
                   type: UUID
                   constraints:
                     primaryKey: true
-                    primaryKeyName: pk_stock_valuations
+                    primaryKeyName: pk_inventory_transactions
                     nullable: false
               - column:
-                  name: inventory_document_line_id
+                  name: inventory_document_id
                   type: UUID
                   constraints:
                     nullable: false
@@ -26,40 +26,38 @@ databaseChangeLog:
               - column:
                   name: quantity
                   type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
                   constraints:
                     nullable: false
               - column:
                   name: unit_cost
                   type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
                   constraints:
                     nullable: false
               - column:
-                  name: total_valuation
+                  name: valuation
                   type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
                   constraints:
                     nullable: false
               - column:
-                  name: method
-                  type: VARCHAR(50)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: created_at
-                  type: TIMESTAMP
-                  defaultValueComputed: CURRENT_TIMESTAMP
+                  name: remaining_quantity
+                  type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
                   constraints:
                     nullable: false
         - addForeignKeyConstraint:
-            constraintName: fk_stock_valuations_line
-            baseTableName: stock_valuations
-            baseColumnNames: inventory_document_line_id
-            referencedTableName: inventory_transactions
+            constraintName: fk_inventory_transactions_document
+            baseTableName: inventory_transactions
+            baseColumnNames: inventory_document_id
+            referencedTableName: inventory_documents
             referencedColumnNames: id
             onDelete: CASCADE
             onUpdate: CASCADE
         - addForeignKeyConstraint:
-            constraintName: fk_stock_valuations_product
-            baseTableName: stock_valuations
+            constraintName: fk_inventory_transactions_product
+            baseTableName: inventory_transactions
             baseColumnNames: product_id
             referencedTableName: products
             referencedColumnNames: id

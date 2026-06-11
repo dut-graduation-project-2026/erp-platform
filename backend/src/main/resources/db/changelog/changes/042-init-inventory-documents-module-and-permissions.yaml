@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 042-init-inventory-documents-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Inventory Documents
+              - column:
+                  name: code
+                  value: inventory-documents
+              - column:
+                  name: description
+                  value: Manage inventory documents (receipts, deliveries, internal transfers).
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-documents:select
+              - column:
+                  name: code
+                  value: inventory-documents:select
+              - column:
+                  name: description
+                  value: Allow selecting inventory documents in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-documents')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-documents:read
+              - column:
+                  name: code
+                  value: inventory-documents:read
+              - column:
+                  name: description
+                  value: Allow reading inventory documents information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-documents')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-documents:write
+              - column:
+                  name: code
+                  value: inventory-documents:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing inventory documents data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-documents')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-documents:create
+              - column:
+                  name: code
+                  value: inventory-documents:create
+              - column:
+                  name: description
+                  value: Allow creating new inventory documents.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-documents')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: inventory-documents:delete
+              - column:
+                  name: code
+                  value: inventory-documents:delete
+              - column:
+                  name: description
+                  value: Allow deleting inventory documents.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'inventory-documents')

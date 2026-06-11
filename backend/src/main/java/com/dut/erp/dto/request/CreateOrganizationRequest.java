@@ -1,6 +1,7 @@
 package com.dut.erp.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateOrganizationRequest(
@@ -12,6 +13,9 @@ public record CreateOrganizationRequest(
         @Size(max = 255, message = "Address must not exceed 255 characters")
         String address,
     @NotBlank(message = "Hotline is required")
+        @Pattern(
+            regexp = "^(\\+\\d{1,3}[- ]?)?\\d{10}$",
+            message = "Hotline must be a valid phone number")
         @Size(max = 255, message = "Hotline must not exceed 255 characters")
         String hotline,
     @NotBlank(message = "Tax code is required")
