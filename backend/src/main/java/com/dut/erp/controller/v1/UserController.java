@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import com.dut.erp.dto.request.UpdateUserRolesRequest;
+import com.dut.erp.dto.response.OrganizationMemberResponse;
 
 /**
  * Controller handling user-related API endpoints.
@@ -79,5 +82,74 @@ public class UserController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     UserBaseResponse userResponse = userService.updateUser(userId, request);
     return ResponseEntity.ok(userResponse);
+  }
+
+  /**
+   * Retrieves detail of a user belonging to a specific organization.
+   *
+   * @param organizationId the UUID of the organization
+   * @param userId the UUID of the user
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing an OrganizationMemberResponse object
+   */
+  @GetMapping("/{userId}")
+  @PreAuthorize(
+      """
+      @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+      and
+      @securityAuthService.hasPermission('users:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<OrganizationMemberResponse> getUserById(
+      @RequestParam UUID organizationId,
+      @PathVariable UUID userId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    OrganizationMemberResponse response = userService.getUserByIdAndOrganizationId(userId, organizationId);
+    return ResponseEntity.ok(response);
+  }
+
+  /**
+   * Updates the roles of a user within a specific organization.
+   *
+   * @param userId the UUID of the user
+   * @param request the update request containing organization ID and list of role IDs
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity containing the updated OrganizationMemberResponse object
+   */
+  @PutMapping("/{userId}/roles")
+  @PreAuthorize(
+      """
+      @securityAuthService.hasOrganizationAccess(#request.organizationId(), #userDetails)
+      and
+      @securityAuthService.hasPermission('users:write', #request.organizationId(), #userDetails)
+      """)
+  public ResponseEntity<OrganizationMemberResponse> updateUserRoles(
+      @PathVariable UUID userId,
+      @Valid @RequestBody UpdateUserRolesRequest request,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    OrganizationMemberResponse response = userService.updateUserRoles(userId, request.organizationId(), request.roleIds());
+    return ResponseEntity.ok(response);
+  }
+
+  /**
+   * Removes a user from a specific organization.
+   *
+   * @param userId the UUID of the user to remove
+   * @param organizationId the UUID of the organization
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity with no content (204)
+   */
+  @DeleteMapping("/{userId}")
+  @PreAuthorize(
+      """
+      @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+      and
+      @securityAuthService.hasPermission('users:delete', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<Void> removeUserFromOrganization(
+      @PathVariable UUID userId,
+      @RequestParam UUID organizationId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    userService.removeUserFromOrganization(userId, organizationId);
+    return ResponseEntity.noContent().build();
   }
 }

@@ -38,12 +38,15 @@ public class MailTemplateServiceImpl implements MailTemplateService {
       inviterName.append(invitation.getInvitedBy().getEmail());
     }
 
+    String emailParam = "&email=" + java.net.URLEncoder.encode(invitation.getEmail(), java.nio.charset.StandardCharsets.UTF_8)
+        + "&orgName=" + java.net.URLEncoder.encode(invitation.getOrganization().getName(), java.nio.charset.StandardCharsets.UTF_8);
+
     var context = new Context();
     context.setVariable("organizationName", invitation.getOrganization().getName());
     context.setVariable("inviterName", inviterName.toString());
     context.setVariable("recipientEmail", invitation.getEmail());
-    context.setVariable("acceptUrl", invitationLink + "true");
-    context.setVariable("declineUrl", invitationLink + "false");
+    context.setVariable("acceptUrl", invitationLink + "true" + emailParam);
+    context.setVariable("declineUrl", invitationLink + "false" + emailParam);
     context.setVariable(
         "expiresAt", invitation.getExpiresAt().atZone(ZoneId.systemDefault()).toLocalDateTime());
 
