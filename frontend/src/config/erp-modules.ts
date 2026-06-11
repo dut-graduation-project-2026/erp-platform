@@ -3,7 +3,7 @@
  * These codes must match exactly with the 'code' field of ErpModule entity in the backend.
  */
 export const ERP_MODULE_CODES = {
-  ERP_MODULE: "erp_module",
+  ERP_MODULE: "erp_module_v1",
   ROLES: "roles",
   USERS: "users",
   ORGANIZATIONS: "organizations",
@@ -19,7 +19,7 @@ export const ERP_MODULE_CODES = {
   TIME_OFF: "time_off",
   SALES: "partners",
   CRM: "leads",
-  INVENTORY: "inventory",
+  INVENTORY: "warehouses",
 } as const;
 
 export type ErpModuleCode = typeof ERP_MODULE_CODES[keyof typeof ERP_MODULE_CODES];

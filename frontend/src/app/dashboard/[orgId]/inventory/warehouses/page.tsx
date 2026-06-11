@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Search, Filter, X, Save, Edit, Trash2, User, MapPin, Clipboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
+import { PERMISSIONS } from '@/config/permissions';
 import { toast } from 'sonner';
 
 export default function WarehousesListPage({ params }: { params: Promise<{ orgId: string }> }) {
@@ -152,7 +153,7 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
           <Button variant="outline" className="border-[#d0d0d0] text-[#242424] h-10 px-3 bg-white rounded-[4px] font-[500] text-[13px]">
             <Filter className="w-4 h-4" />
           </Button>
-          {hasPermission('warehouses:create') && (
+          {hasPermission(PERMISSIONS.WAREHOUSES.CREATE) && (
             <Button 
               onClick={() => handleOpenModal()}
               className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600] text-[13px]"
@@ -213,7 +214,7 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
                 </div>
 
                 <div className="flex justify-end space-x-2 border-t border-[#f5f5f5] mt-4 pt-3 shrink-0">
-                  {hasPermission('warehouses:write') && (
+                  {hasPermission(PERMISSIONS.WAREHOUSES.WRITE) && (
                     <Button 
                       variant="ghost" 
                       onClick={() => handleOpenModal(wh)}
@@ -222,7 +223,7 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
                       <Edit className="w-4 h-4 mr-1.5" /> Edit
                     </Button>
                   )}
-                  {hasPermission('warehouses:delete') && (
+                  {hasPermission(PERMISSIONS.WAREHOUSES.DELETE) && (
                     <Button 
                       variant="ghost" 
                       onClick={() => handleDeleteWarehouse(wh.id, wh.name)}

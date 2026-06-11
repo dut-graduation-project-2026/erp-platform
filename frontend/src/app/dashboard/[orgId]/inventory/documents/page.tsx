@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Search, Filter, RefreshCw, X, Save, Eye, Calendar, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
+import { PERMISSIONS } from '@/config/permissions';
 import { toast } from 'sonner';
 
 export default function DocumentsListPage({ params }: { params: Promise<{ orgId: string }> }) {
@@ -221,7 +222,7 @@ export default function DocumentsListPage({ params }: { params: Promise<{ orgId:
             <RefreshCw className="w-4 h-4" />
           </Button>
 
-          {hasPermission('warehouses:write') && (
+          {hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.CREATE) && (
             <Button 
               onClick={handleOpenCreateModal}
               className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600] text-[13px]"

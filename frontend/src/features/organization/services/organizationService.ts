@@ -4,8 +4,16 @@ import { API_ENDPOINTS } from '@/config/constants';
 export interface CreateOrganizationRequest {
   name: string;
   description?: string;
-  address?: string;
-  hotline?: string;
+  address: string;
+  hotline: string;
+  taxCode: string;
+}
+
+export interface UpdateOrganizationRequest {
+  name: string;
+  description?: string;
+  address: string;
+  hotline: string;
   taxCode: string;
 }
 
@@ -13,11 +21,10 @@ export interface OrganizationResponse {
   id: string;
   name: string;
   taxCode: string;
-  email?: string;
-  phone?: string;
+  hotline?: string;
   address?: string;
   description?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export const createOrganizationApi = async (
@@ -29,5 +36,13 @@ export const createOrganizationApi = async (
 
 export const fetchMyOrganizationsApi = async (): Promise<OrganizationResponse[]> => {
   const response = await apiClient.get<OrganizationResponse[]>(API_ENDPOINTS.ORGANIZATIONS.ME);
+  return response.data;
+};
+
+export const updateOrganizationApi = async (
+  orgId: string,
+  payload: UpdateOrganizationRequest
+): Promise<OrganizationResponse> => {
+  const response = await apiClient.put<OrganizationResponse>(`${API_ENDPOINTS.ORGANIZATIONS.BASE}/${orgId}`, payload);
   return response.data;
 };

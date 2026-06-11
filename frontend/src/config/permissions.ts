@@ -128,7 +128,42 @@ export const PERMISSIONS = {
     DELETE: 'taxes:delete',
   },
   INVENTORY: {
-    ACCESS: 'inventory:access',
+    ACCESS: 'warehouses:read',
+  },
+  WAREHOUSES: {
+    SELECT: 'warehouses:select',
+    READ: 'warehouses:read',
+    WRITE: 'warehouses:write',
+    CREATE: 'warehouses:create',
+    DELETE: 'warehouses:delete',
+  },
+  INVENTORY_DOCUMENTS: {
+    SELECT: 'inventory-documents:select',
+    READ: 'inventory-documents:read',
+    WRITE: 'inventory-documents:write',
+    CREATE: 'inventory-documents:create',
+    DELETE: 'inventory-documents:delete',
+  },
+  INVENTORY_TRANSACTIONS: {
+    SELECT: 'inventory-transactions:select',
+    READ: 'inventory-transactions:read',
+    WRITE: 'inventory-transactions:write',
+    CREATE: 'inventory-transactions:create',
+    DELETE: 'inventory-transactions:delete',
+  },
+  REPLENISHMENT_REQUESTS: {
+    SELECT: 'replenishment-requests:select',
+    READ: 'replenishment-requests:read',
+    WRITE: 'replenishment-requests:write',
+    CREATE: 'replenishment-requests:create',
+    DELETE: 'replenishment-requests:delete',
+  },
+  STOCK_VALUATIONS: {
+    SELECT: 'stock-valuations:select',
+    READ: 'stock-valuations:read',
+    WRITE: 'stock-valuations:write',
+    CREATE: 'stock-valuations:create',
+    DELETE: 'stock-valuations:delete',
   },
 } as const;
 

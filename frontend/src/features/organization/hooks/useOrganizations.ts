@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { useAuthStore } from '@/store/use-auth-store';
-import { fetchMyOrganizationsApi, createOrganizationApi, CreateOrganizationRequest, OrganizationResponse } from '../services/organizationService';
+import { fetchMyOrganizationsApi, createOrganizationApi, updateOrganizationApi, CreateOrganizationRequest, UpdateOrganizationRequest, OrganizationResponse } from '../services/organizationService';
 
 export interface Organization extends OrganizationResponse {
   role: string; // Mocked for now until backend provides role in the response
@@ -58,11 +58,26 @@ export function useOrganizations() {
     }
   };
 
+  const updateOrganization = async (orgId: string, payload: UpdateOrganizationRequest) => {
+    try {
+      setLoading(true);
+      await updateOrganizationApi(orgId, payload);
+      toastSuccess('Cập nhật tổ chức thành công!');
+      await fetchOrganizations(); // Reload the list
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     organizations,
     loading,
     error,
     refetch: fetchOrganizations,
-    createOrganization
+    createOrganization,
+    updateOrganization
   };
 }

@@ -7,7 +7,8 @@ import {
   confirmInventoryDocument,
   completeInventoryDocument,
   cancelInventoryDocument,
-  createReplenishmentRequest
+  createReplenishmentRequest,
+  getWarehouses
 } from '@/features/inventory/services/inventoryService';
 import { InventoryDocument } from '@/features/inventory/types';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
+import { PERMISSIONS } from '@/config/permissions';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -49,27 +51,6 @@ export default function DocumentDetailsPage({
 
   const loadDocument = () => {
     setIsLoading(true);
-    // Find the warehouseId for this document first. Wait! In our route, documentId doesn't specify warehouseId.
-    // Wait, how can we fetch by documentId if the API requires warehouseId?
-    // Let's check our endpoint specification:
-    // `GET /api/v1/organizations/{organizationId}/warehouses/{warehouseId}/documents/{documentId}`
-    // Oh! The backend requires both warehouseId and documentId.
-    // How can we fetch if we only have orgId and documentId?
-    // Wait! Let's see: how is the warehouseId obtained?
-    // We can fetch the list of warehouses first, and search each warehouse's documents list to find the document,
-    // or does the backend also support a direct lookup without warehouseId?
-    // Let's check `InventoryDocumentController.java` to see if there is any endpoint without `warehouseId`.
-    // Looking at the controller: all endpoints are under `@RequestMapping("/api/v1/organizations/{organizationId}/warehouses/{warehouseId}")`.
-    // Oh! This means every document operation requires `warehouseId`.
-    // How do we resolve this in our frontend routing?
-    // In our list page, when we click on a document, we can pass the warehouseId either in query parameters, or we can fetch warehouses and check.
-    // Let's check: does the `InventoryDocument` object contain the `warehouseId`?
-    // Yes! `InventoryDocumentResponse` contains `UUID warehouseId`.
-    // If the user lands on this page via double-click, we can pass the warehouseId in the query parameters (e.g. `?whId=...`).
-    // If they land directly (e.g. via bookmark), we can fetch warehouses and attempt to find the document.
-    // Let's write a robust lookup that reads `whId` from `searchParams` first, and if not present, iterates through all warehouses to load the document!
-    // This is extremely robust and ensures it works in all scenarios!
-    
     const urlParams = new URLSearchParams(window.location.search);
     const queryWhId = urlParams.get('whId');
 
@@ -101,14 +82,14 @@ export default function DocumentDetailsPage({
 
   // Helper to iterate warehouses and find the document
   const getInventoryDocumentByIdWithFallback = async (orgId: string, docId: string): Promise<InventoryDocument> => {
-    // 1. Fetch warehouses
-    const whs = await getInventoryDocumentById(orgId, 'dummy', 'list').catch(async () => {
-      // get warehouses list
-      const res = await fetch(`/api/v1/organizations/${orgId}/warehouses`).then(r => r.json()).catch(() => ({ data: [] }));
-      return res.data || [];
-    });
-
-    const activeWarehouses = Array.isArray(whs) ? whs : [];
+    // 1. Fetch warehouses using authenticated API client
+    let activeWarehouses: any[] = [];
+    try {
+      const res = await getWarehouses(orgId);
+      activeWarehouses = res.data || [];
+    } catch (e) {
+      console.error('Failed to load warehouses list', e);
+    }
     
     // 2. Iterate warehouses and try to get the document
     for (const wh of activeWarehouses) {
@@ -245,7 +226,7 @@ export default function DocumentDetailsPage({
 
         {/* State Action Buttons */}
         <div className="flex space-x-2">
-          {isDraft && hasPermission('warehouses:write') && (
+          {isDraft && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
             <>
               <Button 
                 onClick={handleConfirm} 
@@ -265,7 +246,7 @@ export default function DocumentDetailsPage({
             </>
           )}
 
-          {(isConfirmed || isWaitingStock) && hasPermission('warehouses:write') && (
+          {(isConfirmed || isWaitingStock) && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
             <>
               <Button 
                 onClick={handleComplete} 
