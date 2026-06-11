@@ -4,6 +4,7 @@ import com.dut.erp.dto.request.CreateOrganizationRequest;
 import com.dut.erp.dto.request.UpdateOrganizationRequest;
 import com.dut.erp.dto.response.OrganizationResponse;
 import com.dut.erp.security.CustomUserDetails;
+import com.dut.erp.repository.PermissionRepository;
 import com.dut.erp.service.OrganizationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -30,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/organizations")
 public class OrganizationController {
   private final OrganizationService organizationService;
+  private final PermissionRepository permissionRepository;
+
 
   /**
    * Creates a new organization and associates the authenticated creator with it.
@@ -85,6 +88,16 @@ public class OrganizationController {
         organizationService.getOrganizationById(organizationId);
     return ResponseEntity.ok(organizationResponse);
   }
+
+  @GetMapping("/{organizationId}/my-permissions")
+  @PreAuthorize("@securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)")
+  public ResponseEntity<List<String>> getMyPermissions(
+      @PathVariable UUID organizationId, @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(
+        permissionRepository.findPermissionCodesByUserIdAndOrganizationId(
+            userDetails.getId(), organizationId));
+  }
+
 
   /**
    * Updates the details of a specific organization.

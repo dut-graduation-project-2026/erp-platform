@@ -1,6 +1,7 @@
 package com.dut.erp.repository;
 
 import com.dut.erp.entity.Permission;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,4 +26,17 @@ public interface PermissionRepository extends JpaRepository<Permission, UUID> {
       @Param("userId") UUID userId,
       @Param("organizationId") UUID organizationId,
       @Param("permissionCode") String permissionCode);
+
+  @Query(
+      """
+        SELECT DISTINCT p.code
+        FROM User u
+        JOIN u.roles r
+        JOIN r.permissions p
+        WHERE u.id = :userId
+          AND r.organization.id = :organizationId
+      """)
+  List<String> findPermissionCodesByUserIdAndOrganizationId(
+      @Param("userId") UUID userId,
+      @Param("organizationId") UUID organizationId);
 }

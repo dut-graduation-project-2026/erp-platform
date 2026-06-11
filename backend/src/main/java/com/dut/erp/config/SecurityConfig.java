@@ -34,10 +34,10 @@ public class SecurityConfig {
 
   private static final String[] PUBLIC_ENDPOINTS = {"/api/v1/auth/**", "/api/v1/public/**"};
 
-  private static final String[] ALLOWED_CORS_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS"};
+  private static final String[] ALLOWED_CORS_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"};
 
   private static final String[] ALLOWED_CORS_HEADERS = {
-    "Content-Type", "X-Requested-With", "Accept", "Authorization", "X-CSRF-Token"
+    "Content-Type", "X-Requested-With", "Accept", "Authorization", "X-CSRF-Token", "X-Org-Id"
   };
 
   @Bean
