@@ -10,10 +10,13 @@ export const API_ENDPOINTS = {
     BASE: "/organizations",
     ME: "/organizations/me",
     INVITATIONS: (orgId: string) => `/organizations/${orgId}/invitations`,
+    INVITATION_DETAIL: (orgId: string, invitationId: string) => `/organizations/${orgId}/invitations/${invitationId}`,
     ROLES: (orgId: string) => `/organizations/${orgId}/roles`,
   },
   USERS: {
     BASE: "/users",
+    DETAIL: (userId: string) => `/users/${userId}`,
+    ROLES: (userId: string) => `/users/${userId}/roles`,
   },
   ERP_MODULES: {
     BASE: "/erp-modules",
@@ -35,6 +38,9 @@ export const API_ENDPOINTS = {
   },
   BLOCKCHAIN: {
     TRANSACTIONS: "/blockchain/transactions",
+  },
+  PUBLIC: {
+    INVITATION_DETAIL: (orgId: string, invitationId: string) => `/public/organizations/${orgId}/invitations/${invitationId}`,
   },
 }
 

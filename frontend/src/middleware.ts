@@ -14,8 +14,10 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const isInvitationRoute = /^\/organizations\/[^\/]+\/invitations\/[^\/]+$/.test(pathname);
+
   // Public routes - không cần auth
-  if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+  if (pathname.startsWith('/login') || pathname.startsWith('/register') || isInvitationRoute) {
     return NextResponse.next();
   }
 
@@ -27,7 +29,9 @@ export function middleware(request: NextRequest) {
 
   // Nếu không còn ngữ cảnh phiên tối thiểu từ client thì coi như chưa đăng nhập.
   if (!hasClientSessionContext) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
 
   // 🟠 BƯỚC 4.3: Onboarding routes - /select-org

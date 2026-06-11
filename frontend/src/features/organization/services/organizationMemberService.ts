@@ -1,4 +1,5 @@
 import { apiClient } from '@/services/api-client';
+import { API_ENDPOINTS } from '@/config/constants';
 
 export interface RoleResponse {
   id: string;
@@ -36,9 +37,9 @@ export const organizationMemberService = {
     limit: number = 10
   ): Promise<PagedEntityResponse<OrganizationMemberResponse>> => {
     const response = await apiClient.get<PagedEntityResponse<OrganizationMemberResponse>>(
-      `/organizations/${organizationId}/members`,
+      API_ENDPOINTS.USERS.BASE,
       {
-        params: { query, page, limit },
+        params: { organizationId, query, page, limit },
       }
     );
     return response.data;
@@ -46,20 +47,25 @@ export const organizationMemberService = {
 
   getMemberById: async (organizationId: string, userId: string): Promise<OrganizationMemberResponse> => {
     const response = await apiClient.get<OrganizationMemberResponse>(
-      `/organizations/${organizationId}/members/${userId}`
+      API_ENDPOINTS.USERS.DETAIL(userId),
+      {
+        params: { organizationId }
+      }
     );
     return response.data;
   },
 
   updateMemberRoles: async (organizationId: string, userId: string, roleIds: string[]): Promise<OrganizationMemberResponse> => {
     const response = await apiClient.put<OrganizationMemberResponse>(
-      `/organizations/${organizationId}/members/${userId}/roles`,
-      { roleIds }
+      API_ENDPOINTS.USERS.ROLES(userId),
+      { organizationId, roleIds }
     );
     return response.data;
   },
 
   removeMember: async (organizationId: string, userId: string): Promise<void> => {
-    await apiClient.delete(`/organizations/${organizationId}/members/${userId}`);
+    await apiClient.delete(API_ENDPOINTS.USERS.DETAIL(userId), {
+      params: { organizationId }
+    });
   },
 };

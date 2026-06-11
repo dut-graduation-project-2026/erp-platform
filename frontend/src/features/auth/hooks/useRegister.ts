@@ -1,17 +1,8 @@
 'use client';
 
 /**
- * @file useLogin.ts
- * @description Custom Hook xử lý toàn bộ nghiệp vụ đăng nhập.
- * Áp dụng Single Responsibility Principle: Hook chỉ xử lý logic,
- * KHÔNG chứa bất kỳ JSX nào.
- *
- * Luồng xử lý:
- * 1. Gọi API xác thực (loginApi)
- * 2. Backend set HttpOnly Cookie (access_token, refresh_token)
- * 3. Lưu thông tin User vào Zustand Store
- * 4. Load danh sách Organization & Permissions
- * 5. Phân luồng điều hướng
+ * @file useRegister.ts
+ * @description Custom Hook xử lý toàn bộ nghiệp vụ đăng ký tài khoản.
  */
 
 import { useState, useCallback } from 'react';
@@ -24,34 +15,36 @@ import { getRedirectPath } from '@/services/authFlow';
 // TODO: Thay bằng API get permissions thật từ backend khi backend hỗ trợ
 import { getUserPermissions } from '@/services/mockPermissions';
 
-import { loginApi } from '@/features/auth/services/authService';
-import type { LoginFormValues, UseLoginReturn } from '@/features/auth/types/auth.types';
+import { registerApi } from '@/features/auth/services/authService';
+import type { RegisterFormValues, UseRegisterReturn } from '@/features/auth/types/auth.types';
 
-export const useLogin = (): UseLoginReturn => {
+export const useRegister = (): UseRegisterReturn => {
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const { setUser, setOrganizations, setPermissions } = useAuthStore();
   const router = useRouter();
 
-  const handleLogin = useCallback(
-    async (values: LoginFormValues) => {
+  const handleRegister = useCallback(
+    async (values: RegisterFormValues) => {
       setLoading(true);
       setServerError(null);
 
       try {
-      
-        // Axios interceptor đã được cấu hình gửi/nhận cookie (withCredentials: true)
-        const user = await loginApi({
+        const user = await registerApi({
           email: values.email,
           password: values.password,
+          firstName: values.firstName,
+          lastName: values.lastName,
         });
-
         setUser(user);
+
+        // Lưu danh sách Organization trả về từ backend
         const userOrgs = user.organizations || [];
         setOrganizations(userOrgs);
         const permissions = await getUserPermissions(user.id);
         setPermissions(permissions);
+
         const orgIds = userOrgs.map((org) => org.id).join(',');
         document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; samesite=strict`;
         document.cookie = `clientSession=true; path=/; max-age=86400; samesite=strict`;
@@ -59,13 +52,14 @@ export const useLogin = (): UseLoginReturn => {
         const redirectParam = searchParams.get('redirect');
         const redirectPath = redirectParam || getRedirectPath(user as any);
 
-        toast.success(`Chào mừng, ${user.firstName}! Đang chuyển hướng...`, {
+        toast.success(`Đăng ký tài khoản thành công! Chào mừng, ${user.firstName}!`, {
           duration: 2000,
         });
 
         router.push(redirectPath);
-      } catch {
-        setServerError('Đăng nhập thất bại. Vui lòng kiểm tra lại.');
+      } catch (err: any) {
+        const errMsg = err?.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+        setServerError(errMsg);
       } finally {
         setLoading(false);
       }
@@ -73,5 +67,5 @@ export const useLogin = (): UseLoginReturn => {
     [setUser, setOrganizations, setPermissions, router]
   );
 
-  return { loading, serverError, handleLogin };
+  return { loading, serverError, handleRegister };
 };

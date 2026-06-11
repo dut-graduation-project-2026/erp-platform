@@ -12,7 +12,7 @@
 
 import { apiClient } from '@/services/api-client';
 import { API_ENDPOINTS } from '@/config/constants';
-import type { LoginFormValues, LoginApiResponse } from '@/features/auth/types/auth.types';
+import type { LoginFormValues, LoginApiResponse, RegisterFormValues, RegisterApiResponse } from '@/features/auth/types/auth.types';
 import type { User } from '@/types/user';
 import type { UserOrganization } from '@/types/organization';
 
@@ -33,6 +33,21 @@ export const loginApi = async (
 ): Promise<LoginApiResponse> => {
   const response = await apiClient.post<LoginApiResponse>(
     API_ENDPOINTS.AUTH.LOGIN,
+    payload
+  );
+  return response.data;
+};
+
+// ─── 1B. REGISTER ──────────────────────────────────────────────────────────────
+
+/**
+ * Gọi API đăng ký tài khoản.
+ */
+export const registerApi = async (
+  payload: Omit<RegisterFormValues, 'confirmPassword' | 'acceptTerms'>
+): Promise<RegisterApiResponse> => {
+  const response = await apiClient.post<RegisterApiResponse>(
+    API_ENDPOINTS.AUTH.REGISTER,
     payload
   );
   return response.data;

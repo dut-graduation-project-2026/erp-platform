@@ -49,7 +49,7 @@ export default function UsersPage({ params }: { params: Promise<{ orgId: string 
         id: u.id,
         name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Unknown User',
         email: u.email,
-        roles: u.roles.map(r => r.name) || [],
+        roles: u.roles?.map(r => r.name) || [],
         status: u.status || 'Active',
         lastLogin: u.lastLogin || '-',
         primaryOrg: 'Current Organization'

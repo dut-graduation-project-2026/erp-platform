@@ -21,6 +21,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -126,6 +127,11 @@ const LoginForm = ({
   serverError = null,
 }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get('redirect');
+  const registerHref = redirectParam
+    ? `/register?redirect=${encodeURIComponent(redirectParam)}`
+    : '/register';
 
   // Khởi tạo react-hook-form với Zod resolver
   const {
@@ -333,7 +339,7 @@ const LoginForm = ({
           <p className="pt-1 text-center text-[12px] leading-[1.4] text-muted-foreground">
             Don&apos;t have an account?{' '}
             <Link
-              href="/register"
+              href={registerHref}
               className="text-[#0099ff] underline underline-offset-2 hover:text-[#004499] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
             >
               Register now

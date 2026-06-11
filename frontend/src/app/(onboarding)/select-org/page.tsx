@@ -19,6 +19,16 @@ import {
 import { Building2, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LogOut } from 'lucide-react';
 
 /**
  * SelectOrgPage - Figma Design 2:5212
@@ -34,7 +44,7 @@ import { useAuthStore } from '@/store/use-auth-store';
  */
 export default function SelectOrgPage() {
   const { organizations, loading, error, createOrganization } = useOrganizations();
-  const { setCurrentOrgId, setPermissions } = useAuthStore();
+  const { user, logout, setCurrentOrgId, setPermissions } = useAuthStore();
   const router = useRouter();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -80,6 +90,27 @@ export default function SelectOrgPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      const { logoutApi } = await import('@/features/auth/services/authService');
+      logout();
+      document.cookie = 'currentOrgId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'userOrgIds=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'clientSession=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      await logoutApi();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = '/login';
+    }
+  };
+
+  const getInitials = (firstName?: string, lastName?: string) => {
+    const f = firstName?.[0] || '';
+    const l = lastName?.[0] || '';
+    return (f + l).toUpperCase() || 'U';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fcf9f8] to-[#fcf9f8]">
@@ -118,13 +149,42 @@ export default function SelectOrgPage() {
               <span className="text-[14px] font-medium text-[#5f5e5e]">Organization Gate</span>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-[12px] font-bold text-[#1b1c1c]">Alexander Sterling</div>
-                <div className="text-[10px] text-[#5f5e5e]">Chief Operations Officer</div>
-              </div>
-              <div className="w-9 h-9 bg-[#004e9f] rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">AS</span>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-3 text-left hover:bg-black/5 p-1 px-2 rounded-md transition-colors focus:outline-none">
+                    <div className="text-right hidden sm:block">
+                      <div className="text-[12px] font-bold text-[#1b1c1c]">
+                        {user ? `${user.firstName} ${user.lastName}` : 'Guest'}
+                      </div>
+                      <div className="text-[10px] text-[#5f5e5e] max-w-[150px] truncate">
+                        {user?.email || 'Not logged in'}
+                      </div>
+                    </div>
+                    <Avatar className="w-9 h-9 border border-[#c1c6d5]/50">
+                      <AvatarImage src={user?.avatarUrl} />
+                      <AvatarFallback className="bg-[#004e9f] text-white text-sm font-bold flex items-center justify-center">
+                        {getInitials(user?.firstName, user?.lastName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-white border border-[#c1c6d5]/50 shadow-md rounded-md p-1">
+                  <DropdownMenuLabel className="px-2 py-1.5 text-sm">
+                    <div className="font-semibold text-foreground">
+                      {user ? `${user.firstName} ${user.lastName}` : 'Guest'}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="my-1 bg-[#c1c6d5]/20" />
+                  <DropdownMenuItem 
+                    onClick={handleLogout} 
+                    className="flex items-center px-2 py-1.5 text-sm text-red-600 rounded-sm hover:bg-red-50 focus:bg-red-50 focus:text-red-600 cursor-pointer transition-colors"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -244,9 +304,9 @@ export default function SelectOrgPage() {
                     <Label htmlFor="hotline">Hotline</Label>
                     <Input 
                       id="hotline" 
-                      placeholder="e.g. 1900 1234" 
+                      placeholder="e.g. 0912345678" 
                       value={formData.hotline}
-                      onChange={(e) => setFormData({...formData, hotline: e.target.value})}
+                      onChange={(e) => setFormData({...formData, hotline: e.target.value.replace(/\D/g, '')})}
                     />
                   </div>
                   <div className="space-y-2">
