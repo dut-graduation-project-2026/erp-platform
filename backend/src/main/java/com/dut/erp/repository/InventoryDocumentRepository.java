@@ -45,6 +45,8 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
       SELECT d FROM InventoryDocument d
       LEFT JOIN FETCH d.warehouse
       LEFT JOIN FETCH d.sourceWarehouse
+      LEFT JOIN FETCH d.lines l
+      LEFT JOIN FETCH l.product
       LEFT JOIN FETCH d.createdBy
       LEFT JOIN FETCH d.updatedBy
       WHERE d.id = :id AND d.warehouse.id = :warehouseId
