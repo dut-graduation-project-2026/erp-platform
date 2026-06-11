@@ -36,6 +36,13 @@ export const API_ENDPOINTS = {
     TAXES: (orgId: string) => `/organizations/${orgId}/taxes`,
     REPORTS: (orgId: string) => `/organizations/${orgId}/reports/sales-dashboard`,
   },
+  INVENTORY: {
+    WAREHOUSES: (orgId: string) => `/organizations/${orgId}/warehouses`,
+    BALANCES: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/balances`,
+    DOCUMENTS: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/documents`,
+    REPLENISHMENT_REQUESTS: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/replenishment-requests`,
+    COGS: (orgId: string, orderId: string) => `/organizations/${orgId}/orders/${orderId}/cogs`,
+  },
   BLOCKCHAIN: {
     TRANSACTIONS: "/blockchain/transactions",
   },
@@ -116,3 +123,38 @@ export const INVOICE_STATUS = {
   CANCELLED: "CANCELLED",
 } as const;
 export type InvoiceStatus = typeof INVOICE_STATUS[keyof typeof INVOICE_STATUS];
+
+// ─── INVENTORY ENUMS & TYPES ────────────────────────────────────────────────
+export const DOCUMENT_TYPE = {
+  RECEIPT: "RECEIPT",
+  ISSUE: "ISSUE",
+  ADJUSTMENT: "ADJUSTMENT",
+  TRANSFER_IN: "TRANSFER_IN",
+  TRANSFER_OUT: "TRANSFER_OUT",
+} as const;
+export type DocumentType = typeof DOCUMENT_TYPE[keyof typeof DOCUMENT_TYPE];
+
+export const REFERENCE_TYPE = {
+  PURCHASE_ORDER: "PURCHASE_ORDER",
+  SALES_ORDER: "SALES_ORDER",
+  INVENTORY_COUNT: "INVENTORY_COUNT",
+  MANUAL: "MANUAL",
+} as const;
+export type ReferenceType = typeof REFERENCE_TYPE[keyof typeof REFERENCE_TYPE];
+
+export const DOCUMENT_STATUS = {
+  DRAFT: "DRAFT",
+  CONFIRMED: "CONFIRMED",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+  WAITING_FOR_STOCK: "WAITING_FOR_STOCK",
+} as const;
+export type DocumentStatus = typeof DOCUMENT_STATUS[keyof typeof DOCUMENT_STATUS];
+
+export const COGS_METHOD = {
+  FIFO: "FIFO",
+  LIFO: "LIFO",
+  AVERAGE: "AVERAGE",
+} as const;
+export type CogsMethod = typeof COGS_METHOD[keyof typeof COGS_METHOD];
+
