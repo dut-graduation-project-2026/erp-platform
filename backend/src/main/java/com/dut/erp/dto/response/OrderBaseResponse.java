@@ -7,4 +7,4 @@ import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record OrderBaseResponse(
-    UUID id, String orderNumber, OrderStatus status, BigDecimal totalAmount) {}
+    UUID id, String orderNumber,PartnerBaseResponse partner, OrderStatus status, BigDecimal totalAmount) {}

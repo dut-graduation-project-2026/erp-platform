@@ -127,7 +127,7 @@ public class OrganizationRoleController {
         and
         @securityAuthService.hasPermission('roles:write', #organizationId, #userDetails)
         and
-        @roleService.verifyRoleBelongsToOrganization(#id, #organizationId)
+        @roleService.isRoleBelongsToOrganization(#id, #organizationId)
       """)
   public ResponseEntity<RoleResponse> updateRole(
       @PathVariable UUID organizationId,
