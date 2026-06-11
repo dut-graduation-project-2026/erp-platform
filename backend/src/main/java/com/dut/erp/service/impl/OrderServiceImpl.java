@@ -8,17 +8,24 @@ import com.dut.erp.dto.request.UpsertOrderRequest;
 import com.dut.erp.dto.response.OrderBaseResponse;
 import com.dut.erp.dto.response.OrderResponse;
 import com.dut.erp.dto.response.PagedEntityResponse;
+import com.dut.erp.entity.InventoryBalance;
+import com.dut.erp.entity.InventoryDocumentLine;
 import com.dut.erp.entity.Invoice;
 import com.dut.erp.entity.Lead;
 import com.dut.erp.entity.Order;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Partner;
+import com.dut.erp.enums.DocumentStatus;
+import com.dut.erp.enums.DocumentType;
 import com.dut.erp.enums.InvoiceStatus;
 import com.dut.erp.enums.LeadStage;
 import com.dut.erp.enums.OrderStatus;
+import com.dut.erp.enums.ReferenceType;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrderMapper;
+import com.dut.erp.repository.InventoryBalanceRepository;
+import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.LeadRepository;
 import com.dut.erp.repository.OrderRepository;
@@ -53,6 +60,8 @@ public class OrderServiceImpl implements OrderService {
   private final LeadRepository leadRepository;
   private final OrderMapper orderMapper;
   private final InvoiceRepository invoiceRepository;
+  private final InventoryDocumentRepository inventoryDocumentRepository;
+  private final InventoryBalanceRepository inventoryBalanceRepository;
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
@@ -90,6 +99,23 @@ public class OrderServiceImpl implements OrderService {
             ? orderRepository.findOrderIdsByOrganizationIdAndSearch(
                 organizationId, search, pageable)
             : orderRepository.findOrderIdsByOrganizationId(organizationId, pageable);
+
+    return getPagedResponseFromIds(ids, pageable);
+  }
+
+  @Override
+  public PagedEntityResponse<OrderBaseResponse> getOrdersByStatus(
+      UUID organizationId, OrderStatus status, PaginationRequest paginationRequest) {
+    log.info("Fetching orders with status {} for organization {}", status, organizationId);
+
+    Pageable pageable =
+        PageRequest.of(
+            paginationRequest.page() - 1,
+            paginationRequest.limit(),
+            SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
+
+    Page<UUID> ids =
+        orderRepository.findIdsByOrganizationIdAndStatus(organizationId, status, pageable);
 
     return getPagedResponseFromIds(ids, pageable);
   }
@@ -220,13 +246,21 @@ public class OrderServiceImpl implements OrderService {
       throw new BadRequestException("Cannot update status of a COMPLETED order");
     }
 
-    // Rule: Once status changes away from DRAFT, it cannot transition back to DRAFT
-    if (order.getStatus() != OrderStatus.DRAFT && request.status() == OrderStatus.DRAFT) {
-      throw new BadRequestException("Cannot revert an Order back to a DRAFT Quotation");
+    // Rule: Sales module can only set status to DRAFT, CONFIRMED, CANCELLED, or COMPLETED
+    if (request.status() != OrderStatus.DRAFT
+        && request.status() != OrderStatus.CONFIRMED
+        && request.status() != OrderStatus.CANCELLED
+        && request.status() != OrderStatus.COMPLETED) {
+      throw new BadRequestException(
+          "Sales module is not allowed to manually update status to " + request.status());
     }
 
-    // Rule: Only when the invoice is PAID can the order be completed/done
+    // Rule: Transition to COMPLETED is only allowed if current status is SENT and invoice is PAID
     if (request.status() == OrderStatus.COMPLETED) {
+      if (order.getStatus() != OrderStatus.SENT) {
+        throw new BadRequestException("Only delivered orders (SENT status) can be completed");
+      }
+
       Invoice invoice =
           invoiceRepository
               .findByOrderIdAndOrganizationId(id, organizationId)
@@ -234,13 +268,35 @@ public class OrderServiceImpl implements OrderService {
                   () ->
                       new BadRequestException(
                           "Cannot complete order because no invoice has been created for it yet"));
+
       if (invoice.getStatus() != InvoiceStatus.PAID) {
         throw new BadRequestException(
             "Cannot complete order because the linked invoice is not PAID");
       }
     }
 
-    // Rule: If order is CANCELLED, cancel the linked invoice as well
+    // Rule: If current status is WAITING_FOR_STOCK, Sales team can only cancel it
+    if (order.getStatus() == OrderStatus.WAITING_FOR_STOCK
+        && request.status() != OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+          "Cannot manually update order status in WAITING_FOR_STOCK state unless cancelling. Status"
+              + " is managed by Warehouse.");
+    }
+
+    // Rule: If current status is SENT, Sales team can only cancel or complete it
+    if (order.getStatus() == OrderStatus.SENT
+        && request.status() != OrderStatus.COMPLETED
+        && request.status() != OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+          "Delivered orders (SENT status) can only be completed or cancelled");
+    }
+
+    // Rule: Once status changes away from DRAFT, it cannot transition back to DRAFT
+    if (order.getStatus() != OrderStatus.DRAFT && request.status() == OrderStatus.DRAFT) {
+      throw new BadRequestException("Cannot revert an Order back to a DRAFT Quotation");
+    }
+
+    // Rule: If order is CANCELLED, cancel the linked invoice and associated warehouse document
     if (request.status() == OrderStatus.CANCELLED) {
       invoiceRepository
           .findByOrderIdAndOrganizationId(id, organizationId)
@@ -253,6 +309,40 @@ public class OrderServiceImpl implements OrderService {
                     invoice.getId(),
                     id);
               });
+
+      // Cancel warehouse document and revert stock if it was confirmed
+      inventoryDocumentRepository
+          .findByReferenceTypeAndReferenceIdAndDocumentType(
+              ReferenceType.SALES_ORDER, id, DocumentType.ISSUE)
+          .ifPresent(
+              doc -> {
+                if (doc.getDocumentStatus() != DocumentStatus.COMPLETED
+                    && doc.getDocumentStatus() != DocumentStatus.CANCELLED) {
+
+                  if (doc.getDocumentStatus() == DocumentStatus.CONFIRMED) {
+                    // Revert stock moves
+                    for (InventoryDocumentLine tx : doc.getLines()) {
+                      InventoryBalance balance =
+                          inventoryBalanceRepository
+                              .findByWarehouseIdAndProductId(
+                                  doc.getWarehouse().getId(), tx.getProduct().getId())
+                              .orElseThrow(
+                                  () ->
+                                      new ResourceNotFoundException("Inventory balance not found"));
+                      balance.setQuantity(balance.getQuantity().add(tx.getQuantity()));
+                      inventoryBalanceRepository.save(balance);
+                    }
+                  }
+
+                  doc.setDocumentStatus(DocumentStatus.CANCELLED);
+                  inventoryDocumentRepository.save(doc);
+                  log.info(
+                      "Automatically cancelled inventory document {} because order {} was"
+                          + " CANCELLED",
+                      doc.getId(),
+                      id);
+                }
+              });
     }
 
     order.setStatus(request.status());
@@ -264,14 +354,13 @@ public class OrderServiceImpl implements OrderService {
         organizationId);
 
     // Advance the linked lead's stage when the order reaches a terminal state.
-    // CONFIRMED → PROPOSAL, CANCELLED → LOST. SENT → WON, COMPLETED → WON.
+    // CONFIRMED → PROPOSAL, CANCELLED → LOST, COMPLETED → WON.
     if (order.getLead() != null) {
       LeadStage targetLeadStage =
           switch (request.status()) {
             case CONFIRMED -> LeadStage.PROPOSAL;
             case CANCELLED -> LeadStage.LOST;
             case COMPLETED -> LeadStage.WON;
-            case SENT -> LeadStage.WON;
             default -> null;
           };
       if (targetLeadStage != null) {

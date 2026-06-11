@@ -48,6 +48,14 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
   @Query(
       """
+      SELECT DISTINCT p FROM Product p
+      WHERE p.id IN :ids AND p.organization.id = :organizationId
+      """)
+  List<Product> findAllByIdInAndOrganizationId(
+      @Param("ids") List<UUID> ids, @Param("organizationId") UUID organizationId);
+
+  @Query(
+      """
       SELECT p FROM Product p
       LEFT JOIN FETCH p.organization
       LEFT JOIN FETCH p.createdBy
@@ -55,4 +63,10 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
       WHERE p.id = :id AND p.organization.id = :organizationId
       """)
   Optional<Product> findByIdAndOrganizationId(UUID id, UUID organizationId);
+
+  @Query("""
+      SELECT p FROM Product p
+      WHERE p.organization.id = :organizationId
+      """)
+  List<Product> findAllByOrganizationId(@Param("organizationId") UUID organizationId);
 }

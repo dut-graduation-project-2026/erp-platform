@@ -12,15 +12,6 @@ databaseChangeLog:
               - column:
                   name: manager_id
                   type: UUID
-              - column:
-                  name: maximum_capacity
-                  type: DECIMAL(30, 10)
-              - column:
-                  name: used_capacity
-                  type: DECIMAL(30, 10)
-                  defaultValueNumeric: 0.00
-                  constraints:
-                    nullable: false
         - addForeignKeyConstraint:
             constraintName: fk_warehouses_manager
             baseTableName: warehouses

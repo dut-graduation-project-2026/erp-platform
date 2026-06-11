@@ -7,6 +7,7 @@ import com.dut.erp.entity.OrderItem;
 import com.dut.erp.entity.Product;
 import com.dut.erp.entity.Tax;
 import com.dut.erp.enums.OrderStatus;
+import com.dut.erp.enums.TaxComputation;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.OrderItemMapper;
@@ -68,8 +69,7 @@ public class OrderItemServiceImpl implements OrderItemService {
             ? findTaxByIdAndOrganizationId(request.taxId(), organizationId)
             : null;
 
-    BigDecimal subtotal =
-        request.quantity().multiply(request.unitPrice()).setScale(2, RoundingMode.HALF_UP);
+    BigDecimal subtotal = calculateSubtotal(request.quantity(), request.unitPrice(), tax);
 
     OrderItem orderItem =
         OrderItem.builder()
@@ -104,8 +104,7 @@ public class OrderItemServiceImpl implements OrderItemService {
             ? findTaxByIdAndOrganizationId(request.taxId(), organizationId)
             : null;
 
-    BigDecimal subtotal =
-        request.quantity().multiply(request.unitPrice()).setScale(2, RoundingMode.HALF_UP);
+    BigDecimal subtotal = calculateSubtotal(request.quantity(), request.unitPrice(), tax);
 
     orderItem.setProduct(product);
     orderItem.setTax(tax);
@@ -136,6 +135,22 @@ public class OrderItemServiceImpl implements OrderItemService {
   }
 
   // ---- Private helpers ----
+
+  private BigDecimal calculateSubtotal(BigDecimal quantity, BigDecimal unitPrice, Tax tax) {
+    BigDecimal baseSubtotal = quantity.multiply(unitPrice);
+    if (tax == null) {
+      return baseSubtotal.setScale(2, RoundingMode.HALF_UP);
+    }
+    BigDecimal taxAmount = BigDecimal.ZERO;
+    if (tax.getComputation() == TaxComputation.PERCENTAGE) {
+      BigDecimal percentage =
+          tax.getAmount().divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+      taxAmount = baseSubtotal.multiply(percentage);
+    } else if (tax.getComputation() == TaxComputation.FIXED_AMOUNT) {
+      taxAmount = tax.getAmount().multiply(quantity);
+    }
+    return baseSubtotal.add(taxAmount).setScale(2, RoundingMode.HALF_UP);
+  }
 
   private void recalculateAndSaveOrderTotal(Order order) {
     BigDecimal total =

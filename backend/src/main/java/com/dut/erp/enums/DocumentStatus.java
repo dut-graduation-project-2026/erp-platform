@@ -1,10 +1,9 @@
 package com.dut.erp.enums;
 
-public enum OrderStatus {
+public enum DocumentStatus {
   DRAFT,
-  SENT,
   CONFIRMED,
-  CANCELLED,
   COMPLETED,
+  CANCELLED,
   WAITING_FOR_STOCK
 }

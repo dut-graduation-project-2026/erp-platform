@@ -47,6 +47,22 @@ public class OrderController {
             organizationId, search, paginationRequest));
   }
 
+  @GetMapping("/confirmed")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('orders:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<PagedEntityResponse<OrderBaseResponse>> getConfirmedOrders(
+      @PathVariable UUID organizationId,
+      @Valid @ModelAttribute PaginationRequest paginationRequest,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(
+        orderService.getOrdersByStatus(
+            organizationId, com.dut.erp.enums.OrderStatus.CONFIRMED, paginationRequest));
+  }
+
   @GetMapping("/{id}")
   @PreAuthorize(
       """

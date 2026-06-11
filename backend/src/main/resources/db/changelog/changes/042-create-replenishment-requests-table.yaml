@@ -1,17 +1,17 @@
 databaseChangeLog:
   - changeSet:
-      id: 039-create-inventory-balances-table
+      id: 042-create-replenishment-requests-table
       author: halwins
       changes:
         - createTable:
-            tableName: inventory_balances
+            tableName: replenishment_requests
             columns:
               - column:
                   name: id
                   type: UUID
                   constraints:
                     primaryKey: true
-                    primaryKeyName: pk_inventory_balances
+                    primaryKeyName: pk_replenishment_requests
                     nullable: false
               - column:
                   name: warehouse_id
@@ -19,47 +19,46 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: product_id
+                  name: inventory_document_id
                   type: UUID
                   constraints:
                     nullable: false
               - column:
-                  name: quantity
-                  type: DECIMAL(15, 4)
-                  defaultValueNumeric: 0
+                  name: notes
+                  type: TEXT
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: OPEN
                   constraints:
                     nullable: false
               - column:
-                  name: updated_at
+                  name: created_at
                   type: TIMESTAMP
               - column:
-                  name: updated_by
+                  name: created_by
                   type: UUID
         - addForeignKeyConstraint:
-            constraintName: fk_inventory_balances_warehouse
-            baseTableName: inventory_balances
+            constraintName: fk_replenishment_requests_warehouse
+            baseTableName: replenishment_requests
             baseColumnNames: warehouse_id
             referencedTableName: warehouses
             referencedColumnNames: id
             onDelete: CASCADE
             onUpdate: CASCADE
         - addForeignKeyConstraint:
-            constraintName: fk_inventory_balances_product
-            baseTableName: inventory_balances
-            baseColumnNames: product_id
-            referencedTableName: products
+            constraintName: fk_replenishment_requests_document
+            baseTableName: replenishment_requests
+            baseColumnNames: inventory_document_id
+            referencedTableName: inventory_documents
             referencedColumnNames: id
-            onDelete: RESTRICT
+            onDelete: CASCADE
             onUpdate: CASCADE
         - addForeignKeyConstraint:
-            constraintName: fk_inventory_balances_updated_by
-            baseTableName: inventory_balances
-            baseColumnNames: updated_by
+            constraintName: fk_replenishment_requests_created_by
+            baseTableName: replenishment_requests
+            baseColumnNames: created_by
             referencedTableName: users
             referencedColumnNames: id
             onDelete: SET NULL
             onUpdate: CASCADE
-        - addUniqueConstraint:
-            tableName: inventory_balances
-            columnNames: warehouse_id, product_id
-            constraintName: uq_inventory_balance_warehouse_product

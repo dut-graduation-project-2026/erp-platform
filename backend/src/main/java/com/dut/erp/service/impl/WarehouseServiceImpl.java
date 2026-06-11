@@ -11,6 +11,8 @@ import com.dut.erp.dto.response.WarehouseResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.User;
 import com.dut.erp.entity.Warehouse;
+import com.dut.erp.entity.Product;
+import com.dut.erp.entity.InventoryBalance;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.ResourceNotFoundException;
@@ -18,6 +20,8 @@ import com.dut.erp.mapper.WarehouseMapper;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.repository.WarehouseRepository;
+import com.dut.erp.repository.ProductRepository;
+import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.service.WarehouseService;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +48,8 @@ public class WarehouseServiceImpl implements WarehouseService {
   private final OrganizationRepository organizationRepository;
   private final WarehouseRepository warehouseRepository;
   private final UserRepository userRepository;
+  private final ProductRepository productRepository;
+  private final InventoryBalanceRepository inventoryBalanceRepository;
   private final WarehouseMapper warehouseMapper;
 
   @Override
@@ -114,7 +120,6 @@ public class WarehouseServiceImpl implements WarehouseService {
             .code(request.code())
             .address(request.address())
             .description(request.description())
-            .maximumCapacity(request.maximumCapacity())
             .isActive(Boolean.TRUE)
             .staff(staff)
             .manager(manager)
@@ -122,6 +127,22 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     warehouse = warehouseRepository.save(warehouse);
     log.info("Created warehouse {} in organization {}", warehouse.getId(), organizationId);
+
+    // Seed a zero-quantity InventoryBalance for every product in the organization
+    List<Product> products = productRepository.findAllByOrganizationId(organizationId);
+    if (!products.isEmpty()) {
+      final Warehouse savedWarehouse = warehouse;
+      List<InventoryBalance> balances = products.stream()
+          .map(product -> InventoryBalance.builder()
+              .warehouse(savedWarehouse)
+              .product(product)
+              .build())
+          .collect(Collectors.toList());
+      inventoryBalanceRepository.saveAll(balances);
+      log.info("Seeded {} inventory balance(s) for warehouse {} across products",
+          balances.size(), savedWarehouse.getId());
+    }
+
     return warehouseMapper.toResponse(warehouse);
   }
 
@@ -156,7 +177,6 @@ public class WarehouseServiceImpl implements WarehouseService {
     warehouse.setCode(request.code());
     warehouse.setAddress(request.address());
     warehouse.setDescription(request.description());
-    warehouse.setMaximumCapacity(request.maximumCapacity());
     warehouse.setStaff(staff);
     warehouse.setManager(manager);
 

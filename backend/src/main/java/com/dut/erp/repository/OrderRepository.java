@@ -102,5 +102,17 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       """)
   List<Order> findAllByIdIn(@Param("ids") List<UUID> ids);
 
+  @Query(
+      """
+      SELECT o.id
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+      AND o.status = :status
+      """)
+  Page<UUID> findIdsByOrganizationIdAndStatus(
+      @Param("organizationId") UUID organizationId,
+      @Param("status") com.dut.erp.enums.OrderStatus status,
+      Pageable pageable);
+
   boolean existsByOrganizationIdAndOrderNumber(UUID organizationId, String orderNumber);
 }

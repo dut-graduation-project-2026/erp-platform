@@ -1,18 +1,22 @@
 package com.dut.erp.entity;
 
+import com.dut.erp.enums.DocumentStatus;
+import com.dut.erp.enums.DocumentType;
+import com.dut.erp.enums.ReferenceType;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +35,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "warehouses")
+@Table(name = "inventory_documents")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -39,7 +43,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @EntityListeners(AuditingEntityListener.class)
-public class Warehouse {
+public class InventoryDocument {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -47,38 +51,44 @@ public class Warehouse {
   UUID id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "organization_id", nullable = false)
-  Organization organization;
-
-  @Column(name = "name", nullable = false, length = 255)
-  String name;
-
-  @Column(name = "code", nullable = false, length = 50)
-  String code;
-
-  @Column(name = "address", length = 255)
-  String address;
-
-  @Column(name = "description", columnDefinition = "TEXT")
-  String description;
-
-  @Column(name = "is_active", nullable = false)
-  @Builder.Default
-  Boolean isActive = Boolean.TRUE;
-
+  @JoinColumn(name = "warehouse_id", nullable = false)
+  Warehouse warehouse;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "manager_id")
-  User manager;
+  @JoinColumn(name = "source_warehouse_id")
+  Warehouse sourceWarehouse;
 
-  @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "warehouse_staff",
-      joinColumns = @JoinColumn(name = "warehouse_id"),
-      inverseJoinColumns = @JoinColumn(name = "user_id")
-  )
+  @Column(name = "name", nullable = false, unique = true, length = 100)
+  String name;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "document_type", nullable = false, length = 50)
+  DocumentType documentType;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "reference_type", nullable = false, length = 50)
+  ReferenceType referenceType;
+
+  @Column(name = "reference_id")
+  UUID referenceId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "document_status", nullable = false, length = 50)
   @Builder.Default
-  List<User> staff = new ArrayList<>();
+  DocumentStatus documentStatus = DocumentStatus.DRAFT;
+
+  @Column(name = "notes", columnDefinition = "TEXT")
+  String notes;
+
+  @Column(name = "scheduled_date")
+  Instant scheduledDate;
+
+  @Column(name = "date_done")
+  Instant dateDone;
+
+  @Builder.Default
+  @OneToMany(mappedBy = "inventoryDocument", cascade = CascadeType.ALL, orphanRemoval = true)
+  List<InventoryDocumentLine> lines = new ArrayList<>();
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)
