@@ -254,7 +254,7 @@ const LoginForm = ({
                 Password
               </Label>
               <Link
-                href="#"
+                href="/forgot-password"
                 className="text-[12px] leading-[1.4] text-[#0099ff] underline underline-offset-2 hover:text-[#004499] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
               >
                 Forgot password?

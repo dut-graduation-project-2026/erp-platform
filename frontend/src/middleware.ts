@@ -17,7 +17,13 @@ export function middleware(request: NextRequest) {
   const isInvitationRoute = /^\/organizations\/[^\/]+\/invitations\/[^\/]+$/.test(pathname);
 
   // Public routes - không cần auth
-  if (pathname.startsWith('/login') || pathname.startsWith('/register') || isInvitationRoute) {
+  if (
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password') ||
+    isInvitationRoute
+  ) {
     return NextResponse.next();
   }
 

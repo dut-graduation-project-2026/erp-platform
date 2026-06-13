@@ -129,4 +129,9 @@
   html {
     @apply font-sans;
   }
+  /* Disable Microsoft Edge built-in password reveal button */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
 }

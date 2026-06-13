@@ -181,22 +181,36 @@ export function Header({ className }: HeaderProps) {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                {user?.firstName} {user?.lastName}
+            <DropdownMenuContent align="end" className="w-64 p-1.5 shadow-[0px_2px_8px_rgba(0,0,0,0.15)] border border-[#e0e0e0] rounded-[4px] font-['Segoe_UI'] bg-white">
+              <DropdownMenuLabel className="flex flex-col py-2.5 px-3">
+                <span className="text-[14px] font-bold text-[#242424] leading-tight">
+                  {user?.firstName} {user?.lastName}
+                </span>
+                <span className="text-[11px] font-normal text-[#898989] mt-1 break-all">
+                  {user?.email}
+                </span>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
+              <DropdownMenuSeparator className="bg-[#f5f5f5] my-1" />
+              <DropdownMenuItem 
+                onClick={() => currentOrgId && router.push(`/dashboard/${currentOrgId}/profile`)}
+                className="flex items-center text-[13px] text-[#242424] hover:bg-[#f0f4ff] hover:text-[#0066cc] cursor-pointer py-2 px-3 rounded-[2px] focus:bg-[#f0f4ff] focus:text-[#0066cc] transition-colors"
+              >
+                <User className="mr-2.5 h-4 w-4 text-[#898989]" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
+              <DropdownMenuItem 
+                onClick={() => currentOrgId && router.push(`/dashboard/${currentOrgId}/profile?tab=settings`)}
+                className="flex items-center text-[13px] text-[#242424] hover:bg-[#f0f4ff] hover:text-[#0066cc] cursor-pointer py-2 px-3 rounded-[2px] focus:bg-[#f0f4ff] focus:text-[#0066cc] transition-colors"
+              >
+                <Settings className="mr-2.5 h-4 w-4 text-[#898989]" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                <LogOut className="mr-2 h-4 w-4" />
+              <DropdownMenuSeparator className="bg-[#f5f5f5] my-1" />
+              <DropdownMenuItem 
+                onClick={handleLogout} 
+                className="flex items-center text-[13px] text-[#dc3545] hover:bg-[#fff5f5] hover:text-[#dc3545] cursor-pointer py-2 px-3 rounded-[2px] focus:bg-[#fff5f5] focus:text-[#dc3545] transition-colors"
+              >
+                <LogOut className="mr-2.5 h-4 w-4 text-[#dc3545]" />
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

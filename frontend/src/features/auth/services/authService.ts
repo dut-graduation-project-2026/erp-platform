@@ -93,4 +93,75 @@ export const fetchMyPermissionsApi = async (organizationId: string): Promise<str
   return response.data;
 };
 
+// ─── 5. UPDATE PROFILE ──────────────────────────────────────────────────────────
+
+export interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+}
+
+export interface UpdateProfileResponse {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+/**
+ * Gọi API cập nhật thông tin cá nhân.
+ */
+export const updateProfileApi = async (
+  userId: string,
+  payload: UpdateProfileRequest
+): Promise<UpdateProfileResponse> => {
+  const response = await apiClient.put<UpdateProfileResponse>(
+    `/users/${userId}`,
+    payload
+  );
+  return response.data;
+};
+
+export interface ChangePasswordFormValues {
+  oldPassword?: string;
+  newPassword?: string;
+}
+
+/**
+ * Gọi API đổi mật khẩu dành cho người dùng đã đăng nhập.
+ */
+export const changePasswordApi = async (
+  userId: string,
+  payload: ChangePasswordFormValues
+): Promise<void> => {
+  await apiClient.put(`/users/${userId}/change-password`, payload);
+};
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword?: string;
+}
+
+/**
+ * Gửi yêu cầu lấy lại mật khẩu qua email.
+ */
+export const forgotPasswordApi = async (payload: ForgotPasswordRequest): Promise<string> => {
+  const response = await apiClient.post<string>(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, payload);
+  return response.data;
+};
+
+/**
+ * Đặt lại mật khẩu mới dùng reset token từ email.
+ */
+export const resetPasswordApi = async (payload: ResetPasswordRequest): Promise<string> => {
+  const response = await apiClient.post<string>(API_ENDPOINTS.AUTH.RESET_PASSWORD, payload);
+  return response.data;
+};
+
+
+
+
 
