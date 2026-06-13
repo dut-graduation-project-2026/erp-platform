@@ -1,0 +1,157 @@
+name: Unified Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'Select what to deploy'
+        required: true
+        type: choice
+        options:
+          - frontend
+          - backend
+          - both
+      backend_commit_sha:
+        description: 'Backend commit SHA (required for backend or both)'
+        required: false
+        type: string
+
+concurrency:
+  group: unified-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_frontend: ${{ steps.resolve.outputs.deploy_frontend }}
+      deploy_backend: ${{ steps.resolve.outputs.deploy_backend }}
+    steps:
+      - name: Validate branch
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/dev" ] && [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "Error: deployments are only allowed from dev or main branches"
+            exit 1
+          fi
+
+      - name: Resolve deployment target
+        id: resolve
+        run: |
+          target="${{ github.event.inputs.deploy_target }}"
+          commit_sha="${{ github.event.inputs.backend_commit_sha }}"
+
+          deploy_frontend="false"
+          deploy_backend="false"
+
+          if [ "$target" = "frontend" ] || [ "$target" = "both" ]; then
+            deploy_frontend="true"
+          fi
+
+          if [ "$target" = "backend" ] || [ "$target" = "both" ]; then
+            if [ -z "$commit_sha" ]; then
+              echo "Error: backend_commit_sha is required when deploy_target is backend or both"
+              exit 1
+            fi
+
+            if ! echo "$commit_sha" | grep -Eq '^[0-9a-f]{40}$'; then
+              echo "Error: backend_commit_sha must be a 40-char lowercase hex SHA"
+              exit 1
+            fi
+
+            deploy_backend="true"
+          fi
+
+          echo "deploy_frontend=$deploy_frontend" >> "$GITHUB_OUTPUT"
+          echo "deploy_backend=$deploy_backend" >> "$GITHUB_OUTPUT"
+
+  deploy-frontend:
+    if: needs.validate.outputs.deploy_frontend == 'true'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Pull Vercel environment information
+        run: npx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+
+      - name: Build project artifacts
+        run: npx vercel build --prod --token=$VERCEL_TOKEN
+
+      - name: Deploy project artifacts to Vercel
+        run: npx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+
+  deploy-backend:
+    if: needs.validate.outputs.deploy_backend == 'true'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Login to Dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Verify immutable image exists
+        run: |
+          docker_user=$(echo "${{ secrets.DOCKERHUB_USER }}" | tr '[:upper:]' '[:lower:]')
+          docker manifest inspect ${docker_user}/erp-platform:${{ github.event.inputs.backend_commit_sha }} > /dev/null
+
+      - name: Promote immutable image to latest
+        run: |
+          docker_user=$(echo "${{ secrets.DOCKERHUB_USER }}" | tr '[:upper:]' '[:lower:]')
+          docker pull ${docker_user}/erp-platform:${{ github.event.inputs.backend_commit_sha }}
+          docker tag ${docker_user}/erp-platform:${{ github.event.inputs.backend_commit_sha }} ${docker_user}/erp-platform:latest
+          docker push ${docker_user}/erp-platform:latest
+
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK is not configured"
+            exit 1
+          fi
+
+          echo "Waiting 15s for DockerHub registry to fully index the latest tag..."
+          sleep 15
+
+          curl --fail --silent --show-error --max-time 30 --request POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "Render deploy hook triggered successfully."
+
+  summary:
+    if: always()
+    needs:
+      - validate
+      - deploy-frontend
+      - deploy-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment summary
+        run: |
+          {
+            echo "## Unified Deployment Summary"
+            echo "- Target: ${{ github.event.inputs.deploy_target }}"
+            echo "- Backend commit SHA: ${{ github.event.inputs.backend_commit_sha }}"
+            echo "- Validate: ${{ needs.validate.result }}"
+            echo "- Frontend: ${{ needs.deploy-frontend.result }}"
+            echo "- Backend: ${{ needs.deploy-backend.result }}"
+          } >> "$GITHUB_STEP_SUMMARY"
