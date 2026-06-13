@@ -15,7 +15,6 @@ on:
       - reopened
     branches:
       - main
-      - dev
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yaml"
