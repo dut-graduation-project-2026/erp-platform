@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, useState, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   getInventoryDocumentById,
@@ -18,9 +18,7 @@ import {
   XCircle, 
   Send, 
   Calendar, 
-  FileText, 
   User, 
-  Tag, 
   AlertTriangle,
   ChevronRight,
   Plus,
@@ -31,6 +29,29 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+
+// Helper to iterate warehouses and find the document
+const getInventoryDocumentByIdWithFallback = async (orgId: string, docId: string): Promise<InventoryDocument> => {
+  // 1. Fetch warehouses using authenticated API client
+  let activeWarehouses: any[] = [];
+  try {
+    const res = await getWarehouses(orgId);
+    activeWarehouses = res.data || [];
+  } catch (e) {
+    console.error('Failed to load warehouses list', e);
+  }
+  
+  // 2. Iterate warehouses and try to get the document
+  for (const wh of activeWarehouses) {
+    try {
+      const found = await getInventoryDocumentById(orgId, wh.id, docId);
+      if (found) return found;
+    } catch {
+      // ignore and continue
+    }
+  }
+  throw new Error('Document not found in any warehouse');
+};
 
 export default function DocumentDetailsPage({ 
   params 
@@ -49,7 +70,19 @@ export default function DocumentDetailsPage({
   const [isReplenishOpen, setIsReplenishOpen] = useState(false);
   const [replenishNotes, setReplenishNotes] = useState('');
 
-  const loadDocument = () => {
+  const fallbackSearch = useCallback(async () => {
+    try {
+      const warehousesRes = await getInventoryDocumentByIdWithFallback(orgId, documentId);
+      setDoc(warehousesRes);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to find document in any warehouse');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [orgId, documentId]);
+
+  const loadDocument = useCallback(() => {
     setIsLoading(true);
     const urlParams = new URLSearchParams(window.location.search);
     const queryWhId = urlParams.get('whId');
@@ -66,46 +99,11 @@ export default function DocumentDetailsPage({
     } else {
       fallbackSearch();
     }
-  };
-
-  const fallbackSearch = async () => {
-    try {
-      const warehousesRes = await getInventoryDocumentByIdWithFallback(orgId, documentId);
-      setDoc(warehousesRes);
-    } catch (e) {
-      console.error(e);
-      toast.error('Failed to find document in any warehouse');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Helper to iterate warehouses and find the document
-  const getInventoryDocumentByIdWithFallback = async (orgId: string, docId: string): Promise<InventoryDocument> => {
-    // 1. Fetch warehouses using authenticated API client
-    let activeWarehouses: any[] = [];
-    try {
-      const res = await getWarehouses(orgId);
-      activeWarehouses = res.data || [];
-    } catch (e) {
-      console.error('Failed to load warehouses list', e);
-    }
-    
-    // 2. Iterate warehouses and try to get the document
-    for (const wh of activeWarehouses) {
-      try {
-        const found = await getInventoryDocumentById(orgId, wh.id, docId);
-        if (found) return found;
-      } catch (err) {
-        // ignore and continue
-      }
-    }
-    throw new Error('Document not found in any warehouse');
-  };
+  }, [orgId, documentId, fallbackSearch]);
 
   useEffect(() => {
     loadDocument();
-  }, [orgId, documentId]);
+  }, [loadDocument]);
 
   const handleConfirm = async () => {
     if (!doc) return;
