@@ -11,7 +11,7 @@ public record PaginationRequest(
     }
 
     if (limit == null) {
-      limit = 15;
+      limit = Integer.MAX_VALUE;
     }
   }
 }
