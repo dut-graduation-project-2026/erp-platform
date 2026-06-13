@@ -1,17 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { KeyRound, Eye, EyeOff, CheckCircle2, RefreshCw, AlertTriangle, ArrowLeft } from "lucide-react";
 import { resetPasswordApi } from "@/features/auth/services/authService";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   
   const token = searchParams.get("token");
 
@@ -185,5 +184,20 @@ export default function ResetPasswordPage() {
         </form>
       )}
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full max-w-[420px] bg-white border border-[#e0e0e0] rounded-[4px] p-8 shadow-[0px_4px_16px_rgba(0,0,0,0.08)] font-['Segoe_UI',_sans-serif] flex items-center justify-center min-h-[300px]">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="w-8 h-8 text-[#0066cc] animate-spin" />
+          <p className="text-[13px] text-[#898989]">Loading reset password form...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordPageContent />
+    </Suspense>
   );
 }
