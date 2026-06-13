@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 public class PickingOptimalServiceImpl implements PickingOptimalService {
 
   private final InventoryBalanceRepository inventoryBalanceRepository;
-  private final WarehouseRepository warehouseRepository;
 
   @Override
   public Warehouse recommendOptimalWarehouse(
