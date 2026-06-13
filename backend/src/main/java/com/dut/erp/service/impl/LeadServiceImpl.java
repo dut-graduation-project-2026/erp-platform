@@ -24,6 +24,9 @@ import com.dut.erp.repository.SaleTeamRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.LeadService;
+import com.dut.erp.dto.event.LeadAssignedEvent;
+import com.dut.erp.dto.event.LeadStageChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,6 +54,7 @@ public class LeadServiceImpl implements LeadService {
   private final PartnerRepository partnerRepository;
   private final UserRepository userRepository;
   private final LeadMapper leadMapper;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   public PagedEntityResponse<LeadBaseResponse> getLeadsWithFilterByOrganizationId(
@@ -123,6 +127,11 @@ public class LeadServiceImpl implements LeadService {
 
     lead = leadRepository.save(lead);
     log.info("Created lead {} in organization {}", lead.getId(), organizationId);
+
+    if (lead.getSalePerson() != null) {
+      applicationEventPublisher.publishEvent(new LeadAssignedEvent(lead.getId(), lead.getSalePerson().getId()));
+    }
+
     return leadMapper.toResponse(lead);
   }
 
@@ -135,6 +144,8 @@ public class LeadServiceImpl implements LeadService {
     SaleTeam saleTeam = validateAndGetSaleTeam(request.saleTeamId(), organizationId);
     User salePerson = validateAndGetSalePerson(request.salePersonId(), saleTeam);
     Partner partner = validateAndGetPartner(request.partnerId(), organizationId);
+
+    User oldAssignee = lead.getSalePerson();
 
     lead.setName(request.name());
     lead.setTaxCode(request.taxCode());
@@ -150,6 +161,11 @@ public class LeadServiceImpl implements LeadService {
 
     lead = leadRepository.save(lead);
     log.info("Updated lead {} in organization {}", leadId, organizationId);
+
+    if (salePerson != null && (oldAssignee == null || !oldAssignee.getId().equals(salePerson.getId()))) {
+      applicationEventPublisher.publishEvent(new LeadAssignedEvent(lead.getId(), salePerson.getId()));
+    }
+
     return leadMapper.toResponse(lead);
   }
 
@@ -170,6 +186,9 @@ public class LeadServiceImpl implements LeadService {
     lead = leadRepository.save(lead);
     log.info(
         "Updated lead stage to {} for lead {} in organization {}", stage, leadId, organizationId);
+
+    applicationEventPublisher.publishEvent(new LeadStageChangedEvent(lead.getId(), stage));
+
     return leadMapper.toResponse(lead);
   }
 

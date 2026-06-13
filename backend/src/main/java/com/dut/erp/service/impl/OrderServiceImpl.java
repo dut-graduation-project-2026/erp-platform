@@ -32,6 +32,8 @@ import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.service.OrderService;
 import com.dut.erp.service.SalesOrderIntegrationService;
+import com.dut.erp.dto.event.OrderStatusChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -64,6 +66,7 @@ public class OrderServiceImpl implements OrderService {
   private final InventoryDocumentRepository inventoryDocumentRepository;
   private final InventoryBalanceRepository inventoryBalanceRepository;
   private final SalesOrderIntegrationService salesOrderIntegrationService;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
@@ -355,6 +358,8 @@ public class OrderServiceImpl implements OrderService {
         id,
         request.status(),
         organizationId);
+
+    applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, request.status()));
 
     if (oldStatus != OrderStatus.CONFIRMED && request.status() == OrderStatus.CONFIRMED) {
       salesOrderIntegrationService.handleOrderConfirmation(order, request.warehouseId());

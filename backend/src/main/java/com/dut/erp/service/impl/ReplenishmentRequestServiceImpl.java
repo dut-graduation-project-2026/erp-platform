@@ -18,6 +18,8 @@ import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.repository.ReplenishmentRequestRepository;
 import com.dut.erp.repository.WarehouseRepository;
 import com.dut.erp.service.ReplenishmentRequestService;
+import com.dut.erp.dto.event.ReplenishmentRequestStatusChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,6 +44,7 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
   private final WarehouseRepository warehouseRepository;
   private final InventoryDocumentRepository inventoryDocumentRepository;
   private final ReplenishmentRequestRepository replenishmentRequestRepository;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   @Transactional
@@ -71,6 +74,7 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
         .build();
 
     req = replenishmentRequestRepository.save(req);
+    applicationEventPublisher.publishEvent(new ReplenishmentRequestStatusChangedEvent(req.getId(), null, ReplenishmentStatus.OPEN));
     return mapToResponse(req);
   }
 
