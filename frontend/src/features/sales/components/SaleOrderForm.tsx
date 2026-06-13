@@ -167,21 +167,24 @@ export function SaleOrderForm({ order, orgId }: Props) {
       }
 
       // Persist line items via separate API
-      for (const line of lines) {
+      const updatedLines = [...lines];
+      for (let i = 0; i < updatedLines.length; i++) {
+        const line = updatedLines[i];
+        if (!line.productId) continue;
         const itemPayload = {
           productId: line.productId,
           taxId: line.taxId || undefined,
           quantity: line.quantity,
           unitPrice: line.unitPrice,
         };
-        if (!line.productId) continue;
         if (line.id) {
           await updateOrderItem(orgId, saved.id, line.id, itemPayload);
         } else {
           const created = await createOrderItem(orgId, saved.id, itemPayload);
-          line.id = created.id;
+          updatedLines[i] = { ...line, id: created.id };
         }
       }
+      setLines(updatedLines);
 
       toast.success('Quotation saved successfully.');
       if (!order?.id) {
