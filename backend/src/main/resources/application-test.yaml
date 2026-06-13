@@ -1,3 +1,4 @@
-cookie:
-  secure: false
-  same-site: lax
+app:
+  cookie:
+    secure: false
+    same-site: lax

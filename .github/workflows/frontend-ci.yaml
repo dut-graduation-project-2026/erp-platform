@@ -1,6 +1,13 @@
 name: Frontend CI
 
 on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yaml"
   pull_request:
     types:
       - opened
@@ -8,9 +15,10 @@ on:
       - reopened
     branches:
       - main
+      - dev
     paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend-ci.yaml'
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -31,8 +39,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: 'frontend/package.json'
-          cache: 'npm'
+          node-version-file: "frontend/package.json"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
