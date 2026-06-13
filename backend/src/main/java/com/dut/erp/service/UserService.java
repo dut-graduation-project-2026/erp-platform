@@ -20,4 +20,6 @@ public interface UserService {
   OrganizationMemberResponse updateUserRoles(UUID userId, UUID organizationId, List<UUID> roleIds);
 
   void removeUserFromOrganization(UUID userId, UUID organizationId);
+
+  void changePassword(UUID userId, com.dut.erp.dto.request.ChangePasswordRequest request);
 }

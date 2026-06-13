@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import com.dut.erp.dto.request.UpdateUserRolesRequest;
 import com.dut.erp.dto.response.OrganizationMemberResponse;
+import com.dut.erp.dto.request.ChangePasswordRequest;
 
 /**
  * Controller handling user-related API endpoints.
@@ -150,6 +151,24 @@ public class UserController {
       @RequestParam UUID organizationId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     userService.removeUserFromOrganization(userId, organizationId);
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Updates the password of the authenticated user.
+   *
+   * @param userId the UUID of the user
+   * @param request the request containing old and new passwords
+   * @param userDetails the authenticated user's details
+   * @return a ResponseEntity with no content (204)
+   */
+  @PutMapping("/{userId}/change-password")
+  @PreAuthorize("#userId == #userDetails.id")
+  public ResponseEntity<Void> changePassword(
+      @PathVariable UUID userId,
+      @Valid @RequestBody ChangePasswordRequest request,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    userService.changePassword(userId, request);
     return ResponseEntity.noContent().build();
   }
 }

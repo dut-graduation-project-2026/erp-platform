@@ -24,6 +24,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.dut.erp.dto.request.ChangePasswordRequest;
+import com.dut.erp.exception.BadRequestException;
 
 @Slf4j
 @Service
@@ -33,6 +36,7 @@ public class UserServiceImpl implements UserService {
   private final UserRepository userRepository;
   private final UserMapper userMapper;
   private final RoleRepository roleRepository;
+  private final PasswordEncoder passwordEncoder;
 
   @Override
   public PagedEntityResponse<UserBaseResponse> searchUsersByOrganizationId(
@@ -179,5 +183,21 @@ public class UserServiceImpl implements UserService {
 
     userRepository.save(user);
     log.info("User {} removed from organization {}", userId, organizationId);
+  }
+
+  @Override
+  @Transactional
+  public void changePassword(UUID userId, ChangePasswordRequest request) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+    if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+      log.warn("Password change failed for user {}: old password does not match", userId);
+      throw new BadRequestException("Mật khẩu cũ không chính xác.");
+    }
+
+    user.setPassword(passwordEncoder.encode(request.newPassword()));
+    userRepository.save(user);
+    log.info("Password changed successfully for user {}", userId);
   }
 }
