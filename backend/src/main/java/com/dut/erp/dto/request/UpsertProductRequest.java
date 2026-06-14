@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record UpsertProductRequest(
     @NotBlank(message = "Name cannot be blank")
@@ -20,4 +21,6 @@ public record UpsertProductRequest(
             message =
                 "Price must be a valid decimal number with up to 13 integer digits and 2 decimal"
                     + " places")
-        BigDecimal price) {}
+        BigDecimal price,
+    @NotNull(message = "Product category ID is required")
+        UUID categoryId) {}

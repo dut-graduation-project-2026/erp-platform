@@ -10,11 +10,13 @@ import com.dut.erp.dto.response.ProductResponse;
 import com.dut.erp.entity.InventoryBalance;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Product;
+import com.dut.erp.entity.ProductCategory;
 import com.dut.erp.entity.Warehouse;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.ProductMapper;
 import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.OrganizationRepository;
+import com.dut.erp.repository.ProductCategoryRepository;
 import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.repository.WarehouseRepository;
 import com.dut.erp.service.ProductService;
@@ -41,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
 
   private final OrganizationRepository organizationRepository;
   private final ProductRepository productRepository;
+  private final ProductCategoryRepository productCategoryRepository;
   private final WarehouseRepository warehouseRepository;
   private final InventoryBalanceRepository inventoryBalanceRepository;
   private final ProductMapper productMapper;
@@ -90,10 +93,13 @@ public class ProductServiceImpl implements ProductService {
   @Transactional
   public ProductResponse createProduct(UUID organizationId, UpsertProductRequest request) {
     Organization organization = findOrganizationById(organizationId);
+    ProductCategory category = productCategoryRepository.findByIdAndOrganizationId(request.categoryId(), organizationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Product category not found with id: " + request.categoryId()));
 
     Product product =
         Product.builder()
             .organization(organization)
+            .category(category)
             .name(request.name())
             .price(request.price())
             .description(request.description())
@@ -125,10 +131,13 @@ public class ProductServiceImpl implements ProductService {
   public ProductResponse updateProduct(
       UUID organizationId, UUID productId, UpsertProductRequest request) {
     Product product = findProductByIdAndOrganizationId(productId, organizationId);
+    ProductCategory category = productCategoryRepository.findByIdAndOrganizationId(request.categoryId(), organizationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Product category not found with id: " + request.categoryId()));
 
     product.setName(request.name());
     product.setPrice(request.price());
     product.setDescription(request.description());
+    product.setCategory(category);
 
     product = productRepository.save(product);
     log.info("Updated product {} in organization {}", productId, organizationId);
