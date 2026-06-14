@@ -3,176 +3,175 @@ from pydantic import BaseModel, Field
 
 
 class ComplexAnalysisResponse(BaseModel):
-    summary: str = Field(description="Tóm tắt ngắn gọn nội dung bài viết khoảng 2 câu")
-    main_topic: str = Field(description="Chủ đề chính của bài viết")
+    summary: str = Field(description="Concise summary of the text content in about 2 sentences.")
+    main_topic: str = Field(description="Main topic of the text.")
     tags: List[str] = Field(
-        description="Danh sách các thẻ/nhãn phân loại (tối đa 5 thẻ)"
+        description="List of classification tags/labels (maximum 5 tags)."
     )
     reading_time_minutes: int = Field(
-        description="Thời gian đọc ước tính tính bằng phút"
+        description="Estimated reading time in minutes."
     )
 
-    # Trường dữ liệu có thể có hoặc không (Optional)
+    # Optional fields
     warning_flag: Optional[str] = Field(
         None,
-        description="Cảnh báo nếu nội dung vi phạm chính sách hoặc nhạy cảm, nếu không có thì để null",
+        description="Warning flag if the content violates policy or is sensitive; null if none.",
     )
 
 
 class UserBaseSchema(BaseModel):
-    id: str = Field(description="Mã định danh duy nhất của người dùng (UUID)")
-    email: str = Field(description="Địa chỉ email của người dùng")
-    firstName: Optional[str] = Field(None, description="Tên của người dùng")
-    lastName: Optional[str] = Field(None, description="Họ của người dùng")
+    id: str = Field(description="Unique identifier of the user (UUID).")
+    email: str = Field(description="Email address of the user.")
+    firstName: Optional[str] = Field(None, description="First name of the user.")
+    lastName: Optional[str] = Field(None, description="Last name of the user.")
 
 
 
 class PaginationSchema(BaseModel):
-    page: int = Field(description="Trang hiện tại")
-    limit: int = Field(description="Số lượng phần tử tối đa trên mỗi trang")
-    totalItems: int = Field(description="Tổng số lượng phần tử")
-    totalPages: int = Field(description="Tổng số trang")
-    hasNext: bool = Field(description="Có trang tiếp theo hay không")
-    hasPrev: bool = Field(description="Có trang trước đó hay không")
+    page: int = Field(description="Current page number.")
+    limit: int = Field(description="Maximum number of items per page.")
+    totalItems: int = Field(description="Total number of items.")
+    totalPages: int = Field(description="Total number of pages.")
+    hasNext: bool = Field(description="Whether there is a next page.")
+    hasPrev: bool = Field(description="Whether there is a previous page.")
 
 
 class PagedUserListSchema(BaseModel):
-    data: List[UserBaseSchema] = Field(description="Danh sách người dùng")
-    pagination: PaginationSchema = Field(description="Thông tin phân trang")
+    data: List[UserBaseSchema] = Field(description="List of users.")
+    pagination: PaginationSchema = Field(description="Pagination details.")
 
 
 class UserAnalysisResponse(BaseModel):
-    summary: str = Field(description="Tóm tắt tổng quan về đội ngũ nhân sự của tổ chức khoảng 2-3 câu")
-    total_users: int = Field(description="Tổng số lượng người dùng trong tổ chức")
-    departments_or_groups: List[str] = Field(description="Dự đoán hoặc gợi ý các phòng ban/nhóm làm việc dựa trên vai trò hoặc email (ví dụ: Sales, Warehouse, Admin)")
-    email_domains: List[str] = Field(description="Danh sách các tên miền email duy nhất được sử dụng trong tổ chức")
-    top_email_domains_analysis: str = Field(description="Phân tích chi tiết về các tên miền email được sử dụng (ví dụ: tên miền nội bộ công ty so với tên miền công cộng như gmail)")
-    recommendations: List[str] = Field(description="Gợi ý/khuyến nghị tối ưu hóa quản lý nhân sự hoặc phân quyền trong tổ chức (ví dụ: chuẩn hóa email, thiết lập nhóm phòng ban)")
+    summary: str = Field(description="Overview summary of the organization's personnel team in about 2-3 sentences.")
+    total_users: int = Field(description="Total number of users in the organization.")
+    departments_or_groups: List[str] = Field(description="Predicted or suggested departments/working groups based on roles or email domains (e.g., Sales, Warehouse, Admin).")
+    email_domains: List[str] = Field(description="List of unique email domains used in the organization.")
+    top_email_domains_analysis: str = Field(description="Detailed analysis of email domains used (e.g., company internal domain vs. public domain like gmail).")
+    recommendations: List[str] = Field(description="Suggestions/recommendations for optimizing personnel management or permissions in the organization (e.g., standardizing emails, setting up departmental groups).")
 
 
 class OrderBaseSchema(BaseModel):
-    id: str = Field(description="Mã định danh duy nhất của đơn hàng (UUID)")
-    orderNumber: str = Field(description="Mã số đơn hàng")
-    status: str = Field(description="Trạng thái đơn hàng")
-    totalAmount: float = Field(description="Tổng tiền đơn hàng")
+    id: str = Field(description="Unique identifier of the order (UUID).")
+    orderNumber: str = Field(description="Order number.")
+    status: str = Field(description="Order status.")
+    totalAmount: float = Field(description="Total amount of the order.")
+    createdAt: Optional[str] = Field(None, description="Creation timestamp of the order (ISO string).")
+    deliveryDate: Optional[str] = Field(None, description="Delivery timestamp of the order (ISO string).")
 
 
 class PagedOrderListSchema(BaseModel):
-    data: List[OrderBaseSchema] = Field(description="Danh sách các đơn hàng")
-    pagination: PaginationSchema = Field(description="Thông tin phân trang")
+    data: List[OrderBaseSchema] = Field(description="List of orders.")
+    pagination: PaginationSchema = Field(description="Pagination details.")
 
 
 class ProductBaseSchema(BaseModel):
-    id: str = Field(description="Mã định danh duy nhất của sản phẩm")
-    name: str = Field(description="Tên sản phẩm")
-    price: float = Field(description="Đơn giá sản phẩm")
-    description: Optional[str] = Field(None, description="Mô tả sản phẩm")
+    id: str = Field(description="Unique identifier of the product.")
+    name: str = Field(description="Product name.")
+    price: float = Field(description="Unit price of the product.")
+    description: Optional[str] = Field(None, description="Product description.")
 
 
 class OrderItemDetailSchema(BaseModel):
-    id: str = Field(description="Mã định danh duy nhất của chi tiết đơn hàng")
-    product: ProductBaseSchema = Field(description="Thông tin sản phẩm")
-    quantity: float = Field(description="Số lượng sản phẩm")
-    unitPrice: float = Field(description="Đơn giá tại thời điểm mua")
-    subtotal: float = Field(description="Thành tiền của sản phẩm")
+    id: str = Field(description="Unique identifier of the order item detail.")
+    product: ProductBaseSchema = Field(description="Product details.")
+    quantity: float = Field(description="Quantity of the product.")
+    unitPrice: float = Field(description="Unit price at the time of purchase.")
+    subtotal: float = Field(description="Subtotal amount of the product (quantity * unitPrice).")
 
 
 class OrderDetailSchema(BaseModel):
-    id: str = Field(description="Mã định danh duy nhất của đơn hàng")
-    orderNumber: str = Field(description="Mã số đơn hàng")
-    status: str = Field(description="Trạng thái đơn hàng")
-    totalAmount: float = Field(description="Tổng tiền đơn hàng")
-    items: List[OrderItemDetailSchema] = Field(description="Danh sách các mặt hàng trong đơn")
-    createdAt: str = Field(description="Thời điểm tạo đơn hàng (ISO string)")
+    id: str = Field(description="Unique identifier of the order.")
+    orderNumber: str = Field(description="Order number.")
+    status: str = Field(description="Order status.")
+    totalAmount: float = Field(description="Total amount of the order.")
+    items: List[OrderItemDetailSchema] = Field(description="List of items in the order.")
+    createdAt: str = Field(description="Creation timestamp of the order (ISO string).")
 
 
 class ProductSalesSummary(BaseModel):
-    product_id: str = Field(description="Mã sản phẩm")
-    product_name: str = Field(description="Tên sản phẩm")
-    quantity_sold: float = Field(description="Số lượng đã bán")
-    revenue: float = Field(description="Doanh thu từ sản phẩm này")
+    product_id: str = Field(description="Product identifier.")
+    product_name: str = Field(description="Product name.")
+    quantity_sold: float = Field(description="Quantity sold.")
+    revenue: float = Field(description="Revenue generated from this product.")
 
 
 class SalesAnalysisResponse(BaseModel):
-    summary: str = Field(description="Tóm tắt tổng quan về tình hình bán hàng của tổ chức trong tháng qua khoảng 3-4 câu")
-    total_revenue: float = Field(description="Tổng doanh thu trong tháng qua")
-    total_items_sold: float = Field(description="Tổng số lượng sản phẩm bán ra")
-    top_selling_products: List[ProductSalesSummary] = Field(description="Danh sách sản phẩm bán chạy nhất kèm chi tiết số lượng và doanh thu")
-    sales_trends_and_insights: str = Field(description="Phân tích chi tiết về xu hướng bán hàng, sản phẩm tiềm năng hoặc các điểm đáng chú ý trong tháng")
-    inventory_recommendations: List[str] = Field(description="Khuyến nghị nhập hàng/tối ưu tồn kho dựa trên lượng bán ra")
+    summary: str = Field(description="Overview summary of the organization's sales status in the past month in about 3-4 sentences.")
+    total_revenue: float = Field(description="Total revenue in the past month.")
+    total_items_sold: float = Field(description="Total quantity of products sold.")
+    top_selling_products: List[ProductSalesSummary] = Field(description="List of top selling products with details on quantity sold and revenue.")
+    sales_trends_and_insights: str = Field(description="Detailed analysis of sales trends, potential products, or notable highlights during the month.")
+    inventory_recommendations: List[str] = Field(description="Inventory/stocking recommendations based on sales volume.")
 
 
 class ForecastPoint(BaseModel):
-    date: str = Field(description="Ngày định dạng YYYY-MM-DD")
-    historical_revenue: Optional[float] = Field(None, description="Doanh thu thực tế (nếu có)")
-    predicted_revenue: float = Field(description="Doanh thu dự báo")
+    date: str = Field(description="Date formatted as YYYY-MM-DD.")
+    historical_revenue: Optional[float] = Field(None, description="Actual historical revenue (if available).")
+    predicted_revenue: float = Field(description="Predicted forecasted revenue.")
 
 
 class SalesForecastResponse(BaseModel):
-    summary: str = Field(description="Nhận xét dự báo của AI bằng tiếng Việt")
-    forecast_30d_total_revenue: float = Field(description="Dự báo tổng doanh thu trong 30 ngày tới")
-    forecast_points: List[ForecastPoint] = Field(description="Danh sách các điểm biểu đồ doanh số thực tế và dự báo")
-    insights: List[str] = Field(description="Các nhận xét chuyên sâu từ AI")
+    summary: str = Field(description="AI forecast summary comments (must be in Vietnamese).")
+    forecast_30d_total_revenue: float = Field(description="Forecasted total revenue for the next 30 days.")
+    forecast_points: List[ForecastPoint] = Field(description="List of chart points for actual and forecasted revenue.")
+    insights: List[str] = Field(description="In-depth insights and notes from the AI (must be in Vietnamese).")
 
 
 class ProductAbcXyz(BaseModel):
-    productId: str = Field(description="Mã sản phẩm")
-    productName: str = Field(description="Tên sản phẩm")
-    abcClass: str = Field(description="Nhóm ABC (A, B, C)")
-    xyzClass: str = Field(description="Nhóm XYZ (X, Y, Z)")
-    currentStock: float = Field(description="Tồn kho thực tế")
-    rop: float = Field(description="Điểm đặt hàng lại (Reorder Point)")
-    eoq: float = Field(description="Lượng đặt hàng kinh tế (EOQ)")
-    status: str = Field(description="Trạng thái tồn kho: OK, WARNING, CRITICAL")
+    productId: str = Field(description="Product identifier.")
+    productName: str = Field(description="Product name.")
+    abcClass: str = Field(description="ABC classification class (A, B, or C).")
+    xyzClass: str = Field(description="XYZ classification class (X, Y, or Z).")
+    currentStock: float = Field(description="Actual physical stock level.")
+    rop: float = Field(description="Reorder Point (ROP) level.")
+    eoq: float = Field(description="Economic Order Quantity (EOQ).")
+    status: str = Field(description="Inventory status: OK, WARNING, or CRITICAL.")
 
 
 class InventoryAnalysisResponse(BaseModel):
-    summary: str = Field(description="Tóm tắt phân tích tồn kho của AI")
-    abc_xyz_matrix: List[ProductAbcXyz] = Field(description="Ma trận phân loại ABC-XYZ và các chỉ số tồn kho")
-    critical_stock_count: int = Field(description="Số lượng sản phẩm ở trạng thái CRITICAL (tồn kho dưới ROP)")
-    recommendations: List[str] = Field(description="Đề xuất tối ưu hóa tồn kho")
+    summary: str = Field(description="AI inventory analysis summary comments (must be in Vietnamese).")
+    abc_xyz_matrix: List[ProductAbcXyz] = Field(description="ABC-XYZ classification matrix and inventory metrics.")
+    critical_stock_count: int = Field(description="Number of products in CRITICAL status (stock below ROP).")
+    recommendations: List[str] = Field(description="Stock optimization recommendations (must be in Vietnamese).")
 
 
 class ReorderItem(BaseModel):
-    productId: str = Field(description="Mã sản phẩm")
-    productName: str = Field(description="Tên sản phẩm")
-    warehouseId: str = Field(description="Mã kho")
-    warehouseName: str = Field(description="Tên kho")
-    currentStock: float = Field(description="Tồn kho hiện tại")
-    rop: float = Field(description="Điểm đặt hàng lại ROP")
-    eoq: float = Field(description="Lượng đặt hàng tối ưu EOQ")
-    recommendedQuantity: float = Field(description="Số lượng đề xuất nhập")
-    urgency: str = Field(description="Mức độ khẩn cấp (HIGH, MEDIUM, LOW)")
-    notes: str = Field(description="Lý do đề xuất (ví dụ: Tồn kho < ROP)")
+    productId: str = Field(description="Product identifier.")
+    productName: str = Field(description="Product name.")
+    warehouseId: str = Field(description="Warehouse identifier.")
+    warehouseName: str = Field(description="Warehouse name.")
+    currentStock: float = Field(description="Current physical stock level.")
+    rop: float = Field(description="Reorder Point (ROP).")
+    eoq: float = Field(description="Economic Order Quantity (EOQ).")
+    recommendedQuantity: float = Field(description="Recommended restocking quantity.")
+    urgency: str = Field(description="Urgency level (HIGH, MEDIUM, or LOW).")
+    notes: str = Field(description="Restocking reason or notes (must be in Vietnamese).")
 
 
 class ReorderRecommendationResponse(BaseModel):
-    recommendations: List[ReorderItem] = Field(description="Danh sách các đề xuất nhập hàng")
+    recommendations: List[ReorderItem] = Field(description="List of restocking recommendations.")
 
 
 class DashboardSummaryResponse(BaseModel):
-    summary: str = Field(description="Bản tin tóm tắt hàng ngày của AI bằng tiếng Việt")
-    alerts: List[str] = Field(description="Danh sách cảnh báo nhanh")
+    summary: str = Field(description="Daily brief summary by the AI (must be in Vietnamese).")
+    alerts: List[str] = Field(description="List of quick alerts (must be in Vietnamese).")
 
 
 # ─── LIGHTWEIGHT SCHEMAS FOR LLM RESPONSES (TO PREVENT TRUNCATION) ───
 class SalesForecastLLMResponse(BaseModel):
-    summary: str = Field(description="Nhận xét dự báo của AI bằng tiếng Việt")
-    insights: List[str] = Field(description="Các nhận xét chuyên sâu từ AI")
+    summary: str = Field(description="AI forecast summary comments (must be in Vietnamese).")
+    insights: List[str] = Field(description="In-depth insights and notes from the AI (must be in Vietnamese).")
 
 
 class InventoryLLMResponse(BaseModel):
-    summary: str = Field(description="Tóm tắt phân tích tồn kho của AI")
-    recommendations: List[str] = Field(description="Đề xuất tối ưu hóa tồn kho")
+    summary: str = Field(description="AI inventory analysis summary comments (must be in Vietnamese).")
+    recommendations: List[str] = Field(description="Stock optimization recommendations (must be in Vietnamese).")
 
 
 class ReorderItemLLM(BaseModel):
-    productId: str = Field(description="Mã sản phẩm")
-    notes: str = Field(description="Lý do nhập hàng ngắn gọn viết lại bằng tiếng Việt (tối đa 15 từ)")
+    productId: str = Field(description="Product identifier.")
+    notes: str = Field(description="Short restocking reason notes rewritten (must be in Vietnamese, maximum 15 words).")
 
 
 class ReorderRecommendationLLMResponse(BaseModel):
-    recommendations: List[ReorderItemLLM] = Field(description="Danh sách lý do đề xuất nhập hàng")
-
-
-
+    recommendations: List[ReorderItemLLM] = Field(description="List of restocking recommendation notes.")

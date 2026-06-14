@@ -16,13 +16,13 @@ GET_ORGANIZATION_USERS_TOOL = {
     "type": "function",
     "function": {
         "name": "get_organization_users",
-        "description": "Lấy danh sách toàn bộ người dùng (users) của một tổ chức dựa trên ID tổ chức.",
+        "description": "Retrieve the list of all users of an organization based on the organization ID.",
         "parameters": {
             "type": "object",
             "properties": {
                 "organization_id": {
                     "type": "string",
-                    "description": "ID của tổ chức (UUID)",
+                    "description": "The unique identifier of the organization (UUID).",
                 }
             },
             "required": ["organization_id"],

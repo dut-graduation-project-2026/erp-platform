@@ -44,13 +44,13 @@ GET_WAREHOUSES_TOOL = {
     "type": "function",
     "function": {
         "name": "get_warehouses",
-        "description": "Lấy danh sách các kho hàng (warehouses) của một tổ chức.",
+        "description": "Retrieve the list of warehouses of an organization.",
         "parameters": {
             "type": "object",
             "properties": {
                 "organization_id": {
                     "type": "string",
-                    "description": "ID của tổ chức (UUID)",
+                    "description": "The unique identifier of the organization (UUID).",
                 }
             },
             "required": ["organization_id"],
@@ -62,17 +62,17 @@ GET_WAREHOUSE_BALANCES_TOOL = {
     "type": "function",
     "function": {
         "name": "get_warehouse_balances",
-        "description": "Lấy số dư tồn kho (balances) của tất cả sản phẩm trong một kho hàng cụ thể.",
+        "description": "Retrieve the inventory balances of all products in a specific warehouse.",
         "parameters": {
             "type": "object",
             "properties": {
                 "organization_id": {
                     "type": "string",
-                    "description": "ID của tổ chức (UUID)",
+                    "description": "The unique identifier of the organization (UUID).",
                 },
                 "warehouse_id": {
                     "type": "string",
-                    "description": "ID của kho hàng (UUID)",
+                    "description": "The unique identifier of the warehouse (UUID).",
                 },
             },
             "required": ["organization_id", "warehouse_id"],
@@ -84,21 +84,21 @@ GET_INVENTORY_DOCUMENTS_TOOL = {
     "type": "function",
     "function": {
         "name": "get_inventory_documents",
-        "description": "Lấy lịch sử phiếu xuất nhập kho (inventory documents) của một kho hàng cụ thể.",
+        "description": "Retrieve the history of inventory import/export documents of a specific warehouse.",
         "parameters": {
             "type": "object",
             "properties": {
                 "organization_id": {
                     "type": "string",
-                    "description": "ID của tổ chức (UUID)",
+                    "description": "The unique identifier of the organization (UUID).",
                 },
                 "warehouse_id": {
                     "type": "string",
-                    "description": "ID của kho hàng (UUID)",
+                    "description": "The unique identifier of the warehouse (UUID).",
                 },
                 "search": {
                     "type": "string",
-                    "description": "Từ khóa tìm kiếm tài liệu (tùy chọn)",
+                    "description": "Optional keyword to search/filter documents.",
                 },
             },
             "required": ["organization_id", "warehouse_id"],

@@ -34,7 +34,7 @@ async def sample_response():
     messages = [
         {
             "role": "system",
-            "content": "Bạn là một chuyên gia phân tích dữ liệu văn bản. Hãy đọc và phân tích bài viết được cung cấp.",
+            "content": "You are a text data analysis expert. Analyze the provided text. Output your summary, topics, and warnings in Vietnamese.",
         },
         {"role": "user", "content": sample_text},
     ]

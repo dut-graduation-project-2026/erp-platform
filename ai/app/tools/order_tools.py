@@ -33,21 +33,21 @@ GET_ORGANIZATION_ORDERS_TOOL = {
     "type": "function",
     "function": {
         "name": "get_organization_orders",
-        "description": "Lấy danh sách đơn hàng (orders) của một tổ chức trong một khoảng thời gian nhất định.",
+        "description": "Retrieve the list of orders of an organization within a specific timeframe.",
         "parameters": {
             "type": "object",
             "properties": {
                 "organization_id": {
                     "type": "string",
-                    "description": "ID của tổ chức (UUID)",
+                    "description": "The unique identifier of the organization (UUID).",
                 },
                 "startDate": {
                     "type": "string",
-                    "description": "Thời điểm bắt đầu lọc đơn hàng (ISO 8601 string, ví dụ: 2026-05-14T08:00:00Z)",
+                    "description": "Optional starting timestamp to filter orders (ISO 8601 string, e.g., 2026-05-14T08:00:00Z).",
                 },
                 "endDate": {
                     "type": "string",
-                    "description": "Thời điểm kết thúc lọc đơn hàng (ISO 8601 string, ví dụ: 2026-06-13T08:00:00Z)",
+                    "description": "Optional ending timestamp to filter orders (ISO 8601 string, e.g., 2026-06-13T08:00:00Z).",
                 },
             },
             "required": ["organization_id"],
@@ -59,15 +59,15 @@ GET_ORDER_DETAILS_TOOL = {
     "type": "function",
     "function": {
         "name": "get_order_details",
-        "description": "Lấy thông tin chi tiết của một đơn hàng cụ thể, bao gồm danh sách các mặt hàng (items), số lượng và đơn giá.",
+        "description": "Retrieve the detailed information of a specific order, including list of items, quantities, and unit prices.",
         "parameters": {
             "type": "object",
             "properties": {
                 "organization_id": {
                     "type": "string",
-                    "description": "ID của tổ chức (UUID)",
+                    "description": "The unique identifier of the organization (UUID).",
                 },
-                "order_id": {"type": "string", "description": "ID của đơn hàng (UUID)"},
+                "order_id": {"type": "string", "description": "The unique identifier of the order (UUID)."},
             },
             "required": ["organization_id", "order_id"],
         },

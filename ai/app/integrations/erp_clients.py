@@ -8,7 +8,7 @@ class ERPClient:
         self.admin_user = config.ADMIN_USERNAME
         self.admin_pass = config.ADMIN_PASSWORD
 
-        self.client = httpx.AsyncClient()
+        self.client = httpx.AsyncClient(timeout=30.0)
         self._authenticated = False  # Flag đánh dấu đã login chưa
 
     async def authenticate(self):

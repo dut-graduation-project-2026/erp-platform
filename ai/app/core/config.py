@@ -9,6 +9,10 @@ class Config:
         self.OPENAI_MODEL = os.getenv("OPENAI_MODEL")
         self.OPENAI_URL = os.getenv("OPENAI_URL")
 
+        self.GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+        self.GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+        self.GEMINI_URL = os.getenv("GEMINI_URL")
+
         self.BACKEND_URL = os.getenv("BACKEND_URL")
         self.ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
         self.ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")

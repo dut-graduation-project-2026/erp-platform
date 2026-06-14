@@ -68,7 +68,7 @@ class AnalysisService:
         messages.append(
             {
                 "role": "user",
-                "content": "Dựa trên các dữ liệu đã thu thập được ở trên, hãy tổng hợp và trả về kết quả phân tích theo đúng định dạng được yêu cầu.",
+                "content": "Based on the gathered data above, synthesize and return the analysis results in the requested format. Note: Any text fields (such as summary, insights, notes, recommendations, etc.) MUST be written in Vietnamese.",
             }
         )
 
@@ -80,8 +80,8 @@ class AnalysisService:
 
     async def analyze_users_of_organization(self, organization_id: str):
         prompt = (
-            f"Hãy phân tích cơ cấu nhân sự của tổ chức có ID: {organization_id}. "
-            f"Bạn có thể sử dụng công cụ get_organization_users để lấy danh sách người dùng."
+            f"Analyze the personnel structure of the organization with ID: {organization_id}. "
+            f"You can use the get_organization_users tool to retrieve the list of users."
         )
         return await self._run_tool_calling_loop(
             prompt=prompt,
@@ -97,11 +97,11 @@ class AnalysisService:
         end_date_str = end_date.isoformat().replace("+00:00", "Z")
 
         prompt = (
-            f"Hãy phân tích tình hình và lượng hàng bán ra trong 30 ngày qua của tổ chức có ID: {organization_id}.\n"
-            f"Thời gian: từ {start_date_str} đến {end_date_str}.\n"
-            f"Bạn có thể sử dụng công cụ get_organization_orders để lấy danh sách đơn hàng trong khoảng thời gian này, "
-            f"và sử dụng get_order_details để lấy thông tin chi tiết của từng đơn hàng (bao gồm sản phẩm và số lượng) nhằm tính toán. "
-            f"Lưu ý: Chỉ tính lượng hàng bán ra từ các đơn hàng có trạng thái xác nhận, giao hàng hoặc hoàn thành (bỏ qua các đơn hàng DRAFT hoặc CANCELLED)."
+            f"Analyze the sales status and volume in the last 30 days for the organization with ID: {organization_id}.\n"
+            f"Timeframe: from {start_date_str} to {end_date_str}.\n"
+            f"You can use the get_organization_orders tool to get the orders within this timeframe, "
+            f"and get_order_details to retrieve the details of each order (including products and quantities) for calculations. "
+            f"Note: Only calculate sales volume from orders with confirmed, delivering, or completed status (ignore DRAFT or CANCELLED orders)."
         )
 
         return await self._run_tool_calling_loop(
@@ -206,17 +206,17 @@ class AnalysisService:
                 )
             )
 
-        # Gọi LLM viết nhận xét dựa trên số liệu tóm tắt
+        # Invoke LLM to write analysis comments based on summary data
         prompt = (
-            f"Dưới đây là tóm tắt kết quả dự báo doanh thu 30 ngày tới của tổ chức {organization_id}:\n"
-            f"- Tổng doanh thu thực tế 90 ngày qua: {sum(y_hist):,.2f} USD\n"
-            f"- Dự báo tổng doanh thu 30 ngày tới: {forecast_revenue_total:,.2f} USD\n"
-            f"- Hệ số xu hướng ngày (Linear Slope): {slope:,.2f} (nếu dương là tăng trưởng, âm là sụt giảm)\n"
-            f"Hãy viết một báo cáo nhận xét tiếng Việt ngắn gọn (khoảng 3-4 câu) chỉ ra xu hướng doanh số và đưa ra 3 khuyến nghị tối ưu hóa chiến lược bán hàng."
+            f"Here is the summary of the sales forecast for the next 30 days of the organization {organization_id}:\n"
+            f"- Total actual revenue over the last 90 days: {sum(y_hist):,.2f} USD\n"
+            f"- Forecasted total revenue for the next 30 days: {forecast_revenue_total:,.2f} USD\n"
+            f"- Daily trend slope (Linear Slope): {slope:,.2f} (positive indicates growth, negative indicates decline)\n"
+            f"Please write a brief comment report (about 3-4 sentences) pointing out the sales trend and proposing 3 recommendations to optimize the sales strategy. The entire report and recommendations must be in Vietnamese."
         )
 
         messages = [
-            {"role": "system", "content": "Bạn là chuyên gia phân tích tài chính doanh nghiệp của ERP. Hãy viết nhận xét ngắn gọn, thực tế, chuyên nghiệp bằng tiếng Việt."},
+            {"role": "system", "content": "You are an ERP enterprise financial analyst. Write concise, realistic, and professional comments in Vietnamese."},
             {"role": "user", "content": prompt}
         ]
 
@@ -350,11 +350,11 @@ class AnalysisService:
         abc_class = {}
         cum_rev = 0.0
         for pid, rev in sorted_prods_by_rev:
+            prev_share = cum_rev / total_rev_all if total_rev_all > 0 else 0.0
             cum_rev += rev
-            share = cum_rev / total_rev_all if total_rev_all > 0 else 1.0
-            if share <= 0.70:
+            if prev_share < 0.70:
                 abc_class[pid] = "A"
-            elif share <= 0.90:
+            elif prev_share < 0.90:
                 abc_class[pid] = "B"
             else:
                 abc_class[pid] = "C"
@@ -433,18 +433,18 @@ class AnalysisService:
                 )
             )
 
-        # 5. Gọi LLM sinh nhận xét tổng quan
+        # 5. Invoke LLM to generate overview analysis
         critical_items = [item for item in abc_xyz_matrix if item.status in ["CRITICAL", "WARNING"]]
         summary_prompt = (
-            f"Dưới đây là tóm tắt số liệu tồn kho thực tế của tổ chức:\n"
-            f"- Tổng số mặt hàng phân tích: {len(abc_xyz_matrix)}\n"
-            f"- Số sản phẩm dưới điểm đặt hàng lại ROP (Cần nhập): {len(critical_items)} (trong đó {critical_count} ở mức CRITICAL nguy cấp)\n"
-            f"- Danh sách sản phẩm thiếu hụt tiêu biểu: {', '.join([f'{x.productName} (Tồn: {x.currentStock}/{x.rop} ROP)' for x in critical_items[:5]])}\n"
-            f"Hãy viết một báo cáo phân tích kho tiếng Việt ngắn gọn (3-4 câu) chỉ ra mức độ rủi ro đứt gãy chuỗi cung ứng và đề xuất 3 giải pháp cải thiện tồn kho."
+            f"Here is the summary of the organization's actual inventory data:\n"
+            f"- Total analyzed items: {len(abc_xyz_matrix)}\n"
+            f"- Number of products below reorder point (ROP) (needs restock): {len(critical_items)} (including {critical_count} at CRITICAL level)\n"
+            f"- Representative shortage products: {', '.join([f'{x.productName} (Stock: {x.currentStock}/{x.rop} ROP)' for x in critical_items[:5]])}\n"
+            f"Please write a brief inventory analysis report (3-4 sentences) pointing out the risk of supply chain disruption and propose 3 solutions to improve inventory management. The entire analysis and recommendations must be in Vietnamese."
         )
 
         messages = [
-            {"role": "system", "content": "Bạn là giám đốc logistics thông minh của ERP. Hãy viết nhận xét chuyên nghiệp bằng tiếng Việt."},
+            {"role": "system", "content": "You are a smart ERP logistics manager. Write professional comments in Vietnamese."},
             {"role": "user", "content": summary_prompt}
         ]
 
@@ -487,10 +487,9 @@ class AnalysisService:
         default_wh_id = warehouses[0]["id"] if warehouses else ""
         default_wh_name = warehouses[0]["name"] if warehouses else "Kho chính"
 
-        # Lấy map kho của từng sản phẩm từ balances (để đề xuất đúng kho)
-        # Để đơn giản, ta sẽ lấy warehouseId đầu tiên tìm thấy của sản phẩm đó
+        # Parallelize fetching warehouse balances to map products to warehouses
         product_wh_map = {}
-        for wh in warehouses:
+        async def fetch_and_map_wh(wh):
             try:
                 bal_text = await inventory_tools.get_warehouse_balances(organization_id, wh["id"])
                 bal_data = json.loads(bal_text).get("data", [])
@@ -499,7 +498,10 @@ class AnalysisService:
                     if prod:
                         product_wh_map[prod["id"]] = (wh["id"], wh["name"])
             except Exception:
-                continue
+                pass
+
+        if warehouses:
+            await asyncio.gather(*(fetch_and_map_wh(wh) for wh in warehouses))
 
         reorder_items = []
         for prod in analysis.abc_xyz_matrix:
@@ -529,16 +531,27 @@ class AnalysisService:
                     )
                 )
 
-        # Sử dụng LLM viết lại lý do (notes) sinh động và khoa học cho 5 mặt hàng khẩn cấp nhất
+        # Use LLM to rewrite reorder reasons (notes) professionally for the top 5 most critical items
         if reorder_items:
+            prod_class_map = {p.productId: (p.abcClass, p.xyzClass) for p in analysis.abc_xyz_matrix}
+            llm_input_lines = []
+            for x in reorder_items[:5]:
+                abc, xyz = prod_class_map.get(x.productId, ("C", "Z"))
+                llm_input_lines.append(
+                    f"- ID: {x.productId}, Name: {x.productName} (Class: {abc}{xyz}, Stock: {x.currentStock}/{x.rop} ROP, Recommended Qty: {x.recommendedQuantity})"
+                )
+            
             prompt = (
-                f"Hãy viết lại trường lý do nhập hàng (notes) bằng tiếng Việt thật chuyên nghiệp cho danh sách đề xuất nhập kho sau đây. "
-                f"Chỉ ra tầm quan trọng của sản phẩm dựa trên phân loại nhóm ABC-XYZ của nó:\n"
-                + "\n".join([f"- ID: {x.productId}, Tên: {x.productName} (Nhóm: {analysis.abc_xyz_matrix[0].abcClass}{analysis.abc_xyz_matrix[0].xyzClass}, Tồn: {x.currentStock}/{x.rop} ROP, Lượng khuyên dùng: {x.recommendedQuantity})" for x in reorder_items[:5]])
+                "Please rewrite the restocking reason (notes) in professional Vietnamese for the following list of warehouse recommendations. "
+                "Highlight the importance of the product based on its ABC-XYZ classification:\n"
+                + "\n".join(llm_input_lines)
             )
 
             messages = [
-                {"role": "system", "content": "Bạn là trợ lý chuỗi cung ứng AI. Hãy viết trường notes cực kỳ ngắn gọn (tối đa 15 từ) cho mỗi sản phẩm, nêu rõ lý do ROP/nhóm sản phẩm. Trả về đúng ID của sản phẩm."},
+                {
+                    "role": "system",
+                    "content": "You are an AI supply chain assistant. Write extremely concise note fields (maximum 15 words) for each product in Vietnamese, clearly stating the ROP reason/product group. Return the correct product ID.",
+                },
                 {"role": "user", "content": prompt}
             ]
 
@@ -574,14 +587,14 @@ class AnalysisService:
             predicted_sales = 0.0
 
         prompt = (
-            f"Hãy soạn một bản tin tóm tắt khởi đầu ngày mới (Daily Brief) bằng tiếng Việt cực kỳ ngắn gọn (khoảng 3 câu) cho CEO:\n"
-            f"- Dự báo doanh thu 30 ngày tới: {predicted_sales:,.2f} USD\n"
-            f"- Cảnh báo tồn kho: {critical_count} sản phẩm đang cạn kiệt dưới điểm ROP.\n"
-            f"Văn phong truyền cảm hứng, ngắn gọn, chỉ ra hành động cần làm ngay trong ngày hôm nay."
+            f"Please compose a Daily Brief in Vietnamese, extremely concise (about 3 sentences), for the CEO:\n"
+            f"- Forecasted sales for the next 30 days: {predicted_sales:,.2f} USD\n"
+            f"- Stock alerts: {critical_count} products are running low below the ROP.\n"
+            f"Use an inspiring, concise tone, highlighting the immediate action to take today."
         )
 
         messages = [
-            {"role": "system", "content": "Bạn là trợ lý điều hành AI của CEO. Hãy viết bản tóm tắt ngắn gọn, lịch sự, tập trung vào hành động."},
+            {"role": "system", "content": "You are the CEO's executive AI assistant. Write a concise, polite summary focusing on immediate actions, written in Vietnamese."},
             {"role": "user", "content": prompt}
         ]
 
