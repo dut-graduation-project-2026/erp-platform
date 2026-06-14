@@ -6,12 +6,14 @@ import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
 import com.dut.erp.dto.response.analytics.LeadStageCount;
 import com.dut.erp.dto.response.analytics.PipelineStageSummary;
+import com.dut.erp.dto.response.analytics.AssetCategoryDistribution;
 import com.dut.erp.dto.response.analytics.StockValuationTrendPoint;
 import com.dut.erp.dto.response.analytics.TopProductResponse;
 import com.dut.erp.enums.LeadStage;
 import com.dut.erp.enums.OrderStatus;
 import com.dut.erp.repository.LeadRepository;
 import com.dut.erp.repository.OrderRepository;
+import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.InventoryDocumentLineRepository;
 import com.dut.erp.repository.StockValuationRepository;
 import com.dut.erp.service.AnalyticsService;
@@ -45,6 +47,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
   private final StockValuationRepository stockValuationRepository;
   private final LeadRepository leadRepository;
   private final InventoryDocumentLineRepository inventoryDocumentLineRepository;
+  private final InventoryBalanceRepository inventoryBalanceRepository;
 
   @Override
   public SalesSummaryResponse getSalesSummary(UUID organizationId, String periodType, Integer year) {
@@ -383,5 +386,44 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     return points;
+  }
+
+  @Override
+  public List<AssetCategoryDistribution> getAssetCategoryDistribution(UUID organizationId) {
+    log.info("Fetching asset value distribution by category for organization {}", organizationId);
+
+    List<Object[]> rows = inventoryBalanceRepository.findAssetDistributionByCategory(organizationId);
+
+    if (rows.isEmpty()) {
+      return List.of();
+    }
+
+    BigDecimal totalValue =
+        rows.stream()
+            .map(row -> (BigDecimal) row[2])
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    List<AssetCategoryDistribution> result = new ArrayList<>();
+    for (Object[] row : rows) {
+      UUID categoryId = (UUID) row[0];
+      String categoryName = (String) row[1];
+      BigDecimal value = (BigDecimal) row[2];
+      BigDecimal quantity = (BigDecimal) row[3];
+      long productCount = (long) row[4];
+
+      double percentage = 0.0;
+      if (totalValue.compareTo(BigDecimal.ZERO) > 0) {
+        percentage =
+            value
+                .divide(totalValue, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .doubleValue();
+      }
+
+      result.add(
+          new AssetCategoryDistribution(categoryId, categoryName, value, percentage, quantity, productCount));
+    }
+
+    return result;
   }
 }

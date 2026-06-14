@@ -6,6 +6,7 @@ import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
 import com.dut.erp.dto.response.analytics.LeadStageCount;
 import com.dut.erp.dto.response.analytics.PipelineStageSummary;
+import com.dut.erp.dto.response.analytics.AssetCategoryDistribution;
 import com.dut.erp.dto.response.analytics.StockValuationTrendPoint;
 import com.dut.erp.dto.response.analytics.TopProductResponse;
 import java.time.Instant;
@@ -31,4 +32,6 @@ public interface AnalyticsService {
 
   List<StockValuationTrendPoint> getStockValuationTrend(
       UUID organizationId, Integer months, Integer year);
+
+  List<AssetCategoryDistribution> getAssetCategoryDistribution(UUID organizationId);
 }
