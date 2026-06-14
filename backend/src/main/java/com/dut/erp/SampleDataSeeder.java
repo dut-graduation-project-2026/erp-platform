@@ -39,6 +39,8 @@ import com.dut.erp.repository.StockValuationRepository;
 import com.dut.erp.repository.TaxRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.repository.WarehouseRepository;
+import com.dut.erp.entity.ProductCategory;
+import com.dut.erp.repository.ProductCategoryRepository;
 import com.dut.erp.service.AuthenticationService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -83,6 +85,7 @@ public class SampleDataSeeder implements CommandLineRunner {
   private final StockValuationRepository stockValuationRepository;
   private final ReplenishmentRequestRepository replenishmentRequestRepository;
   private final PartnerContactRepository partnerContactRepository;
+  private final ProductCategoryRepository productCategoryRepository;
 
   @Override
   @Transactional
@@ -124,6 +127,20 @@ public class SampleDataSeeder implements CommandLineRunner {
                             .organization(organization)
                             .build()));
 
+    // Seed default Product Category
+    ProductCategory defaultCategory =
+        productCategoryRepository.findAll().stream()
+            .filter(pc -> "General".equals(pc.getName()) && pc.getOrganization().getId().equals(organization.getId()))
+            .findFirst()
+            .orElseGet(
+                () ->
+                    productCategoryRepository.save(
+                        ProductCategory.builder()
+                            .name("General")
+                            .description("Default product category")
+                            .organization(organization)
+                            .build()));
+
     // Seed original Product
     Product originalProduct =
         productRepository.findAll().stream()
@@ -137,6 +154,7 @@ public class SampleDataSeeder implements CommandLineRunner {
                             .price(BigDecimal.valueOf(150.00))
                             .description("High quality seeded product for testing")
                             .organization(organization)
+                            .category(defaultCategory)
                             .build()));
 
     // Seed original Quotation (Order in DRAFT status)
@@ -465,11 +483,36 @@ public class SampleDataSeeder implements CommandLineRunner {
       }
     };
 
+    Map<String, ProductCategory> categoriesByName = new HashMap<>();
+    for (String catName : List.of("Electronics", "Office Supplies", "Hardware", "Apparel", "General")) {
+      ProductCategory cat = productCategoryRepository.findAll().stream()
+          .filter(pc -> catName.equals(pc.getName()) && pc.getOrganization().getId().equals(org.getId()))
+          .findFirst()
+          .orElseGet(() -> productCategoryRepository.save(
+              ProductCategory.builder()
+                  .name(catName)
+                  .description(catName + " category")
+                  .organization(org)
+                  .build()
+          ));
+      categoriesByName.put(catName, cat);
+    }
+
     for (Object[] data : productData) {
       String name = (String) data[0];
       BigDecimal price = new BigDecimal((String) data[1]);
       String desc = (String) data[2];
       com.dut.erp.enums.CogsMethod method = (com.dut.erp.enums.CogsMethod) data[3];
+
+      String categoryName = "General";
+      if (name.contains("Laptop") || name.contains("MacBook") || name.contains("ThinkPad") || name.contains("Keyboard") || name.contains("Mouse") || name.contains("Docking") || name.contains("Headset") || name.contains("Camera") || name.contains("Trackpad")) {
+        categoryName = "Electronics";
+      } else if (name.contains("Chair") || name.contains("Lamp") || name.contains("Frame") || name.contains("Top")) {
+        categoryName = "Office Supplies";
+      } else if (name.contains("Monitor")) {
+        categoryName = "Hardware";
+      }
+      ProductCategory category = categoriesByName.get(categoryName);
 
       Product product =
           productRepository.findAllByOrganizationId(org.getId()).stream()
@@ -485,6 +528,7 @@ public class SampleDataSeeder implements CommandLineRunner {
                               .cogsMethod(method)
                               .isArchived(false)
                               .organization(org)
+                              .category(category)
                               .build()));
       products.add(product);
     }

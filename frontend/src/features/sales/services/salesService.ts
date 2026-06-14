@@ -344,14 +344,97 @@ export const updateInvoiceStatus = async (
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ANALYTICS (Mocked)
+// ANALYTICS
 // ─────────────────────────────────────────────────────────────────────────────
-export const getSalesDashboard = async (orgId: string): Promise<any> => {
-  console.warn('[salesService] getSalesDashboard – mock data');
-  return {
-    totalRevenue: 0,
-    confirmedOrders: 0,
-    pendingQuotations: 0,
-    topProducts: [],
-  };
+export interface SalesSummaryResponse {
+  ytdNetRevenue: number;
+  avgDealSize: number;
+  activeSalesReps: number;
+  previousPeriodRevenue: number;
+  revenueGrowthPercent: number;
+}
+
+export interface RevenueTrendPoint {
+  date: string;
+  grossSales: number;
+  cogs: number;
+  netMargin: number;
+}
+
+export interface OrderStatusCount {
+  status: string;
+  count: number;
+}
+
+export interface TopProductResponse {
+  productId: string;
+  productName: string;
+  categoryName: string;
+  totalRevenue: number;
+  quantitySold: number;
+  orderCount: number;
+}
+
+export interface CategorySalesDistribution {
+  categoryId: string;
+  categoryName: string;
+  totalRevenue: number;
+  percentage: number;
+  quantitySold: number;
+  orderCount: number;
+}
+
+export const getSalesSummary = async (
+  orgId: string,
+  params?: { periodType?: string; year?: number }
+): Promise<SalesSummaryResponse> => {
+  const response = await apiClient.get<SalesSummaryResponse>(
+    API_ENDPOINTS.ANALYTICS.SALES_SUMMARY(orgId),
+    { params }
+  );
+  return response.data;
+};
+
+export const getRevenueTrend = async (
+  orgId: string,
+  params?: { months?: number; year?: number }
+): Promise<RevenueTrendPoint[]> => {
+  const response = await apiClient.get<RevenueTrendPoint[]>(
+    API_ENDPOINTS.ANALYTICS.SALES_REVENUE_TREND(orgId),
+    { params }
+  );
+  return response.data;
+};
+
+export const getSalesConversionFunnel = async (
+  orgId: string,
+  params?: { periodType?: string; year?: number }
+): Promise<OrderStatusCount[]> => {
+  const response = await apiClient.get<OrderStatusCount[]>(
+    API_ENDPOINTS.ANALYTICS.SALES_CONVERSION_FUNNEL(orgId),
+    { params }
+  );
+  return response.data;
+};
+
+export const getSalesTopProducts = async (
+  orgId: string,
+  params?: { limit?: number; startDate?: string; endDate?: string }
+): Promise<TopProductResponse[]> => {
+  const response = await apiClient.get<TopProductResponse[]>(
+    API_ENDPOINTS.ANALYTICS.SALES_TOP_PRODUCTS(orgId),
+    { params }
+  );
+  return response.data;
+};
+
+export const getSalesCategoryDistribution = async (
+  orgId: string,
+  params?: { startDate?: string; endDate?: string }
+): Promise<CategorySalesDistribution[]> => {
+  const response = await apiClient.get<CategorySalesDistribution[]>(
+    API_ENDPOINTS.ANALYTICS.SALES_CATEGORY_DISTRIBUTION(orgId),
+    { params }
+  );
+  return response.data;
 };

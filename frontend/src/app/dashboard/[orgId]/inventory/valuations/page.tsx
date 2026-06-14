@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
-import { getOrderCOGS } from '@/features/inventory/services/inventoryService';
+import { 
+  getOrderCOGS,
+  getStockValuationTrend,
+  getAssetCategoryDistribution,
+  StockValuationTrendPoint,
+  AssetCategoryDistribution
+} from '@/features/inventory/services/inventoryService';
 import { getOrders } from '@/features/sales/services/salesService';
 import { StockValuation } from '@/features/inventory/types';
 import { SaleOrder } from '@/features/sales/types';
@@ -14,7 +20,6 @@ import {
   DollarSign, 
   Layers, 
   PieChart as PieIcon, 
-  ArrowUpRight, 
   ShieldAlert,
   Loader2
 } from 'lucide-react';
@@ -45,18 +50,43 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
   const [salesOrders, setSalesOrders] = useState<SaleOrder[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
+  // Analytics states
+  const [valuationTrend, setValuationTrend] = useState<StockValuationTrendPoint[]>([]);
+  const [assetDistribution, setAssetDistribution] = useState<AssetCategoryDistribution[]>([]);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
+
   // Load confirmed sales orders for easy lookup select dropdown
   useEffect(() => {
     setIsLoadingOrders(true);
     getOrders(orgId, { limit: 50 })
       .then(res => {
-        // filter orders that are confirmed or completed
         setSalesOrders(res.data || []);
       })
       .catch(err => {
         console.error(err);
       })
       .finally(() => setIsLoadingOrders(false));
+  }, [orgId]);
+
+  // Load Inventory Analytics
+  useEffect(() => {
+    const fetchInventoryAnalytics = async () => {
+      setIsLoadingAnalytics(true);
+      try {
+        const [trendRes, distributionRes] = await Promise.all([
+          getStockValuationTrend(orgId, { months: 6 }),
+          getAssetCategoryDistribution(orgId)
+        ]);
+        setValuationTrend(trendRes || []);
+        setAssetDistribution(distributionRes || []);
+      } catch (err) {
+        console.error('Error fetching inventory analytics:', err);
+        toast.error('Failed to load inventory valuation statistics.');
+      } finally {
+        setIsLoadingAnalytics(false);
+      }
+    };
+    fetchInventoryAnalytics();
   }, [orgId]);
 
   const handleLookup = async (orderIdToQuery?: string) => {
@@ -89,30 +119,47 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
     }
   };
 
-  // Mock static reporting values for overall warehouse stock trend chart
-  const distributionData = [
-    { name: 'Electronics', value: 45000 },
-    { name: 'Office Supplies', value: 12000 },
-    { name: 'Hardware', value: 28000 },
-    { name: 'Apparel', value: 15000 },
-  ];
-
-  const trendData = [
-    { month: 'Jan', value: 92000 },
-    { month: 'Feb', value: 95000 },
-    { month: 'Mar', value: 101000 },
-    { month: 'Apr', value: 99000 },
-    { month: 'May', value: 104000 },
-    { month: 'Jun', value: 100000 },
-  ];
-
-  const COLORS = ['#0066cc', '#898989', '#4a4a4a', '#242424'];
+  const COLORS = ['#0066cc', '#898989', '#4a4a4a', '#242424', '#00b4d8', '#ffb703', '#fb8500'];
 
   // Calculations for looked-up order
   const totalCogsValuation = valuations.reduce((sum, v) => sum + (v.totalValuation || 0), 0);
   const totalSaleAmount = selectedOrder ? (selectedOrder.totalAmount || 0) : valuations.reduce((sum, v) => sum + (v.quantity * v.unitCost * 1.3), 0); // fallback markup estimate if SO object is not fetched
   const grossProfit = Math.max(0, totalSaleAmount - totalCogsValuation);
   const grossMarginPercentage = totalSaleAmount > 0 ? (grossProfit / totalSaleAmount) * 100 : 0;
+
+  // Real aggregations
+  const totalWarehouseValue = assetDistribution.reduce((sum, item) => sum + (item.totalAssetValue || 0), 0);
+  const activeCategoriesCount = assetDistribution.length;
+
+  const chartTrendData = valuationTrend.map(point => {
+    const date = new Date(point.date);
+    const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+    return {
+      month: `${monthName} ${date.getFullYear()}`,
+      value: point.valuation,
+      inbound: point.inboundValue,
+      outbound: point.outboundValue,
+      netChange: point.netChange
+    };
+  });
+
+  const chartDistributionData = assetDistribution.map(item => ({
+    name: item.categoryName || 'General',
+    value: item.totalAssetValue || 0,
+    productCount: item.productCount || 0,
+    totalQuantity: item.totalQuantity || 0
+  }));
+
+  if (isLoadingAnalytics) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-white">
+        <div className="flex flex-col items-center space-y-2">
+          <Loader2 className="h-8 w-8 animate-spin text-[#0066cc]" />
+          <span className="text-[14px] text-[#898989]">Loading Inventory Valuations...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white overflow-y-auto">
@@ -127,7 +174,7 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
         <div className="border border-[#e0e0e0] rounded-[4px] p-4 bg-[#fcfcfc] flex items-center justify-between">
           <div>
             <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Total Warehouse Value</span>
-            <span className="text-[20px] font-[700] text-[#242424]">$100,000.00</span>
+            <span className="text-[20px] font-[700] text-[#242424]">${totalWarehouseValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="w-10 h-10 bg-[#f0f4ff] rounded-[4px] flex items-center justify-center text-[#0066cc]">
             <DollarSign className="w-5 h-5" />
@@ -147,7 +194,7 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
         <div className="border border-[#e0e0e0] rounded-[4px] p-4 bg-[#fcfcfc] flex items-center justify-between">
           <div>
             <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Active SKU Categories</span>
-            <span className="text-[20px] font-[700] text-[#242424]">4 categories</span>
+            <span className="text-[20px] font-[700] text-[#242424]">{activeCategoriesCount} categories</span>
           </div>
           <div className="w-10 h-10 bg-[#f5f5f5] rounded-[4px] flex items-center justify-center text-[#898989]">
             <PieIcon className="w-5 h-5" />
@@ -299,15 +346,19 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
           <div className="border border-[#e0e0e0] rounded-[4px] p-5 bg-white shadow-sm">
             <h3 className="text-[14px] font-[700] text-[#242424] mb-4">Stock Valuation Trend (Last 6 Months)</h3>
             <div className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trendData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
-                  <XAxis dataKey="month" stroke="#898989" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#898989" fontSize={11} tickLine={false} />
-                  <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Valuation']} />
-                  <Bar dataKey="value" fill="#0066cc" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {chartTrendData.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-[#898989]">No trend data available</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartTrendData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
+                    <XAxis dataKey="month" stroke="#898989" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#898989" fontSize={11} tickLine={false} />
+                    <Tooltip formatter={(value, name) => [`$${Number(value).toLocaleString()}`, name === 'value' ? 'Valuation' : name.toString().toUpperCase()]} />
+                    <Bar dataKey="value" name="Valuation" fill="#0066cc" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
@@ -320,32 +371,36 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
             <p className="text-[12px] text-[#898989] mb-4">Current total stock valuation by product categories</p>
             
             <div className="h-[200px] flex justify-center items-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={distributionData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {distributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                </PieChart>
-              </ResponsiveContainer>
+              {chartDistributionData.length === 0 ? (
+                <div className="text-[13px] text-[#898989]">No distribution data</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {chartDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
-            <div className="space-y-2 mt-4 text-[12px] text-[#4a4a4a]">
-              {distributionData.map((item, idx) => (
+            <div className="space-y-2 mt-4 text-[12px] text-[#4a4a4a] max-h-[220px] overflow-y-auto">
+              {chartDistributionData.map((item, idx) => (
                 <div key={idx} className="flex justify-between items-center border-t border-[#f5f5f5] pt-2 first:border-0 first:pt-0">
                   <div className="flex items-center space-x-2">
                     <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></span>
-                    <span className="font-medium">{item.name}</span>
+                    <span className="font-medium truncate max-w-[120px]">{item.name}</span>
                   </div>
                   <strong className="font-mono text-[#242424]">${item.value.toLocaleString()}</strong>
                 </div>
