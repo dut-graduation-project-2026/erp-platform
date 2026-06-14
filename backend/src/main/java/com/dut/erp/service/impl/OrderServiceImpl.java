@@ -2,6 +2,7 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.constant.SortingConstants;
 import com.dut.erp.dto.common.SortField;
+import com.dut.erp.dto.event.OrderStatusChangedEvent;
 import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.request.UpdateOrderStatusRequest;
 import com.dut.erp.dto.request.UpsertOrderRequest;
@@ -32,9 +33,8 @@ import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.service.OrderService;
 import com.dut.erp.service.SalesOrderIntegrationService;
-import com.dut.erp.dto.event.OrderStatusChangedEvent;
-import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -45,6 +45,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -107,16 +108,17 @@ public class OrderServiceImpl implements OrderService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
 
-    Page<UUID> ids = orderRepository.findOrderIdsWithFilters(
-        organizationId,
-        (search != null && !search.trim().isEmpty()) ? search : null,
-        status,
-        partnerId,
-        salePersonId,
-        saleTeamId,
-        startDate,
-        endDate,
-        pageable);
+    Page<UUID> ids =
+        orderRepository.findOrderIdsWithFilters(
+            organizationId,
+            (search != null && !search.trim().isEmpty()) ? search : null,
+            status,
+            partnerId,
+            salePersonId,
+            saleTeamId,
+            startDate,
+            endDate,
+            pageable);
 
     return getPagedResponseFromIds(ids, pageable);
   }
@@ -372,7 +374,8 @@ public class OrderServiceImpl implements OrderService {
         request.status(),
         organizationId);
 
-    applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, request.status()));
+    applicationEventPublisher.publishEvent(
+        new OrderStatusChangedEvent(order.getId(), oldStatus, request.status()));
 
     if (oldStatus != OrderStatus.CONFIRMED && request.status() == OrderStatus.CONFIRMED) {
       salesOrderIntegrationService.handleOrderConfirmation(order, request.warehouseId());
