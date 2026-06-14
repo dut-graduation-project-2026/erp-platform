@@ -6,11 +6,13 @@ import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
 import com.dut.erp.dto.response.analytics.LeadStageCount;
 import com.dut.erp.dto.response.analytics.PipelineStageSummary;
+import com.dut.erp.dto.response.analytics.StockValuationTrendPoint;
 import com.dut.erp.dto.response.analytics.TopProductResponse;
 import com.dut.erp.enums.LeadStage;
 import com.dut.erp.enums.OrderStatus;
 import com.dut.erp.repository.LeadRepository;
 import com.dut.erp.repository.OrderRepository;
+import com.dut.erp.repository.InventoryDocumentLineRepository;
 import com.dut.erp.repository.StockValuationRepository;
 import com.dut.erp.service.AnalyticsService;
 import java.math.BigDecimal;
@@ -32,7 +34,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -43,6 +44,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
   private final OrderRepository orderRepository;
   private final StockValuationRepository stockValuationRepository;
   private final LeadRepository leadRepository;
+  private final InventoryDocumentLineRepository inventoryDocumentLineRepository;
 
   @Override
   public SalesSummaryResponse getSalesSummary(UUID organizationId, String periodType, Integer year) {
@@ -341,5 +343,45 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     return List.of(LeadStage.values()).stream()
         .map(summaryMap::get)
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<StockValuationTrendPoint> getStockValuationTrend(
+      UUID organizationId, Integer months, Integer year) {
+    int targetMonths = (months != null && months > 0) ? months : 12;
+    log.info("Calculating stock valuation trend for organization {} for the past {} months (year={})",
+        organizationId, targetMonths, year);
+
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+    int targetYear = (year != null) ? year : now.getYear();
+
+    ZonedDateTime endDate;
+    if (targetYear == now.getYear()) {
+      endDate = now;
+    } else {
+      endDate = ZonedDateTime.of(targetYear, 12, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    }
+
+    List<StockValuationTrendPoint> points = new ArrayList<>();
+
+    for (int i = targetMonths - 1; i >= 0; i--) {
+      ZonedDateTime monthStart = endDate.minusMonths(i).withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS);
+      ZonedDateTime monthEnd = monthStart.plusMonths(1).minusNanos(1);
+
+      Instant startInstant = monthStart.toInstant();
+      Instant endInstant = monthEnd.toInstant();
+
+      BigDecimal inbound = inventoryDocumentLineRepository.sumInboundValuationByOrgAndDateRange(
+          organizationId, startInstant, endInstant);
+
+      BigDecimal outbound = inventoryDocumentLineRepository.sumOutboundValuationByOrgAndDateRange(
+          organizationId, startInstant, endInstant);
+
+      BigDecimal netChange = inbound.subtract(outbound);
+
+      points.add(new StockValuationTrendPoint(startInstant, inbound, outbound, netChange));
+    }
+
+    return points;
   }
 }
