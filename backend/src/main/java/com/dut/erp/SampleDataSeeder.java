@@ -13,6 +13,7 @@ import com.dut.erp.entity.Partner;
 import com.dut.erp.entity.PartnerContact;
 import com.dut.erp.entity.Permission;
 import com.dut.erp.entity.Product;
+import com.dut.erp.entity.ProductCategory;
 import com.dut.erp.entity.ReplenishmentRequest;
 import com.dut.erp.entity.Role;
 import com.dut.erp.entity.SaleTeam;
@@ -31,6 +32,7 @@ import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.PartnerContactRepository;
 import com.dut.erp.repository.PartnerRepository;
 import com.dut.erp.repository.PermissionRepository;
+import com.dut.erp.repository.ProductCategoryRepository;
 import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.repository.ReplenishmentRequestRepository;
 import com.dut.erp.repository.RoleRepository;
@@ -39,15 +41,12 @@ import com.dut.erp.repository.StockValuationRepository;
 import com.dut.erp.repository.TaxRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.repository.WarehouseRepository;
-import com.dut.erp.entity.ProductCategory;
-import com.dut.erp.repository.ProductCategoryRepository;
 import com.dut.erp.service.AuthenticationService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,13 +93,18 @@ public class SampleDataSeeder implements CommandLineRunner {
 
     // Clean up old seed if it exists, to force re-seeding with updated low stock and alerts
     boolean hasOldSeed = false;
-    Optional<Product> macbookOpt = productRepository.findAll().stream()
-        .filter(p -> "MacBook Pro M3 Max".equals(p.getName()))
-        .findFirst();
+    Optional<Product> macbookOpt =
+        productRepository.findAll().stream()
+            .filter(p -> "MacBook Pro M3 Max".equals(p.getName()))
+            .findFirst();
     if (macbookOpt.isPresent()) {
       UUID macbookId = macbookOpt.get().getId();
-      hasOldSeed = inventoryBalanceRepository.findAll().stream()
-          .anyMatch(b -> b.getProduct().getId().equals(macbookId) && b.getQuantity().compareTo(BigDecimal.valueOf(100.0)) == 0);
+      hasOldSeed =
+          inventoryBalanceRepository.findAll().stream()
+              .anyMatch(
+                  b ->
+                      b.getProduct().getId().equals(macbookId)
+                          && b.getQuantity().compareTo(BigDecimal.valueOf(100.0)) == 0);
     }
 
     if (hasOldSeed) {
@@ -119,9 +123,11 @@ public class SampleDataSeeder implements CommandLineRunner {
     }
 
     Map<String, Organization> organizationsByName = loadOrganizationsByName();
+    Map<String, Organization> organizationsByTaxCode = loadOrganizationsByTaxCode();
     Organization organization =
         getOrCreateOrganization(
             organizationsByName,
+            organizationsByTaxCode,
             ORG_NAME,
             "Default seeded organization for initial setup",
             "1 Default Street",
@@ -156,7 +162,10 @@ public class SampleDataSeeder implements CommandLineRunner {
     // Seed default Product Category
     ProductCategory defaultCategory =
         productCategoryRepository.findAll().stream()
-            .filter(pc -> "General".equals(pc.getName()) && pc.getOrganization().getId().equals(organization.getId()))
+            .filter(
+                pc ->
+                    "General".equals(pc.getName())
+                        && pc.getOrganization().getId().equals(organization.getId()))
             .findFirst()
             .orElseGet(
                 () ->
@@ -510,17 +519,23 @@ public class SampleDataSeeder implements CommandLineRunner {
     };
 
     Map<String, ProductCategory> categoriesByName = new HashMap<>();
-    for (String catName : List.of("Electronics", "Office Supplies", "Hardware", "Apparel", "General")) {
-      ProductCategory cat = productCategoryRepository.findAll().stream()
-          .filter(pc -> catName.equals(pc.getName()) && pc.getOrganization().getId().equals(org.getId()))
-          .findFirst()
-          .orElseGet(() -> productCategoryRepository.save(
-              ProductCategory.builder()
-                  .name(catName)
-                  .description(catName + " category")
-                  .organization(org)
-                  .build()
-          ));
+    for (String catName :
+        List.of("Electronics", "Office Supplies", "Hardware", "Apparel", "General")) {
+      ProductCategory cat =
+          productCategoryRepository.findAll().stream()
+              .filter(
+                  pc ->
+                      catName.equals(pc.getName())
+                          && pc.getOrganization().getId().equals(org.getId()))
+              .findFirst()
+              .orElseGet(
+                  () ->
+                      productCategoryRepository.save(
+                          ProductCategory.builder()
+                              .name(catName)
+                              .description(catName + " category")
+                              .organization(org)
+                              .build()));
       categoriesByName.put(catName, cat);
     }
 
@@ -531,9 +546,20 @@ public class SampleDataSeeder implements CommandLineRunner {
       com.dut.erp.enums.CogsMethod method = (com.dut.erp.enums.CogsMethod) data[3];
 
       String categoryName = "General";
-      if (name.contains("Laptop") || name.contains("MacBook") || name.contains("ThinkPad") || name.contains("Keyboard") || name.contains("Mouse") || name.contains("Docking") || name.contains("Headset") || name.contains("Camera") || name.contains("Trackpad")) {
+      if (name.contains("Laptop")
+          || name.contains("MacBook")
+          || name.contains("ThinkPad")
+          || name.contains("Keyboard")
+          || name.contains("Mouse")
+          || name.contains("Docking")
+          || name.contains("Headset")
+          || name.contains("Camera")
+          || name.contains("Trackpad")) {
         categoryName = "Electronics";
-      } else if (name.contains("Chair") || name.contains("Lamp") || name.contains("Frame") || name.contains("Top")) {
+      } else if (name.contains("Chair")
+          || name.contains("Lamp")
+          || name.contains("Frame")
+          || name.contains("Top")) {
         categoryName = "Office Supplies";
       } else if (name.contains("Monitor")) {
         categoryName = "Hardware";
@@ -1105,9 +1131,11 @@ public class SampleDataSeeder implements CommandLineRunner {
                 wh.getCode().contains("CHI") ? 100 : (wh.getCode().contains("DAL") ? 80 : 50));
 
         // Create low stock items for ROP/Warning test scenarios
-        if ("MacBook Pro M3 Max".equals(prod.getName()) || "Mechanical Keyboard RGB".equals(prod.getName())) {
+        if ("MacBook Pro M3 Max".equals(prod.getName())
+            || "Mechanical Keyboard RGB".equals(prod.getName())) {
           qty = BigDecimal.valueOf(wh.getCode().contains("CHI") ? 2 : 0);
-        } else if ("ThinkPad X1 Carbon".equals(prod.getName()) || "Active Noise Cancelling Headset".equals(prod.getName())) {
+        } else if ("ThinkPad X1 Carbon".equals(prod.getName())
+            || "Active Noise Cancelling Headset".equals(prod.getName())) {
           qty = BigDecimal.valueOf(wh.getCode().contains("CHI") ? 4 : 1);
         }
 
@@ -1603,14 +1631,28 @@ public class SampleDataSeeder implements CommandLineRunner {
     return organizationsByName;
   }
 
+  private Map<String, Organization> loadOrganizationsByTaxCode() {
+    Map<String, Organization> organizationsByTaxCode = new HashMap<>();
+    for (Organization organization : organizationRepository.findAll()) {
+      if (organization.getTaxCode() != null) {
+        organizationsByTaxCode.putIfAbsent(organization.getTaxCode(), organization);
+      }
+    }
+    return organizationsByTaxCode;
+  }
+
   private Organization getOrCreateOrganization(
       Map<String, Organization> organizationsByName,
+      Map<String, Organization> organizationsByTaxCode,
       String name,
       String description,
       String address,
       String hotline,
       String taxCode) {
     Organization existing = organizationsByName.get(name);
+    if (existing == null && taxCode != null) {
+      existing = organizationsByTaxCode.get(taxCode);
+    }
     if (existing != null) {
       return existing;
     }
@@ -1625,6 +1667,9 @@ public class SampleDataSeeder implements CommandLineRunner {
                 .taxCode(taxCode)
                 .build());
     organizationsByName.put(name, created);
+    if (taxCode != null) {
+      organizationsByTaxCode.put(taxCode, created);
+    }
     return created;
   }
 
