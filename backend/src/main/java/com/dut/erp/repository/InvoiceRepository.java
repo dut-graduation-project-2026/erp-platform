@@ -45,6 +45,11 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
       SELECT i.id
       FROM Invoice i
       WHERE i.organization.id = :organizationId
+      ORDER BY 
+        CASE WHEN i.status = com.dut.erp.enums.InvoiceStatus.PAID THEN 1 ELSE 0 END ASC,
+        CASE WHEN i.dueDate IS NULL THEN 1 ELSE 0 END ASC,
+        i.dueDate ASC,
+        i.createdAt ASC
       """)
   Page<UUID> findInvoiceIdsByOrganizationId(
       @Param("organizationId") UUID organizationId, Pageable pageable);
@@ -54,7 +59,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
       SELECT i.id
       FROM Invoice i
       WHERE i.organization.id = :organizationId
-      AND LOWER(i.invoiceNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+        AND LOWER(i.invoiceNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+      ORDER BY 
+        CASE WHEN i.status = com.dut.erp.enums.InvoiceStatus.PAID THEN 1 ELSE 0 END ASC,
+        CASE WHEN i.dueDate IS NULL THEN 1 ELSE 0 END ASC,
+        i.dueDate ASC,
+        i.createdAt ASC
       """)
   Page<UUID> findInvoiceIdsByOrganizationIdAndSearch(
       @Param("organizationId") UUID organizationId,

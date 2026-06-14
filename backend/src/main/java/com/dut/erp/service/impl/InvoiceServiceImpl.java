@@ -192,8 +192,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     Pageable pageable =
         PageRequest.of(
             paginationRequest.page() - 1,
-            paginationRequest.limit(),
-            SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
+            paginationRequest.limit());
 
     Page<UUID> ids =
         (search != null && !search.trim().isEmpty())
