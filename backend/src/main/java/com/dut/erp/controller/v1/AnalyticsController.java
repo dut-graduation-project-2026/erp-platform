@@ -3,6 +3,7 @@ package com.dut.erp.controller.v1;
 import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
 import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.dto.response.analytics.OrderStatusCount;
+import com.dut.erp.dto.response.analytics.AssetCategoryDistribution;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
 import com.dut.erp.dto.response.analytics.LeadStageCount;
 import com.dut.erp.dto.response.analytics.PipelineStageSummary;
@@ -148,5 +149,19 @@ public class AnalyticsController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
         analyticsService.getStockValuationTrend(organizationId, months, year));
+  }
+
+  @GetMapping("/inventory/asset-distribution")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('orders:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<List<AssetCategoryDistribution>> getAssetCategoryDistribution(
+      @PathVariable UUID organizationId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(
+        analyticsService.getAssetCategoryDistribution(organizationId));
   }
 }

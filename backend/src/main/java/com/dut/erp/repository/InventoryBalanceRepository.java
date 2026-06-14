@@ -14,6 +14,21 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface InventoryBalanceRepository extends JpaRepository<InventoryBalance, UUID> {
 
+  @Query("""
+      SELECT p.category.id, p.category.name,
+        COALESCE(SUM(ib.quantity * p.price), 0),
+        COALESCE(SUM(ib.quantity), 0),
+        COUNT(DISTINCT p.id)
+      FROM InventoryBalance ib
+      JOIN ib.product p
+      JOIN ib.warehouse w
+      WHERE w.organization.id = :orgId
+        AND ib.quantity > 0
+      GROUP BY p.category.id, p.category.name
+      ORDER BY COALESCE(SUM(ib.quantity * p.price), 0) DESC
+      """)
+  List<Object[]> findAssetDistributionByCategory(@Param("orgId") UUID orgId);
+
   // ---- Paginated ID list for list-view queries ----
 
   @Query(
