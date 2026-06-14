@@ -10,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -27,7 +26,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "products")
+@Table(name = "product_categories")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,7 +34,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @EntityListeners(AuditingEntityListener.class)
-public class Product {
+public class ProductCategory {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -45,28 +44,12 @@ public class Product {
   @Column(name = "name", nullable = false, length = 255)
   String name;
 
-  @Column(name = "price", nullable = false, precision = 15, scale = 2)
-  BigDecimal price;
-
   @Column(name = "description", columnDefinition = "TEXT")
   String description;
-
-  @Column(name = "is_archived", nullable = false)
-  @Builder.Default
-  boolean isArchived = false;
-
-  @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
-  @Column(name = "cogs_method", nullable = false, length = 50)
-  @Builder.Default
-  com.dut.erp.enums.CogsMethod cogsMethod = com.dut.erp.enums.CogsMethod.FIFO;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "organization_id", nullable = false)
   Organization organization;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "category_id", nullable = false)
-  ProductCategory category;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)

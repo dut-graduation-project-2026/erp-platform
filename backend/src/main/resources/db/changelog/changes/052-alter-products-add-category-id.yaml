@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 052-alter-products-add-category-id
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: category_id
+                  type: UUID
+        - sql:
+            dbms: postgresql
+            sql: |
+              -- 1. Create a default product category for each organization that has products
+              INSERT INTO product_categories (id, organization_id, name, description, created_at, updated_at)
+              SELECT gen_random_uuid(), id, 'Default Category', 'Automatically created default category', NOW(), NOW()
+              FROM organizations
+              WHERE id IN (SELECT DISTINCT organization_id FROM products);
+
+              -- 2. Update products to link to the newly created default category for their organization
+              UPDATE products p
+              SET category_id = (
+                SELECT pc.id FROM product_categories pc 
+                WHERE pc.organization_id = p.organization_id 
+                  AND pc.name = 'Default Category'
+                LIMIT 1
+              )
+              WHERE p.category_id IS NULL;
+        - addNotNullConstraint:
+            tableName: products
+            columnName: category_id
+            columnDataType: UUID
+        - addForeignKeyConstraint:
+            constraintName: fk_products_category
+            baseTableName: products
+            baseColumnNames: category_id
+            referencedTableName: product_categories
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE
