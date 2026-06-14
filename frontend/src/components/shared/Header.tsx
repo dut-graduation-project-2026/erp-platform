@@ -59,9 +59,9 @@ export function Header({ className }: HeaderProps) {
   const handleLogout = async () => {
     try {
       logout();
-      document.cookie = 'currentOrgId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      document.cookie = 'userOrgIds=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      document.cookie = 'clientSession=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'currentOrgId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
+      document.cookie = 'userOrgIds=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
+      document.cookie = 'clientSession=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
       await logoutApi();
       window.location.href = '/login';
     } catch (error) {

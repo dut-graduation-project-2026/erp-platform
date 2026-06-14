@@ -69,8 +69,8 @@ export default function SelectOrgPage() {
       
       // Đồng bộ cookies để Next.js Middleware có thể đọc được (Middleware không đọc được localStorage của Zustand)
       const orgIds = organizations.map(org => org.id).join(',');
-      document.cookie = `currentOrgId=${orgId}; path=/; max-age=86400; SameSite=Lax`;
-      document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `currentOrgId=${orgId}; path=/; max-age=86400; secure; SameSite=Lax`;
+      document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; secure; SameSite=Lax`;
       
       router.push(`/dashboard/${orgId}`);
     } catch (err) {
@@ -94,9 +94,9 @@ export default function SelectOrgPage() {
     try {
       const { logoutApi } = await import('@/features/auth/services/authService');
       logout();
-      document.cookie = 'currentOrgId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      document.cookie = 'userOrgIds=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      document.cookie = 'clientSession=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'currentOrgId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
+      document.cookie = 'userOrgIds=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
+      document.cookie = 'clientSession=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
       await logoutApi();
       window.location.href = '/login';
     } catch (error) {
