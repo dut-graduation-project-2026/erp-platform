@@ -33,3 +33,4 @@ app:
   domains:
     frontend: ${FRONTEND_DOMAIN:http://localhost:3000}
     backend: ${BACKEND_DOMAIN:http://localhost:8080/api/v1}
+    ai-service: ${AI_SERVICE_URL:http://localhost:8000/api/v1}

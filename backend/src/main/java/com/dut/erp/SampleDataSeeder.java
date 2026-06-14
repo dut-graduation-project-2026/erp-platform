@@ -92,6 +92,32 @@ public class SampleDataSeeder implements CommandLineRunner {
   public void run(String... args) {
     seedModulesAndPermissions();
 
+    // Clean up old seed if it exists, to force re-seeding with updated low stock and alerts
+    boolean hasOldSeed = false;
+    Optional<Product> macbookOpt = productRepository.findAll().stream()
+        .filter(p -> "MacBook Pro M3 Max".equals(p.getName()))
+        .findFirst();
+    if (macbookOpt.isPresent()) {
+      UUID macbookId = macbookOpt.get().getId();
+      hasOldSeed = inventoryBalanceRepository.findAll().stream()
+          .anyMatch(b -> b.getProduct().getId().equals(macbookId) && b.getQuantity().compareTo(BigDecimal.valueOf(100.0)) == 0);
+    }
+
+    if (hasOldSeed) {
+      replenishmentRequestRepository.deleteAll();
+      stockValuationRepository.deleteAll();
+      inventoryDocumentLineRepository.deleteAll();
+      inventoryDocumentRepository.deleteAll();
+      inventoryBalanceRepository.deleteAll();
+      invoiceRepository.deleteAll();
+      orderRepository.deleteAll();
+      leadRepository.deleteAll();
+      partnerContactRepository.deleteAll();
+      partnerRepository.deleteAll();
+      productRepository.deleteAll();
+      productCategoryRepository.deleteAll();
+    }
+
     Map<String, Organization> organizationsByName = loadOrganizationsByName();
     Organization organization =
         getOrCreateOrganization(
@@ -1077,6 +1103,14 @@ public class SampleDataSeeder implements CommandLineRunner {
         BigDecimal qty =
             BigDecimal.valueOf(
                 wh.getCode().contains("CHI") ? 100 : (wh.getCode().contains("DAL") ? 80 : 50));
+
+        // Create low stock items for ROP/Warning test scenarios
+        if ("MacBook Pro M3 Max".equals(prod.getName()) || "Mechanical Keyboard RGB".equals(prod.getName())) {
+          qty = BigDecimal.valueOf(wh.getCode().contains("CHI") ? 2 : 0);
+        } else if ("ThinkPad X1 Carbon".equals(prod.getName()) || "Active Noise Cancelling Headset".equals(prod.getName())) {
+          qty = BigDecimal.valueOf(wh.getCode().contains("CHI") ? 4 : 1);
+        }
+
         BigDecimal unitCost =
             prod.getPrice()
                 .multiply(BigDecimal.valueOf(0.70))

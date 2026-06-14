@@ -81,3 +81,80 @@ async def analyze_organization_sales(
     return await analysis_service.analyze_sales_of_last_month(actual_org_id)
 
 
+@router.get("/analysis/sales-forecast")
+async def get_sales_forecast(
+    organization_id: Optional[str] = Query(None),
+    organizationId: Optional[str] = Query(None)
+):
+    actual_org_id = organization_id or organizationId
+    if not actual_org_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Either organization_id or organizationId query parameter must be provided"
+        )
+    from ..services.analysis_service import analysis_service
+    return await analysis_service.analyze_sales_forecast(actual_org_id)
+
+
+@router.get("/analysis/inventory")
+async def get_inventory_analysis(
+    organization_id: Optional[str] = Query(None),
+    organizationId: Optional[str] = Query(None),
+    force_refresh: bool = Query(False)
+):
+    actual_org_id = organization_id or organizationId
+    if not actual_org_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Either organization_id or organizationId query parameter must be provided"
+        )
+    from ..services.analysis_service import analysis_service
+    return await analysis_service.analyze_inventory_abc_xyz(actual_org_id, force_refresh)
+
+
+@router.get("/analysis/inventory-alerts")
+async def get_inventory_alerts(
+    organization_id: Optional[str] = Query(None),
+    organizationId: Optional[str] = Query(None)
+):
+    actual_org_id = organization_id or organizationId
+    if not actual_org_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Either organization_id or organizationId query parameter must be provided"
+        )
+    from ..services.analysis_service import analysis_service
+    return await analysis_service.get_inventory_alerts(actual_org_id)
+
+
+@router.get("/analysis/reorder")
+async def get_reorder_recommendations(
+    organization_id: Optional[str] = Query(None),
+    organizationId: Optional[str] = Query(None)
+):
+    actual_org_id = organization_id or organizationId
+    if not actual_org_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Either organization_id or organizationId query parameter must be provided"
+        )
+    from ..services.analysis_service import analysis_service
+    return await analysis_service.get_reorder_recommendations(actual_org_id)
+
+
+@router.get("/analysis/dashboard")
+async def get_dashboard_summary(
+    organization_id: Optional[str] = Query(None),
+    organizationId: Optional[str] = Query(None)
+):
+    actual_org_id = organization_id or organizationId
+    if not actual_org_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Either organization_id or organizationId query parameter must be provided"
+        )
+    from ..services.analysis_service import analysis_service
+    return await analysis_service.get_dashboard_summary(actual_org_id)
+
+
+

@@ -438,3 +438,31 @@ export const getSalesCategoryDistribution = async (
   );
   return response.data;
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTIONABLE AI: SALES FORECASTING
+// ─────────────────────────────────────────────────────────────────────────────
+export interface AiForecastPoint {
+  date: string;
+  historical_revenue: number | null;
+  predicted_revenue: number;
+}
+
+export interface AiSalesForecastResponse {
+  summary: string;
+  forecast_30d_total_revenue: number;
+  forecast_points: AiForecastPoint[];
+  insights: string[];
+}
+
+export const getAiSalesForecast = async (
+  orgId: string,
+  period: string = '30d'
+): Promise<AiSalesForecastResponse> => {
+  const response = await apiClient.get<AiSalesForecastResponse>(
+    `/organizations/${orgId}/ai/sales/forecast`,
+    { params: { period } }
+  );
+  return response.data;
+};
+

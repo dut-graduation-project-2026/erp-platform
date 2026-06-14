@@ -102,3 +102,77 @@ class SalesAnalysisResponse(BaseModel):
     inventory_recommendations: List[str] = Field(description="Khuyến nghị nhập hàng/tối ưu tồn kho dựa trên lượng bán ra")
 
 
+class ForecastPoint(BaseModel):
+    date: str = Field(description="Ngày định dạng YYYY-MM-DD")
+    historical_revenue: Optional[float] = Field(None, description="Doanh thu thực tế (nếu có)")
+    predicted_revenue: float = Field(description="Doanh thu dự báo")
+
+
+class SalesForecastResponse(BaseModel):
+    summary: str = Field(description="Nhận xét dự báo của AI bằng tiếng Việt")
+    forecast_30d_total_revenue: float = Field(description="Dự báo tổng doanh thu trong 30 ngày tới")
+    forecast_points: List[ForecastPoint] = Field(description="Danh sách các điểm biểu đồ doanh số thực tế và dự báo")
+    insights: List[str] = Field(description="Các nhận xét chuyên sâu từ AI")
+
+
+class ProductAbcXyz(BaseModel):
+    productId: str = Field(description="Mã sản phẩm")
+    productName: str = Field(description="Tên sản phẩm")
+    abcClass: str = Field(description="Nhóm ABC (A, B, C)")
+    xyzClass: str = Field(description="Nhóm XYZ (X, Y, Z)")
+    currentStock: float = Field(description="Tồn kho thực tế")
+    rop: float = Field(description="Điểm đặt hàng lại (Reorder Point)")
+    eoq: float = Field(description="Lượng đặt hàng kinh tế (EOQ)")
+    status: str = Field(description="Trạng thái tồn kho: OK, WARNING, CRITICAL")
+
+
+class InventoryAnalysisResponse(BaseModel):
+    summary: str = Field(description="Tóm tắt phân tích tồn kho của AI")
+    abc_xyz_matrix: List[ProductAbcXyz] = Field(description="Ma trận phân loại ABC-XYZ và các chỉ số tồn kho")
+    critical_stock_count: int = Field(description="Số lượng sản phẩm ở trạng thái CRITICAL (tồn kho dưới ROP)")
+    recommendations: List[str] = Field(description="Đề xuất tối ưu hóa tồn kho")
+
+
+class ReorderItem(BaseModel):
+    productId: str = Field(description="Mã sản phẩm")
+    productName: str = Field(description="Tên sản phẩm")
+    warehouseId: str = Field(description="Mã kho")
+    warehouseName: str = Field(description="Tên kho")
+    currentStock: float = Field(description="Tồn kho hiện tại")
+    rop: float = Field(description="Điểm đặt hàng lại ROP")
+    eoq: float = Field(description="Lượng đặt hàng tối ưu EOQ")
+    recommendedQuantity: float = Field(description="Số lượng đề xuất nhập")
+    urgency: str = Field(description="Mức độ khẩn cấp (HIGH, MEDIUM, LOW)")
+    notes: str = Field(description="Lý do đề xuất (ví dụ: Tồn kho < ROP)")
+
+
+class ReorderRecommendationResponse(BaseModel):
+    recommendations: List[ReorderItem] = Field(description="Danh sách các đề xuất nhập hàng")
+
+
+class DashboardSummaryResponse(BaseModel):
+    summary: str = Field(description="Bản tin tóm tắt hàng ngày của AI bằng tiếng Việt")
+    alerts: List[str] = Field(description="Danh sách cảnh báo nhanh")
+
+
+# ─── LIGHTWEIGHT SCHEMAS FOR LLM RESPONSES (TO PREVENT TRUNCATION) ───
+class SalesForecastLLMResponse(BaseModel):
+    summary: str = Field(description="Nhận xét dự báo của AI bằng tiếng Việt")
+    insights: List[str] = Field(description="Các nhận xét chuyên sâu từ AI")
+
+
+class InventoryLLMResponse(BaseModel):
+    summary: str = Field(description="Tóm tắt phân tích tồn kho của AI")
+    recommendations: List[str] = Field(description="Đề xuất tối ưu hóa tồn kho")
+
+
+class ReorderItemLLM(BaseModel):
+    productId: str = Field(description="Mã sản phẩm")
+    notes: str = Field(description="Lý do nhập hàng ngắn gọn viết lại bằng tiếng Việt (tối đa 15 từ)")
+
+
+class ReorderRecommendationLLMResponse(BaseModel):
+    recommendations: List[ReorderItemLLM] = Field(description="Danh sách lý do đề xuất nhập hàng")
+
+
+

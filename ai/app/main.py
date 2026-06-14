@@ -13,8 +13,11 @@ logger = logging.getLogger("uvicorn.error")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Connecting to ERP backend...")
-    await erp_client.authenticate()
-    logger.info("Connected to ERP backend successfully.")
+    try:
+        await erp_client.authenticate()
+        logger.info("Connected to ERP backend successfully.")
+    except Exception as e:
+        logger.warning(f"Could not connect/authenticate with ERP backend on startup: {e}. Will retry on demand.")
     yield
     logger.info("Closing ERP client connection...")
     await erp_client.client.aclose()
