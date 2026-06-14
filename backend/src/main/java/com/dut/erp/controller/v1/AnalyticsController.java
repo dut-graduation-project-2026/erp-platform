@@ -2,6 +2,7 @@ package com.dut.erp.controller.v1;
 
 import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
 import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
+import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.AnalyticsService;
 import java.util.List;
@@ -51,5 +52,20 @@ public class AnalyticsController {
       @RequestParam(required = false) Integer year,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(analyticsService.getRevenueTrend(organizationId, months, year));
+  }
+
+  @GetMapping("/sales/conversion-funnel")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('orders:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<List<OrderStatusCount>> getConversionFunnel(
+      @PathVariable UUID organizationId,
+      @RequestParam(defaultValue = "YEAR") String periodType,
+      @RequestParam(required = false) Integer year,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(analyticsService.getConversionFunnel(organizationId, periodType, year));
   }
 }

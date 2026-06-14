@@ -2,6 +2,8 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
 import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
+import com.dut.erp.dto.response.analytics.OrderStatusCount;
+import com.dut.erp.enums.OrderStatus;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.StockValuationRepository;
 import com.dut.erp.service.AnalyticsService;
@@ -13,8 +15,11 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -160,5 +165,65 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     return trendPoints;
+  }
+
+  @Override
+  public List<OrderStatusCount> getConversionFunnel(UUID organizationId, String periodType, Integer year) {
+    log.info("Calculating conversion funnel analytics for organization {} with periodType {} and year {}", 
+        organizationId, periodType, year);
+
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+    int targetYear = (year != null) ? year : now.getYear();
+
+    ZonedDateTime currentStart;
+    ZonedDateTime currentEnd;
+
+    String normalizedPeriod = (periodType != null) ? periodType.toUpperCase() : "YEAR";
+
+    switch (normalizedPeriod) {
+      case "WEEK": {
+        ZonedDateTime baseDate = (targetYear == now.getYear()) 
+            ? now 
+            : ZonedDateTime.of(targetYear, 12, 28, 0, 0, 0, 0, ZoneOffset.UTC);
+        ZonedDateTime startOfWeek = baseDate.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+        currentStart = startOfWeek;
+        currentEnd = startOfWeek.plusWeeks(1).minusNanos(1);
+        break;
+      }
+      case "MONTH": {
+        int monthValue = (targetYear == now.getYear()) ? now.getMonthValue() : 12;
+        currentStart = ZonedDateTime.of(targetYear, monthValue, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+        currentEnd = currentStart.plusMonths(1).minusNanos(1);
+        break;
+      }
+      case "QUARTER": {
+        int currentQuarter = (targetYear == now.getYear()) ? (now.getMonthValue() - 1) / 3 + 1 : 4;
+        int startMonth = (currentQuarter - 1) * 3 + 1;
+        currentStart = ZonedDateTime.of(targetYear, startMonth, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+        currentEnd = currentStart.plusMonths(3).minusNanos(1);
+        break;
+      }
+      default: { // YEAR
+        currentStart = ZonedDateTime.of(targetYear, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+        currentEnd = currentStart.plusYears(1).minusNanos(1);
+        break;
+      }
+    }
+
+    List<OrderStatusCount> dbResults = orderRepository.countOrdersByStatusAndDateRange(
+        organizationId, currentStart.toInstant(), currentEnd.toInstant());
+
+    Map<OrderStatus, Long> countsMap = new EnumMap<>(OrderStatus.class);
+    for (OrderStatus status : OrderStatus.values()) {
+      countsMap.put(status, 0L);
+    }
+
+    for (OrderStatusCount result : dbResults) {
+      countsMap.put(result.status(), result.count());
+    }
+
+    return countsMap.entrySet().stream()
+        .map(entry -> new OrderStatusCount(entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
   }
 }
