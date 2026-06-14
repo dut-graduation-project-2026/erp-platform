@@ -179,5 +179,17 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("startDate") Instant startDate,
       @Param("endDate") Instant endDate);
 
+  @Query("""
+      SELECT new com.dut.erp.dto.response.analytics.OrderStatusCount(o.status, COUNT(o.id))
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+        AND o.createdAt >= :startDate AND o.createdAt <= :endDate
+      GROUP BY o.status
+      """)
+  List<com.dut.erp.dto.response.analytics.OrderStatusCount> countOrdersByStatusAndDateRange(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
   boolean existsByOrganizationIdAndOrderNumber(UUID organizationId, String orderNumber);
 }
