@@ -1,24 +1,16 @@
-# --- Stage 1: Build the application ---
-FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9-eclipse-temurin-21 AS build
+
 WORKDIR /app
+
 COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw mvnw
-COPY src src
-RUN --mount=type=cache,target=/root/.m2 sh mvnw clean package -DskipTests
+COPY src ./src
 
-# --- Stage 2: Runtime image ---
-FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
+RUN mvn clean package -DskipTests
 
-RUN addgroup -S spring && adduser -S spring -G spring
+FROM eclipse-temurin:21-jre
 
-COPY --from=builder /app/target/*.jar app.jar
-
-ENV SPRING_PROFILES_ACTIVE=prod
+COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-USER spring:spring
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["java", "-jar", "/app.jar"]
