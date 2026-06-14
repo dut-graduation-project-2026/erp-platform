@@ -1,6 +1,8 @@
 package com.dut.erp.repository;
 
 import com.dut.erp.entity.Order;
+import com.dut.erp.enums.OrderStatus;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -88,6 +90,31 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   Page<UUID> findOrderIdsByOrganizationIdAndSearch(
       @Param("organizationId") UUID organizationId,
       @Param("search") String search,
+      Pageable pageable);
+
+  @Query(
+      """
+      SELECT o.id
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+      AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
+      AND (:search IS NULL OR :search = '' OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%')))
+      AND (:status IS NULL OR o.status = :status)
+      AND (:partnerId IS NULL OR o.partner.id = :partnerId)
+      AND (:salePersonId IS NULL OR o.lead.salePerson.id = :salePersonId)
+      AND (:saleTeamId IS NULL OR o.lead.saleTeam.id = :saleTeamId)
+      AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
+      AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
+      """)
+  Page<UUID> findOrderIdsWithFilters(
+      @Param("organizationId") UUID organizationId,
+      @Param("search") String search,
+      @Param("status") OrderStatus status,
+      @Param("partnerId") UUID partnerId,
+      @Param("salePersonId") UUID salePersonId,
+      @Param("saleTeamId") UUID saleTeamId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate,
       Pageable pageable);
 
   @Query(

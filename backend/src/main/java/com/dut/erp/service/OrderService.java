@@ -6,6 +6,8 @@ import com.dut.erp.dto.request.UpsertOrderRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.OrderBaseResponse;
 import com.dut.erp.dto.response.OrderResponse;
+import com.dut.erp.enums.OrderStatus;
+import java.time.Instant;
 import java.util.UUID;
 
 public interface OrderService {
@@ -14,7 +16,15 @@ public interface OrderService {
       UUID organizationId, String search, PaginationRequest paginationRequest);
 
   PagedEntityResponse<OrderBaseResponse> getOrdersWithFilterByOrganizationId(
-      UUID organizationId, String search, PaginationRequest paginationRequest);
+      UUID organizationId,
+      String search,
+      OrderStatus status,
+      UUID partnerId,
+      UUID salePersonId,
+      UUID saleTeamId,
+      Instant startDate,
+      Instant endDate,
+      PaginationRequest paginationRequest);
 
   OrderResponse getQuotationById(UUID organizationId, UUID id);
 
