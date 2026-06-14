@@ -51,6 +51,11 @@ export const API_ENDPOINTS = {
   PUBLIC: {
     INVITATION_DETAIL: (orgId: string, invitationId: string) => `/public/organizations/${orgId}/invitations/${invitationId}`,
   },
+  NOTIFICATIONS: {
+    BASE: "/notifications",
+    STREAM: "/notifications/stream",
+    DELETE: (id: string) => `/notifications/${id}`,
+  },
 }
 
 export const PAGINATION = {
@@ -78,6 +83,15 @@ export const PERMISSIONS = {
 }
 
 // ─── ERP System Enums & Types ──────────────────────────────────────────────
+export const NOTIFICATION_TYPES = {
+  INFO: "INFO",
+  WARNING: "WARNING",
+  ERROR: "ERROR",
+  SUCCESS: "SUCCESS",
+  ALERT: "ALERT",
+} as const;
+export type NotificationType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATION_TYPES];
+
 export const PARTNER_TYPES = {
   INDIVIDUAL: "INDIVIDUAL",
   COMPANY: "COMPANY",

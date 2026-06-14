@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -33,7 +34,7 @@ public class NotificationEventListener {
   private final InvoiceRepository invoiceRepository;
 
   @Async
-  @Transactional(readOnly = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleInvitationCreated(OrganizationInvitationCreatedEvent event) {
     log.info("Processing invitation created event for notification: {}", event.organizationInvitationId());
@@ -50,7 +51,7 @@ public class NotificationEventListener {
   }
 
   @Async
-  @Transactional(readOnly = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleInvitationStatusChanged(OrganizationInvitationStatusChangedEvent event) {
     log.info("Processing invitation status changed event: {}", event.invitationId());
@@ -67,7 +68,7 @@ public class NotificationEventListener {
   }
 
   @Async
-  @Transactional(readOnly = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleLeadAssigned(LeadAssignedEvent event) {
     log.info("Processing lead assigned event: {}", event.leadId());
@@ -82,7 +83,7 @@ public class NotificationEventListener {
   }
 
   @Async
-  @Transactional(readOnly = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleLeadStageChanged(LeadStageChangedEvent event) {
     log.info("Processing lead stage changed event: {}", event.leadId());
@@ -100,7 +101,7 @@ public class NotificationEventListener {
   }
 
   @Async
-  @Transactional(readOnly = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleOrderStatusChanged(OrderStatusChangedEvent event) {
     log.info("Processing order status changed event: {}", event.orderId());
@@ -133,7 +134,7 @@ public class NotificationEventListener {
   }
 
   @Async
-  @Transactional(readOnly = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleReplenishmentRequestStatusChanged(ReplenishmentRequestStatusChangedEvent event) {
     log.info("Processing replenishment request event: {}", event.replenishmentId());
@@ -177,7 +178,7 @@ public class NotificationEventListener {
   }
 
   @Async
-  @Transactional(readOnly = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleInvoiceStatusChanged(InvoiceStatusChangedEvent event) {
     log.info("Processing invoice status changed event: {}", event.invoiceId());

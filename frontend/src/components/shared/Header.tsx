@@ -16,10 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import {
   Search,
-  Bell,
   Settings,
   LogOut,
   User,
@@ -31,6 +29,8 @@ import { useAuthStore } from '@/store/use-auth-store';
 import { APP_MODULES } from '@/config/modules';
 import { useErpModules } from '@/features/organization/hooks/useErpModules';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
+import { NotificationPopover } from '@/features/notification/components/NotificationPopover';
+import { useNotificationStore } from '@/features/notification/store/use-notification-store';
 
 interface HeaderProps {
   className?: string;
@@ -43,6 +43,17 @@ export function Header({ className }: HeaderProps) {
   const currentOrg = organizations.find(org => org.id === currentOrgId);
 
   const [isAppLauncherOpen, setIsAppLauncherOpen] = useState(false);
+
+  const { initializeSSE, cleanupSSE } = useNotificationStore();
+
+  React.useEffect(() => {
+    if (user) {
+      initializeSSE();
+    }
+    return () => {
+      cleanupSSE();
+    };
+  }, [user, initializeSSE, cleanupSSE]);
 
   // Fetch modules for the App Launcher Overlay
   const { modules: backendModules } = useErpModules(currentOrgId || '');
@@ -159,15 +170,7 @@ export function Header({ className }: HeaderProps) {
           )}
 
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 relative">
-            <Bell className="h-5 w-5" />
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              3
-            </Badge>
-          </Button>
+          <NotificationPopover />
 
           {/* User Menu */}
           <DropdownMenu>
