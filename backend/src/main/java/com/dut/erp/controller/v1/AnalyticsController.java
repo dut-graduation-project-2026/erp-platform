@@ -3,8 +3,11 @@ package com.dut.erp.controller.v1;
 import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
 import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.dto.response.analytics.OrderStatusCount;
+import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
+import com.dut.erp.dto.response.analytics.TopProductResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.AnalyticsService;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -67,5 +70,38 @@ public class AnalyticsController {
       @RequestParam(required = false) Integer year,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(analyticsService.getConversionFunnel(organizationId, periodType, year));
+  }
+
+  @GetMapping("/sales/top-products")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('orders:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<List<TopProductResponse>> getTopPerformingProducts(
+      @PathVariable UUID organizationId,
+      @RequestParam(defaultValue = "10") int limit,
+      @RequestParam(required = false) Instant startDate,
+      @RequestParam(required = false) Instant endDate,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(
+        analyticsService.getTopPerformingProducts(organizationId, startDate, endDate, limit));
+  }
+
+  @GetMapping("/sales/category-distribution")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('orders:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<List<CategorySalesDistribution>> getCategorySalesDistribution(
+      @PathVariable UUID organizationId,
+      @RequestParam(required = false) Instant startDate,
+      @RequestParam(required = false) Instant endDate,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(
+        analyticsService.getCategorySalesDistribution(organizationId, startDate, endDate));
   }
 }
