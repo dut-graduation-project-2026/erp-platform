@@ -141,5 +141,43 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("status") com.dut.erp.enums.OrderStatus status,
       Pageable pageable);
 
+  @Query(
+      """
+      SELECT COALESCE(SUM(o.totalAmount), 0)
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+        AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
+        AND o.createdAt >= :startDate AND o.createdAt <= :endDate
+      """)
+  java.math.BigDecimal sumRevenueByOrganizationIdAndDateRange(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
+  @Query(
+      """
+      SELECT COALESCE(AVG(o.totalAmount), 0)
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+        AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
+        AND o.createdAt >= :startDate AND o.createdAt <= :endDate
+      """)
+  java.math.BigDecimal avgDealSizeByOrganizationIdAndDateRange(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
+  @Query(
+      """
+      SELECT COUNT(DISTINCT o.createdBy.id)
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+        AND o.createdAt >= :startDate AND o.createdAt <= :endDate
+      """)
+  long countActiveSalesRepsByOrganizationIdAndDateRange(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
   boolean existsByOrganizationIdAndOrderNumber(UUID organizationId, String orderNumber);
 }
