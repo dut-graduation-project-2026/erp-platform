@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,7 +48,7 @@ public class UserServiceImpl implements UserService {
         PageRequest.of(
             paginationRequest.page() - 1,
             paginationRequest.limit(),
-            SortingConstants.DEFAULT_ENTITIES_SORT);
+            Sort.by(Sort.Order.asc("firstName"), Sort.Order.asc("lastName")));
     Page<User> userPage;
     if (normalizedQuery == null) {
       userPage = userRepository.findAllByOrganizationsId(organizationId, pageable);
