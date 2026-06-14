@@ -5,9 +5,11 @@ import com.dut.erp.dto.request.UpdateOrderStatusRequest;
 import com.dut.erp.dto.response.OrderBaseResponse;
 import com.dut.erp.dto.response.OrderResponse;
 import com.dut.erp.dto.response.PagedEntityResponse;
+import com.dut.erp.enums.OrderStatus;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.OrderService;
 import jakarta.validation.Valid;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -40,11 +42,25 @@ public class OrderController {
   public ResponseEntity<PagedEntityResponse<OrderBaseResponse>> getOrders(
       @PathVariable UUID organizationId,
       @RequestParam(required = false) String search,
+      @RequestParam(required = false) OrderStatus status,
+      @RequestParam(required = false) UUID partnerId,
+      @RequestParam(required = false) UUID salePersonId,
+      @RequestParam(required = false) UUID saleTeamId,
+      @RequestParam(required = false) Instant startDate,
+      @RequestParam(required = false) Instant endDate,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
         orderService.getOrdersWithFilterByOrganizationId(
-            organizationId, search, paginationRequest));
+            organizationId,
+            search,
+            status,
+            partnerId,
+            salePersonId,
+            saleTeamId,
+            startDate,
+            endDate,
+            paginationRequest));
   }
 
   @GetMapping("/confirmed")

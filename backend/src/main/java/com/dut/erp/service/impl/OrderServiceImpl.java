@@ -91,8 +91,16 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getOrdersWithFilterByOrganizationId(
-      UUID organizationId, String search, PaginationRequest paginationRequest) {
-    log.info("Fetching orders for organization {}", organizationId);
+      UUID organizationId,
+      String search,
+      OrderStatus status,
+      UUID partnerId,
+      UUID salePersonId,
+      UUID saleTeamId,
+      Instant startDate,
+      Instant endDate,
+      PaginationRequest paginationRequest) {
+    log.info("Fetching orders for organization {} with filters", organizationId);
 
     Pageable pageable =
         PageRequest.of(
@@ -100,11 +108,16 @@ public class OrderServiceImpl implements OrderService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
 
-    Page<UUID> ids =
-        (search != null && !search.trim().isEmpty())
-            ? orderRepository.findOrderIdsByOrganizationIdAndSearch(
-                organizationId, search, pageable)
-            : orderRepository.findOrderIdsByOrganizationId(organizationId, pageable);
+    Page<UUID> ids = orderRepository.findOrderIdsWithFilters(
+        organizationId,
+        (search != null && !search.trim().isEmpty()) ? search : null,
+        status,
+        partnerId,
+        salePersonId,
+        saleTeamId,
+        startDate,
+        endDate,
+        pageable);
 
     return getPagedResponseFromIds(ids, pageable);
   }
