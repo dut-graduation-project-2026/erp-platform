@@ -1,8 +1,10 @@
 package com.dut.erp.controller.v1;
 
 import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
+import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.AnalyticsService;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,5 +36,20 @@ public class AnalyticsController {
       @RequestParam(required = false) Integer year,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(analyticsService.getSalesSummary(organizationId, periodType, year));
+  }
+
+  @GetMapping("/sales/revenue-trend")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('orders:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<List<RevenueTrendPoint>> getRevenueTrend(
+      @PathVariable UUID organizationId,
+      @RequestParam(defaultValue = "6") Integer months,
+      @RequestParam(required = false) Integer year,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(analyticsService.getRevenueTrend(organizationId, months, year));
   }
 }

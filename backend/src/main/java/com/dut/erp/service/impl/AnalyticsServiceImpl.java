@@ -1,7 +1,9 @@
 package com.dut.erp.service.impl;
 
 import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
+import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.repository.OrderRepository;
+import com.dut.erp.repository.StockValuationRepository;
 import com.dut.erp.service.AnalyticsService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -10,6 +12,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AnalyticsServiceImpl implements AnalyticsService {
 
   private final OrderRepository orderRepository;
+  private final StockValuationRepository stockValuationRepository;
 
   @Override
   public SalesSummaryResponse getSalesSummary(UUID organizationId, String periodType, Integer year) {
@@ -111,5 +116,49 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         previousRevenue,
         growthPercent
     );
+  }
+
+  @Override
+  public List<RevenueTrendPoint> getRevenueTrend(UUID organizationId, Integer months, Integer year) {
+    int targetMonths = (months != null && months > 0) ? months : 6;
+    log.info("Calculating gross sales and COGS revenue trend for organization {} for the past {} months (year={})",
+        organizationId, targetMonths, year);
+
+    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+    int targetYear = (year != null) ? year : now.getYear();
+
+    ZonedDateTime endDate;
+    if (targetYear == now.getYear()) {
+      endDate = now;
+    } else {
+      endDate = ZonedDateTime.of(targetYear, 12, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    }
+
+    List<RevenueTrendPoint> trendPoints = new ArrayList<>();
+
+    for (int i = targetMonths - 1; i >= 0; i--) {
+      ZonedDateTime monthStart = endDate.minusMonths(i).withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS);
+      ZonedDateTime monthEnd = monthStart.plusMonths(1).minusNanos(1);
+
+      Instant startInstant = monthStart.toInstant();
+      Instant endInstant = monthEnd.toInstant();
+
+      BigDecimal grossSales = orderRepository.sumRevenueByOrganizationIdAndDateRange(
+          organizationId, startInstant, endInstant);
+
+      BigDecimal cogs = stockValuationRepository.sumCogsByOrganizationIdAndOrderDateRange(
+          organizationId, startInstant, endInstant);
+
+      BigDecimal netMargin = grossSales.subtract(cogs);
+
+      trendPoints.add(new RevenueTrendPoint(
+          startInstant,
+          grossSales,
+          cogs,
+          netMargin
+      ));
+    }
+
+    return trendPoints;
   }
 }
