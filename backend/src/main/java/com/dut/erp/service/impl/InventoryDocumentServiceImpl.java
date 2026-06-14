@@ -428,17 +428,36 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     // Calculate COGS and initialize remaining quantities
     cogsValuationEngine.calculateCOGS(doc);
 
-    doc.setDocumentStatus(DocumentStatus.COMPLETED);
-    doc.setDateDone(Instant.now());
-    doc = inventoryDocumentRepository.save(doc);
+    if (doc.getDocumentType() == DocumentType.TRANSFER_OUT && doc.getReferenceId() != null) {
+      inventoryDocumentRepository.findById(doc.getReferenceId()).ifPresent(docIn -> {
+        Map<UUID, InventoryDocumentLine> outLineMap = doc.getLines().stream()
+            .collect(Collectors.toMap(
+                line -> line.getProduct().getId(),
+                Function.identity(),
+                (l1, l2) -> l1));
 
-    if (doc.getDocumentType() == DocumentType.RECEIPT || 
-        doc.getDocumentType() == DocumentType.TRANSFER_IN || 
-        (doc.getDocumentType() == DocumentType.ADJUSTMENT && hasPositiveAdjustment)) {
-      reevaluateWaitingDocuments(doc.getWarehouse().getId());
+        for (InventoryDocumentLine lineIn : docIn.getLines()) {
+          InventoryDocumentLine lineOut = outLineMap.get(lineIn.getProduct().getId());
+          if (lineOut != null) {
+            lineIn.setUnitCost(lineOut.getUnitCost());
+            lineIn.setValuation(lineIn.getQuantity().multiply(lineOut.getUnitCost()));
+          }
+        }
+        inventoryDocumentRepository.save(docIn);
+      });
     }
 
-    return mapToResponse(doc);
+    doc.setDocumentStatus(DocumentStatus.COMPLETED);
+    doc.setDateDone(Instant.now());
+    InventoryDocument savedDoc = inventoryDocumentRepository.save(doc);
+
+    if (savedDoc.getDocumentType() == DocumentType.RECEIPT || 
+        savedDoc.getDocumentType() == DocumentType.TRANSFER_IN || 
+        (savedDoc.getDocumentType() == DocumentType.ADJUSTMENT && hasPositiveAdjustment)) {
+      reevaluateWaitingDocuments(savedDoc.getWarehouse().getId());
+    }
+
+    return mapToResponse(savedDoc);
   }
 
   @Override

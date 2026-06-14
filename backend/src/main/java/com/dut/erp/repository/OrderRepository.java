@@ -96,13 +96,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       """
       SELECT o.id
       FROM Order o
+      LEFT JOIN o.lead l
+      LEFT JOIN l.salePerson sp
+      LEFT JOIN l.saleTeam st
       WHERE o.organization.id = :organizationId
       AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
       AND (:search IS NULL OR :search = '' OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%')))
       AND (:status IS NULL OR o.status = :status)
       AND (:partnerId IS NULL OR o.partner.id = :partnerId)
-      AND (:salePersonId IS NULL OR o.lead.salePerson.id = :salePersonId)
-      AND (:saleTeamId IS NULL OR o.lead.saleTeam.id = :saleTeamId)
+      AND (:salePersonId IS NULL OR sp.id = :salePersonId)
+      AND (:saleTeamId IS NULL OR st.id = :saleTeamId)
       AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
       AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
       """)
