@@ -37,6 +37,8 @@ import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.WarehouseRepository;
 import com.dut.erp.service.InventoryDocumentService;
 import com.dut.erp.service.COGSValuationEngine;
+import com.dut.erp.dto.event.ReplenishmentRequestStatusChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -70,6 +72,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   private final ReplenishmentRequestRepository replenishmentRequestRepository;
   private final InvoiceRepository invoiceRepository;
   private final COGSValuationEngine cogsValuationEngine;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   @Transactional
@@ -704,6 +707,10 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     }
     if (!updatedReplenishments.isEmpty()) {
       replenishmentRequestRepository.saveAll(updatedReplenishments);
+      for (ReplenishmentRequest req : updatedReplenishments) {
+        applicationEventPublisher.publishEvent(new ReplenishmentRequestStatusChangedEvent(
+            req.getId(), ReplenishmentStatus.OPEN, ReplenishmentStatus.RESOLVED));
+      }
     }
   }
 

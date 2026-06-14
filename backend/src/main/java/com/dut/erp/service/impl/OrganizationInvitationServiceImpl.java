@@ -2,6 +2,7 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.constant.ExpirationDurationDefault;
 import com.dut.erp.dto.event.OrganizationInvitationCreatedEvent;
+import com.dut.erp.dto.event.OrganizationInvitationStatusChangedEvent;
 import com.dut.erp.dto.response.OrganizationInvitationResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.OrganizationInvitation;
@@ -190,6 +191,9 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
     invitation.setRespondedBy(responderUser);
 
     organizationInvitationRepository.save(invitation);
+
+    applicationEventPublisher.publishEvent(
+        new OrganizationInvitationStatusChangedEvent(invitation.getId(), newStatusEnum));
 
     return invitationMapper.toOrganizationInvitationResponse(invitation);
   }

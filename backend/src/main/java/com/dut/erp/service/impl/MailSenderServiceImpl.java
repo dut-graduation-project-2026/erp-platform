@@ -32,7 +32,7 @@ public class MailSenderServiceImpl implements MailSenderService {
   private final OrganizationInvitationRepository organizationInvitationRepository;
   private final EmailProperties emailProperties;
 
-  @Async("mailTaskExecutor")
+  @Async("taskExecutor")
   @Override
   public CompletableFuture<Void> sendMail(SendMailRequest request) {
     try {
@@ -47,7 +47,7 @@ public class MailSenderServiceImpl implements MailSenderService {
     }
   }
 
-  @Async("mailTaskExecutor")
+  @Async("taskExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleInvitationCreated(OrganizationInvitationCreatedEvent event) {
 

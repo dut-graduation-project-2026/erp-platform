@@ -18,6 +18,10 @@ import com.dut.erp.mapper.InvoiceMapper;
 import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.service.InvoiceService;
+import com.dut.erp.dto.event.InvoiceStatusChangedEvent;
+import com.dut.erp.dto.event.OrderStatusChangedEvent;
+import com.dut.erp.enums.OrderStatus;
+import org.springframework.context.ApplicationEventPublisher;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -46,6 +50,7 @@ public class InvoiceServiceImpl implements InvoiceService {
   private final InvoiceRepository invoiceRepository;
   private final OrderRepository orderRepository;
   private final InvoiceMapper invoiceMapper;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   @Transactional
@@ -91,6 +96,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     invoice = invoiceRepository.save(invoice);
     log.info("Successfully created invoice {} from order {}", invoice.getId(), order.getId());
+
+    applicationEventPublisher.publishEvent(new InvoiceStatusChangedEvent(invoice.getId(), null, InvoiceStatus.DRAFT));
 
     return invoiceMapper.toResponse(invoice);
   }
@@ -148,14 +155,18 @@ public class InvoiceServiceImpl implements InvoiceService {
     invoice.setStatus(newStatus);
     invoice = invoiceRepository.save(invoice);
 
+    applicationEventPublisher.publishEvent(new InvoiceStatusChangedEvent(invoice.getId(), currentStatus, newStatus));
+
     if (newStatus == InvoiceStatus.PAID) {
       Order order = invoice.getOrder();
+      OrderStatus oldOrderStatus = order.getStatus();
       order.setStatus(OrderStatus.COMPLETED);
       orderRepository.save(order);
       log.info(
           "Automatically completed order {} because invoice {} was marked PAID",
           order.getId(),
           invoice.getId());
+      applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldOrderStatus, OrderStatus.COMPLETED));
     }
 
     return invoiceMapper.toResponse(invoice);
