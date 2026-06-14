@@ -52,6 +52,14 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
       """)
   List<Lead> findAllByIdIn(@Param("ids") List<UUID> ids);
 
+  @Query("""
+      SELECT l.stage, COUNT(l.id)
+      FROM Lead l
+      WHERE l.organization.id = :orgId
+      GROUP BY l.stage
+      """)
+  List<Object[]> countLeadsByStage(@Param("orgId") UUID orgId);
+
   @Query(
       """
       SELECT l FROM Lead l

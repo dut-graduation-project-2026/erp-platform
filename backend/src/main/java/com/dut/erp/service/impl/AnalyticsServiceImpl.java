@@ -4,8 +4,11 @@ import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
 import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
+import com.dut.erp.dto.response.analytics.LeadStageCount;
 import com.dut.erp.dto.response.analytics.TopProductResponse;
+import com.dut.erp.enums.LeadStage;
 import com.dut.erp.enums.OrderStatus;
+import com.dut.erp.repository.LeadRepository;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.StockValuationRepository;
 import com.dut.erp.service.AnalyticsService;
@@ -37,6 +40,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
   private final OrderRepository orderRepository;
   private final StockValuationRepository stockValuationRepository;
+  private final LeadRepository leadRepository;
 
   @Override
   public SalesSummaryResponse getSalesSummary(UUID organizationId, String periodType, Integer year) {
@@ -281,5 +285,27 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     return result;
+  }
+
+  @Override
+  public List<LeadStageCount> getLeadStageFunnel(UUID organizationId) {
+    log.info("Fetching lead stage funnel for organization {}", organizationId);
+
+    List<Object[]> dbResults = leadRepository.countLeadsByStage(organizationId);
+
+    Map<LeadStage, Long> countsMap = new EnumMap<>(LeadStage.class);
+    for (LeadStage stage : LeadStage.values()) {
+      countsMap.put(stage, 0L);
+    }
+
+    for (Object[] row : dbResults) {
+      LeadStage stage = (LeadStage) row[0];
+      long count = (long) row[1];
+      countsMap.put(stage, count);
+    }
+
+    return countsMap.entrySet().stream()
+        .map(entry -> new LeadStageCount(entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
   }
 }
