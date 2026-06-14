@@ -18,4 +18,19 @@ public interface StockValuationRepository extends JpaRepository<StockValuation, 
       WHERE doc.referenceId = :orderId
       """)
   List<StockValuation> findAllByOrderId(@Param("orderId") UUID orderId);
+
+  @Query("""
+      SELECT COALESCE(SUM(sv.totalValuation), 0)
+      FROM StockValuation sv
+      JOIN sv.inventoryDocumentLine line
+      JOIN line.inventoryDocument doc
+      JOIN Order o ON o.id = doc.referenceId
+      WHERE o.organization.id = :organizationId
+        AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
+        AND o.createdAt >= :startDate AND o.createdAt <= :endDate
+      """)
+  java.math.BigDecimal sumCogsByOrganizationIdAndOrderDateRange(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") java.time.Instant startDate,
+      @Param("endDate") java.time.Instant endDate);
 }
