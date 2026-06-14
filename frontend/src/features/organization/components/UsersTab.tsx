@@ -78,6 +78,7 @@ export function UsersTab({ orgId }: { orgId: string }) {
       name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Unknown User',
       email: u.email,
       roles: u.roles?.map(r => r.name) || [],
+      roleIds: u.roles?.map(r => r.id) || [],
       status: u.status || 'Active',
       lastLogin: u.lastLogin || '-',
     }));
@@ -201,21 +202,20 @@ export function UsersTab({ orgId }: { orgId: string }) {
                     <tr className="bg-[#f8f8f8] border-b border-[#e0e0e0]">
                       <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider min-w-[250px]">USER DETAILS</th>
                       <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">ROLE IN ORG</th>
-                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">LAST LOGIN ACTIVITY</th>
                       <th className="py-3 px-4 w-[50px]"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading && formattedUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-12 text-center text-[#898989]">
+                        <td colSpan={3} className="py-12 text-center text-[#898989]">
                           <RefreshCcw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#0066cc]" />
                           Loading users...
                         </td>
                       </tr>
                     ) : formattedUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-12 text-center text-[#898989]">
+                        <td colSpan={3} className="py-12 text-center text-[#898989]">
                           <div className="bg-[#f8f8f8] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
                             <UserCircle className="w-8 h-8 text-[#d0d0d0]" />
                           </div>
@@ -255,7 +255,6 @@ export function UsersTab({ orgId }: { orgId: string }) {
                               ))}
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-[13px] text-[#64748b]">{user.lastLogin}</td>
                           <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                             <UserActionsDropdown 
                               user={user} 

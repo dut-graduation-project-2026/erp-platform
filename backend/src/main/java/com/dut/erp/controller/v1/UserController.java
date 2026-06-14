@@ -52,12 +52,12 @@ public class UserController {
       and
       @securityAuthService.hasPermission('users:read', #organizationId, #userDetails)
       """)
-  public ResponseEntity<PagedEntityResponse<UserBaseResponse>> getUsersOfOrganization(
+  public ResponseEntity<PagedEntityResponse<OrganizationMemberResponse>> getUsersOfOrganization(
       @RequestParam UUID organizationId,
       @RequestParam(required = false) String query,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    PagedEntityResponse<UserBaseResponse> response =
+    PagedEntityResponse<OrganizationMemberResponse> response =
         userService.searchUsersByOrganizationId(organizationId, query, paginationRequest);
     return ResponseEntity.ok(response);
   }
