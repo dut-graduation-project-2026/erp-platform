@@ -192,4 +192,49 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("endDate") Instant endDate);
 
   boolean existsByOrganizationIdAndOrderNumber(UUID organizationId, String orderNumber);
+
+  @Query("""
+      SELECT pc.id, pc.name,
+        COALESCE(SUM(oi.subtotal), 0),
+        COALESCE(SUM(oi.quantity), 0),
+        COUNT(DISTINCT o.id)
+      FROM OrderItem oi
+      JOIN oi.order o
+      JOIN oi.product p
+      JOIN p.category pc
+      WHERE o.organization.id = :organizationId
+        AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
+        AND (:startDate IS NULL OR o.createdAt >= :startDate)
+        AND (:endDate IS NULL OR o.createdAt <= :endDate)
+      GROUP BY pc.id, pc.name
+      ORDER BY COALESCE(SUM(oi.subtotal), 0) DESC
+      """)
+  List<Object[]> findCategorySalesDistribution(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
+  @Query("""
+      SELECT new com.dut.erp.dto.response.analytics.TopProductResponse(
+        oi.product.id,
+        oi.product.name,
+        oi.product.category.name,
+        COALESCE(SUM(oi.subtotal), 0),
+        COALESCE(SUM(oi.quantity), 0),
+        COUNT(DISTINCT o.id)
+      )
+      FROM OrderItem oi
+      JOIN oi.order o
+      WHERE o.organization.id = :organizationId
+        AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
+        AND (:startDate IS NULL OR o.createdAt >= :startDate)
+        AND (:endDate IS NULL OR o.createdAt <= :endDate)
+      GROUP BY oi.product.id, oi.product.name, oi.product.category.name
+      ORDER BY COALESCE(SUM(oi.subtotal), 0) DESC
+      """)
+  List<com.dut.erp.dto.response.analytics.TopProductResponse> findTopPerformingProducts(
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate,
+      Pageable pageable);
 }

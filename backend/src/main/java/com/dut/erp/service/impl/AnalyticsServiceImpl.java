@@ -3,6 +3,8 @@ package com.dut.erp.service.impl;
 import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
 import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.dto.response.analytics.OrderStatusCount;
+import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
+import com.dut.erp.dto.response.analytics.TopProductResponse;
 import com.dut.erp.enums.OrderStatus;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.StockValuationRepository;
@@ -22,6 +24,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -225,5 +229,57 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     return countsMap.entrySet().stream()
         .map(entry -> new OrderStatusCount(entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<TopProductResponse> getTopPerformingProducts(
+      UUID organizationId, Instant startDate, Instant endDate, int limit) {
+    log.info("Fetching top {} performing products for organization {}", limit, organizationId);
+
+    int effectiveLimit = Math.max(1, Math.min(limit, 100));
+    Pageable pageable = PageRequest.of(0, effectiveLimit);
+
+    return orderRepository.findTopPerformingProducts(organizationId, startDate, endDate, pageable);
+  }
+
+  @Override
+  public List<CategorySalesDistribution> getCategorySalesDistribution(
+      UUID organizationId, Instant startDate, Instant endDate) {
+    log.info("Fetching category sales distribution for organization {}", organizationId);
+
+    List<Object[]> rows =
+        orderRepository.findCategorySalesDistribution(organizationId, startDate, endDate);
+
+    if (rows.isEmpty()) {
+      return List.of();
+    }
+
+    BigDecimal totalRevenue =
+        rows.stream()
+            .map(row -> (BigDecimal) row[2])
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    List<CategorySalesDistribution> result = new ArrayList<>();
+    for (Object[] row : rows) {
+      UUID categoryId = (UUID) row[0];
+      String categoryName = (String) row[1];
+      BigDecimal revenue = (BigDecimal) row[2];
+      BigDecimal quantity = (BigDecimal) row[3];
+      long orderCount = (long) row[4];
+
+      double percentage = 0.0;
+      if (totalRevenue.compareTo(BigDecimal.ZERO) > 0) {
+        percentage =
+            revenue
+                .divide(totalRevenue, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .doubleValue();
+      }
+
+      result.add(
+          new CategorySalesDistribution(categoryId, categoryName, revenue, percentage, quantity, orderCount));
+    }
+
+    return result;
   }
 }
