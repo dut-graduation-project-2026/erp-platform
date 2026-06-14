@@ -44,6 +44,10 @@ export function Header({ className }: HeaderProps) {
 
   const [isAppLauncherOpen, setIsAppLauncherOpen] = useState(false);
 
+  React.useEffect(() => {
+    setIsAppLauncherOpen(false);
+  }, [pathname]);
+
   // Fetch modules for the App Launcher Overlay
   const { modules: backendModules } = useErpModules(currentOrgId || '');
 
@@ -83,7 +87,6 @@ export function Header({ className }: HeaderProps) {
   }, [backendModules]);
 
   const handleModuleClick = (route: string) => {
-    setIsAppLauncherOpen(false);
     router.push(`/dashboard/${currentOrgId}${route}`);
   };
 

@@ -51,6 +51,17 @@ export const API_ENDPOINTS = {
   PUBLIC: {
     INVITATION_DETAIL: (orgId: string, invitationId: string) => `/public/organizations/${orgId}/invitations/${invitationId}`,
   },
+  ANALYTICS: {
+    SALES_SUMMARY: (orgId: string) => `/organizations/${orgId}/analytics/sales/summary`,
+    SALES_REVENUE_TREND: (orgId: string) => `/organizations/${orgId}/analytics/sales/revenue-trend`,
+    SALES_CONVERSION_FUNNEL: (orgId: string) => `/organizations/${orgId}/analytics/sales/conversion-funnel`,
+    SALES_TOP_PRODUCTS: (orgId: string) => `/organizations/${orgId}/analytics/sales/top-products`,
+    SALES_CATEGORY_DISTRIBUTION: (orgId: string) => `/organizations/${orgId}/analytics/sales/category-distribution`,
+    PIPELINE_LEAD_FUNNEL: (orgId: string) => `/organizations/${orgId}/analytics/pipeline/lead-funnel`,
+    PIPELINE_SUMMARY: (orgId: string) => `/organizations/${orgId}/analytics/pipeline/summary`,
+    INVENTORY_VALUATION_TREND: (orgId: string) => `/organizations/${orgId}/analytics/inventory/valuation-trend`,
+    INVENTORY_ASSET_DISTRIBUTION: (orgId: string) => `/organizations/${orgId}/analytics/inventory/asset-distribution`,
+  },
 }
 
 export const PAGINATION = {

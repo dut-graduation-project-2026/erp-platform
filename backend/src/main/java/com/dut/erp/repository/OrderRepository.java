@@ -204,8 +204,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       JOIN p.category pc
       WHERE o.organization.id = :organizationId
         AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
-        AND (:startDate IS NULL OR o.createdAt >= :startDate)
-        AND (:endDate IS NULL OR o.createdAt <= :endDate)
+        AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
+        AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
       GROUP BY pc.id, pc.name
       ORDER BY COALESCE(SUM(oi.subtotal), 0) DESC
       """)
@@ -227,8 +227,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       JOIN oi.order o
       WHERE o.organization.id = :organizationId
         AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
-        AND (:startDate IS NULL OR o.createdAt >= :startDate)
-        AND (:endDate IS NULL OR o.createdAt <= :endDate)
+        AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
+        AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
       GROUP BY oi.product.id, oi.product.name, oi.product.category.name
       ORDER BY COALESCE(SUM(oi.subtotal), 0) DESC
       """)

@@ -94,3 +94,36 @@ export const deleteSaleTeam = async (orgId: string, id: string): Promise<void> =
   await apiClient.delete(`${API_ENDPOINTS.CRM.SALE_TEAMS(orgId)}/${id}`);
 };
 
+// ─── CRM ANALYTICS ───────────────────────────────────────────────────────────
+
+export interface LeadStageCount {
+  stage: string;
+  count: number;
+}
+
+export interface PipelineStageSummary {
+  stage: string;
+  count: number;
+  revenue: number;
+  weightedRevenue: number;
+  avgProbability: number;
+}
+
+export const getLeadStageFunnel = async (
+  orgId: string
+): Promise<LeadStageCount[]> => {
+  const response = await apiClient.get<LeadStageCount[]>(
+    API_ENDPOINTS.ANALYTICS.PIPELINE_LEAD_FUNNEL(orgId)
+  );
+  return response.data;
+};
+
+export const getPipelineSummary = async (
+  orgId: string
+): Promise<PipelineStageSummary[]> => {
+  const response = await apiClient.get<PipelineStageSummary[]>(
+    API_ENDPOINTS.ANALYTICS.PIPELINE_SUMMARY(orgId)
+  );
+  return response.data;
+};
+

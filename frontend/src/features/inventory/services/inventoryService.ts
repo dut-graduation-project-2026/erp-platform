@@ -195,3 +195,42 @@ export const getOrderCOGS = async (
   );
   return response.data;
 };
+
+// ─── INVENTORY ANALYTICS ─────────────────────────────────────────────────────
+
+export interface StockValuationTrendPoint {
+  date: string;
+  valuation: number;
+  inboundValue: number;
+  outboundValue: number;
+  netChange: number;
+}
+
+export interface AssetCategoryDistribution {
+  categoryId: string;
+  categoryName: string;
+  totalAssetValue: number;
+  percentage: number;
+  totalQuantity: number;
+  productCount: number;
+}
+
+export const getStockValuationTrend = async (
+  orgId: string,
+  params?: { months?: number; year?: number }
+): Promise<StockValuationTrendPoint[]> => {
+  const response = await apiClient.get<StockValuationTrendPoint[]>(
+    API_ENDPOINTS.ANALYTICS.INVENTORY_VALUATION_TREND(orgId),
+    { params }
+  );
+  return response.data;
+};
+
+export const getAssetCategoryDistribution = async (
+  orgId: string
+): Promise<AssetCategoryDistribution[]> => {
+  const response = await apiClient.get<AssetCategoryDistribution[]>(
+    API_ENDPOINTS.ANALYTICS.INVENTORY_ASSET_DISTRIBUTION(orgId)
+  );
+  return response.data;
+};
