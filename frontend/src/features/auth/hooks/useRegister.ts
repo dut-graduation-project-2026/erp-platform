@@ -46,8 +46,8 @@ export const useRegister = (): UseRegisterReturn => {
         setPermissions(permissions);
 
         const orgIds = userOrgs.map((org) => org.id).join(',');
-        document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; samesite=strict`;
-        document.cookie = `clientSession=true; path=/; max-age=86400; samesite=strict`;
+        document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; secure; samesite=strict`;
+        document.cookie = `clientSession=true; path=/; max-age=86400; secure; samesite=strict`;
         const searchParams = new URLSearchParams(window.location.search);
         const redirectParam = searchParams.get('redirect');
         const redirectPath = redirectParam || getRedirectPath(user as any);
