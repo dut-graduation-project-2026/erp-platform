@@ -4,6 +4,7 @@ import com.dut.erp.dto.response.analytics.SalesSummaryResponse;
 import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
+import com.dut.erp.dto.response.analytics.LeadStageCount;
 import com.dut.erp.dto.response.analytics.TopProductResponse;
 import java.time.Instant;
 import java.util.List;
@@ -21,4 +22,6 @@ public interface AnalyticsService {
 
   List<CategorySalesDistribution> getCategorySalesDistribution(
       UUID organizationId, Instant startDate, Instant endDate);
+
+  List<LeadStageCount> getLeadStageFunnel(UUID organizationId);
 }
