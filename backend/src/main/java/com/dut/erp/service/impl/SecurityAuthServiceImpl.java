@@ -1,5 +1,8 @@
 package com.dut.erp.service.impl;
 
+import com.dut.erp.entity.Lead;
+import com.dut.erp.entity.Order;
+import com.dut.erp.entity.Warehouse;
 import com.dut.erp.repository.ErpModuleRepository;
 import com.dut.erp.repository.PermissionRepository;
 import com.dut.erp.security.CustomUserDetails;
@@ -62,5 +65,81 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
     }
 
     return true;
+  }
+
+  @Override
+  public boolean isAdmin(CustomUserDetails userDetails) {
+    if (userDetails == null) {
+      return false;
+    }
+    return userDetails.getAuthorities().stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+  }
+
+  @Override
+  public boolean isWarehouseManagerOrAdmin(Warehouse warehouse, CustomUserDetails userDetails) {
+    if (isAdmin(userDetails)) {
+      return true;
+    }
+    if (warehouse.getManager() != null && warehouse.getManager().getId().equals(userDetails.getId())) {
+      return true;
+    }
+    log.warn("User {} denied update access to warehouse {}", userDetails.getId(), warehouse.getId());
+    throw new AccessDeniedException("Access denied: You must be the warehouse manager or an administrator.");
+  }
+
+  @Override
+  public boolean isWarehouseStaffOrManagerOrAdmin(Warehouse warehouse, CustomUserDetails userDetails) {
+    if (isAdmin(userDetails)) {
+      return true;
+    }
+    if (warehouse.getManager() != null && warehouse.getManager().getId().equals(userDetails.getId())) {
+      return true;
+    }
+    boolean isStaff = warehouse.getStaff() != null && warehouse.getStaff().stream()
+        .anyMatch(staff -> staff.getId().equals(userDetails.getId()));
+    if (isStaff) {
+      return true;
+    }
+    log.warn("User {} denied access to warehouse {}", userDetails.getId(), warehouse.getId());
+    throw new AccessDeniedException("Access denied: You are not assigned to this warehouse.");
+  }
+
+  @Override
+  public boolean isLeadOwnerOrManagerOrAdmin(Lead lead, CustomUserDetails userDetails) {
+    if (isAdmin(userDetails)) {
+      return true;
+    }
+    if (lead.getSalePerson() != null && lead.getSalePerson().getId().equals(userDetails.getId())) {
+      return true;
+    }
+    if (lead.getSaleTeam() != null && lead.getSaleTeam().getLeader() != null
+        && lead.getSaleTeam().getLeader().getId().equals(userDetails.getId())) {
+      return true;
+    }
+    log.warn("User {} denied access to lead {}", userDetails.getId(), lead.getId());
+    throw new AccessDeniedException("Access denied: You do not own or manage this lead.");
+  }
+
+  @Override
+  public boolean isOrderOwnerOrManagerOrAdmin(Order order, CustomUserDetails userDetails) {
+    if (isAdmin(userDetails)) {
+      return true;
+    }
+    if (order.getCreatedBy() != null && order.getCreatedBy().getId().equals(userDetails.getId())) {
+      return true;
+    }
+    if (order.getLead() != null) {
+      Lead lead = order.getLead();
+      if (lead.getSalePerson() != null && lead.getSalePerson().getId().equals(userDetails.getId())) {
+        return true;
+      }
+      if (lead.getSaleTeam() != null && lead.getSaleTeam().getLeader() != null
+          && lead.getSaleTeam().getLeader().getId().equals(userDetails.getId())) {
+        return true;
+      }
+    }
+    log.warn("User {} denied access to order {}", userDetails.getId(), order.getId());
+    throw new AccessDeniedException("Access denied: You do not own or manage this order.");
   }
 }

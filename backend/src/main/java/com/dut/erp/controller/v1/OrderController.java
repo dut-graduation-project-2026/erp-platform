@@ -50,9 +50,9 @@ public class OrderController {
       @RequestParam(required = false) Instant endDate,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    java.time.Instant finalEndDate = endDate;
+    Instant finalEndDate = endDate;
     if (startDate != null && endDate == null) {
-      finalEndDate = java.time.Instant.now();
+      finalEndDate = Instant.now();
     }
     return ResponseEntity.ok(
         orderService.getOrdersWithFilterByOrganizationId(
@@ -63,10 +63,9 @@ public class OrderController {
             salePersonId,
             saleTeamId,
             startDate,
-            endDate,
+            finalEndDate,
             paginationRequest));
   }
-
 
   @GetMapping("/confirmed")
   @PreAuthorize(

@@ -33,6 +33,8 @@ import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.service.OrderService;
 import com.dut.erp.service.SalesOrderIntegrationService;
+import com.dut.erp.service.SecurityAuthService;
+import com.dut.erp.util.SecurityUtils;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -68,6 +70,7 @@ public class OrderServiceImpl implements OrderService {
   private final InventoryBalanceRepository inventoryBalanceRepository;
   private final SalesOrderIntegrationService salesOrderIntegrationService;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final SecurityAuthService securityAuthService;
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
@@ -123,7 +126,6 @@ public class OrderServiceImpl implements OrderService {
     return getPagedResponseFromIds(ids, pageable);
   }
 
-
   @Override
   public PagedEntityResponse<OrderBaseResponse> getOrdersByStatus(
       UUID organizationId, OrderStatus status, PaginationRequest paginationRequest) {
@@ -165,6 +167,7 @@ public class OrderServiceImpl implements OrderService {
   public OrderResponse getQuotationById(UUID organizationId, UUID id) {
     log.info("Fetching quotation {} for organization {}", id, organizationId);
     Order order = findOrderByIdAndOrganizationId(id, organizationId);
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
     if (order.getStatus() != OrderStatus.DRAFT) {
       throw new BadRequestException("Requested resource is an Order, not a Quotation");
     }
@@ -175,6 +178,7 @@ public class OrderServiceImpl implements OrderService {
   public OrderResponse getOrderById(UUID organizationId, UUID id) {
     log.info("Fetching order {} for organization {}", id, organizationId);
     Order order = findOrderByIdAndOrganizationId(id, organizationId);
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
     if (order.getStatus() == OrderStatus.DRAFT) {
       throw new BadRequestException("Requested resource is a Quotation, not an Order");
     }
@@ -221,6 +225,8 @@ public class OrderServiceImpl implements OrderService {
   public OrderResponse updateQuotation(UUID organizationId, UUID id, UpsertOrderRequest request) {
     Order order = findOrderByIdAndOrganizationId(id, organizationId);
 
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
+
     if (order.getStatus() != OrderStatus.DRAFT) {
       throw new BadRequestException("Only quotations in DRAFT status can be updated");
     }
@@ -261,6 +267,8 @@ public class OrderServiceImpl implements OrderService {
   public OrderResponse updateOrderStatus(
       UUID organizationId, UUID id, UpdateOrderStatusRequest request) {
     Order order = findOrderWithLeadByIdAndOrganizationId(id, organizationId);
+
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
 
     // Rule: Once status is COMPLETED, it cannot be updated
     if (order.getStatus() == OrderStatus.COMPLETED) {
@@ -412,6 +420,9 @@ public class OrderServiceImpl implements OrderService {
   @Transactional
   public void deleteQuotation(UUID organizationId, UUID id) {
     Order order = findOrderShallowByIdAndOrganizationId(id, organizationId);
+
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
+
     if (order.getStatus() != OrderStatus.DRAFT) {
       throw new BadRequestException("Only quotations in DRAFT status can be deleted");
     }
