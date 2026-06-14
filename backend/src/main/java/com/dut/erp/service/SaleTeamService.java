@@ -6,6 +6,7 @@ import com.dut.erp.dto.request.UpdateSaleTeamRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.SaleTeamBaseResponse;
 import com.dut.erp.dto.response.SaleTeamResponse;
+import com.dut.erp.dto.response.UserBaseResponse;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,6 +18,8 @@ public interface SaleTeamService {
   SaleTeamResponse getSaleTeamById(UUID organizationId, UUID id);
 
   List<SaleTeamResponse> getMySaleTeamsByOrganizationId(UUID organizationId, UUID userId);
+
+  List<UserBaseResponse> getSaleTeamUsers(UUID organizationId, UUID id);
 
   SaleTeamResponse createSaleTeam(UUID organizationId, CreateSaleTeamRequest request);
 
