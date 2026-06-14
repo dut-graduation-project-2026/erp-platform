@@ -53,19 +53,20 @@ export const useLogin = (): UseLoginReturn => {
         const permissions = await getUserPermissions(user.id);
         setPermissions(permissions);
         const orgIds = userOrgs.map((org) => org.id).join(',');
-        document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; secure; samesite=strict`;
-        document.cookie = `clientSession=true; path=/; max-age=86400; secure; samesite=strict`;
+        const maxAge = values.rememberMe ? 2592000 : 86400; // 30 days vs 1 day
+        document.cookie = `userOrgIds=${orgIds}; path=/; max-age=${maxAge}; secure; samesite=strict`;
+        document.cookie = `clientSession=true; path=/; max-age=${maxAge}; secure; samesite=strict`;
         const searchParams = new URLSearchParams(window.location.search);
         const redirectParam = searchParams.get('redirect');
-        const redirectPath = redirectParam || getRedirectPath(user as any);
+        const redirectPath = (redirectParam && redirectParam !== '/') ? redirectParam : getRedirectPath(user as any);
 
-        toast.success(`Chào mừng, ${user.firstName}! Đang chuyển hướng...`, {
+        toast.success(`Welcome back, ${user.firstName}! Redirecting...`, {
           duration: 2000,
         });
 
         router.push(redirectPath);
       } catch {
-        setServerError('Đăng nhập thất bại. Vui lòng kiểm tra lại.');
+        setServerError('Login failed. Please check your credentials.');
       } finally {
         setLoading(false);
       }

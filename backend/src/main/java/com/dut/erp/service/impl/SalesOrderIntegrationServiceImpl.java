@@ -21,7 +21,8 @@ public class SalesOrderIntegrationServiceImpl implements SalesOrderIntegrationSe
   @Transactional
   public void handleOrderConfirmation(Order order, UUID warehouseId) {
     if (warehouseId == null) {
-      throw new BadRequestException("Warehouse ID must be specified when confirming the sales order");
+      log.info("SalesOrderIntegration: Order {} confirmed without warehouse. Pending fulfillment.", order.getId());
+      return;
     }
 
     log.info("SalesOrderIntegration: Automatically creating warehouse issue document for order {} (number: {}) in warehouse {}", 

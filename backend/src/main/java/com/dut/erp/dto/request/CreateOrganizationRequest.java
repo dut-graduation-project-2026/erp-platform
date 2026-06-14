@@ -13,10 +13,8 @@ public record CreateOrganizationRequest(
         @Size(max = 255, message = "Address must not exceed 255 characters")
         String address,
     @NotBlank(message = "Hotline is required")
-        @Pattern(
-            regexp = "^(\\+\\d{1,3}[- ]?)?\\d{10}$",
-            message = "Hotline must be a valid phone number")
         @Size(max = 255, message = "Hotline must not exceed 255 characters")
+        @Pattern(regexp = "^\\+?[0-9]{7,20}$", message = "Hotline must be a valid phone number containing only digits (7-20 characters, optional leading +)")
         String hotline,
     @NotBlank(message = "Tax code is required")
         @Size(max = 255, message = "Tax code must not exceed 255 characters")

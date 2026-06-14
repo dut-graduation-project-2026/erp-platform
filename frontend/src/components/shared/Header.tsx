@@ -1,13 +1,14 @@
 'use client';
 
-import { logoutApi } from '@/features/auth/services/authService';
+import { logoutApi, fetchMyPermissionsApi } from '@/features/auth/services/authService';
 
 import React, { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn, setCookie, deleteCookie } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +40,7 @@ interface HeaderProps {
 export function Header({ className }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, organizations, currentOrgId, logout } = useAuthStore();
+  const { user, organizations, currentOrgId, logout, setCurrentOrgId, setPermissions } = useAuthStore();
   const currentOrg = organizations.find(org => org.id === currentOrgId);
 
   const [isAppLauncherOpen, setIsAppLauncherOpen] = useState(false);
@@ -70,12 +71,37 @@ export function Header({ className }: HeaderProps) {
     ? APP_MODULES.find(m => m.route === currentModuleRoute) 
     : null;
 
+  const handleSwitchOrg = async (orgId: string, orgName: string) => {
+    try {
+      setCurrentOrgId(orgId);
+      setCookie('currentOrgId', orgId, 86400);
+      
+      try {
+        const userPermissions = await fetchMyPermissionsApi(orgId);
+        setPermissions(userPermissions);
+      } catch (err) {
+        console.warn('Failed to fetch real permissions, falling back to mock:', err);
+        const { getUserPermissions } = await import('@/services/mockPermissions');
+        if (user?.id) {
+          const userPermissions = await getUserPermissions(user.id);
+          setPermissions(userPermissions);
+        }
+      }
+
+      router.push(`/dashboard/${orgId}`);
+      toast.success(`Switched to organization: ${orgName}`);
+    } catch (error) {
+      console.error('Switch org error:', error);
+      toast.error('Failed to switch organization');
+    }
+  };
+
   const handleLogout = async () => {
     try {
       logout();
-      document.cookie = 'currentOrgId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
-      document.cookie = 'userOrgIds=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
-      document.cookie = 'clientSession=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
+      deleteCookie('currentOrgId');
+      deleteCookie('userOrgIds');
+      deleteCookie('clientSession');
       await logoutApi();
       window.location.href = '/login';
     } catch (error) {
@@ -161,12 +187,22 @@ export function Header({ className }: HeaderProps) {
                   <ChevronDown className="h-4 w-4 ml-2" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Switch Organization</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Tech Corp</DropdownMenuItem>
-                <DropdownMenuItem>Manufacturing Inc</DropdownMenuItem>
-                <DropdownMenuItem>Retail Solutions</DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-56 p-1.5 shadow-[0px_2px_8px_rgba(0,0,0,0.15)] border border-[#e0e0e0] rounded-[4px] font-['Segoe_UI'] bg-white">
+                <DropdownMenuLabel className="px-3 py-2 text-[12px] font-bold text-[#898989] uppercase tracking-wider">Switch Organization</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-[#f5f5f5] my-1" />
+                {organizations.map(org => (
+                  <DropdownMenuItem
+                    key={org.id}
+                    onClick={() => handleSwitchOrg(org.id, org.name)}
+                    className={cn(
+                      "flex items-center text-[13px] text-[#242424] hover:bg-[#f0f4ff] hover:text-[#0066cc] cursor-pointer py-2 px-3 rounded-[2px] focus:bg-[#f0f4ff] focus:text-[#0066cc] transition-colors",
+                      org.id === currentOrgId && "bg-[#f0f4ff] text-[#0066cc] font-[600]"
+                    )}
+                  >
+                    <Building2 className="mr-2.5 h-4 w-4 text-[#898989]" />
+                    <span className="truncate">{org.name}</span>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           )}

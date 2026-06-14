@@ -19,6 +19,11 @@ export interface OrganizationInvitationResponse {
   createdAt: string;
 }
 
+export interface BulkOrganizationInvitationRequest {
+  roleId: string;
+  emails: string[];
+}
+
 export const inviteUserApi = async (
   orgId: string,
   data: OrganizationInvitationUserRequest
@@ -29,6 +34,27 @@ export const inviteUserApi = async (
   );
   return response.data;
 };
+
+export const bulkInviteUsersApi = async (
+  orgId: string,
+  data: BulkOrganizationInvitationRequest
+): Promise<OrganizationInvitationResponse[]> => {
+  const response = await apiClient.post<OrganizationInvitationResponse[]>(
+    `${API_ENDPOINTS.ORGANIZATIONS.INVITATIONS(orgId)}/bulk`,
+    data
+  );
+  return response.data;
+};
+
+export const getInvitationsApi = async (
+  orgId: string
+): Promise<OrganizationInvitationResponse[]> => {
+  const response = await apiClient.get<OrganizationInvitationResponse[]>(
+    API_ENDPOINTS.ORGANIZATIONS.INVITATIONS(orgId)
+  );
+  return response.data;
+};
+
 
 export const resendInvitationApi = async (
   orgId: string,

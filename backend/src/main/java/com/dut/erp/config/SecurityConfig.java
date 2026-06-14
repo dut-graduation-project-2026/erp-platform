@@ -32,7 +32,7 @@ public class SecurityConfig {
 
   private final CorsProperties corsProperties;
 
-  private static final String[] PUBLIC_ENDPOINTS = {"/api/v1/auth/**", "/api/v1/public/**"};
+  private static final String[] PUBLIC_ENDPOINTS = {"/api/v1/auth/**", "/api/v1/public/**", "/error"};
 
   private static final String[] ALLOWED_CORS_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"};
 

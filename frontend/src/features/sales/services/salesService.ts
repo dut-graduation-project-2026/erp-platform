@@ -438,3 +438,20 @@ export const getSalesCategoryDistribution = async (
   );
   return response.data;
 };
+
+export interface ProductCategory {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export const getProductCategories = async (
+  orgId: string,
+  params?: { search?: string; page?: number; limit?: number }
+): Promise<PagedEntityResponse<ProductCategory>> => {
+  const response = await apiClient.get<PagedEntityResponse<ProductCategory>>(
+    `/organizations/${orgId}/product-categories`,
+    { params }
+  );
+  return response.data;
+};

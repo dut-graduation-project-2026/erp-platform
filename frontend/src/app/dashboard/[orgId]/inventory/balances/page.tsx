@@ -135,21 +135,20 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Product Name</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Unit Price</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Physical Stock</th>
-                <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">Status</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Last Updated</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={5} className="py-12 text-center text-[#898989] text-[13px]">
                     <RefreshCcw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#0066cc]" />
                     Fetching inventory balances...
                   </td>
                 </tr>
               ) : balances.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={5} className="py-12 text-center text-[#898989] text-[13px]">
                     No stock balance records found in this warehouse.
                   </td>
                 </tr>
@@ -179,24 +178,6 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                           isLowStock ? "text-[#dc3545]" : "text-[#242424]"
                         )}>
                           {qty.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={cn(
-                          "inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-[12px] text-[11px] font-[600]",
-                          qty === 0 
-                            ? "bg-[#fbe5d6] text-[#c65911]" 
-                            : isLowStock 
-                              ? "bg-[#fff2cc] text-[#d68100]" 
-                              : "bg-[#e2f0d9] text-[#385723]"
-                        )}>
-                          {qty === 0 ? (
-                            <>Out of Stock</>
-                          ) : isLowStock ? (
-                            <><AlertTriangle className="w-3 h-3 mr-1" /> Low Stock</>
-                          ) : (
-                            <><CheckCircle className="w-3 h-3 mr-1" /> In Stock</>
-                          )}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-[12px] text-[#898989]">

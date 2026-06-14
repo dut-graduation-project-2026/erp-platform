@@ -15,9 +15,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -127,6 +129,18 @@ public class AuthController {
       @Valid @RequestBody ResetPasswordRequest request) {
     authenticationService.resetPassword(request);
     return ResponseEntity.ok("Password has been reset successfully.");
+  }
+
+  /**
+   * Validates a password reset token.
+   *
+   * @param token the token to validate
+   * @return a success message indicating successful validation
+   */
+  @GetMapping("/reset-password/validate")
+  public ResponseEntity<String> validateResetToken(@RequestParam String token) {
+    authenticationService.validateResetToken(token);
+    return ResponseEntity.ok("Token is valid.");
   }
 
   /**

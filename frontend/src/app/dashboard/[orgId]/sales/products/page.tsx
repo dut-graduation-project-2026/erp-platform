@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
-import { getProducts } from '@/features/sales/services/salesService';
+import { getProducts, getProductCategories, ProductCategory } from '@/features/sales/services/salesService';
 import { Product } from '@/features/sales/types';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, Filter, X, Save } from 'lucide-react';
@@ -17,6 +17,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
   const { orgId } = use(params);
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { hasPermission } = usePermissions();
@@ -39,6 +40,9 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
 
   useEffect(() => {
     loadProducts();
+    getProductCategories(orgId)
+      .then(res => setCategories(res.data || []))
+      .catch(console.error);
   }, [orgId]);
 
   useEffect(() => {
@@ -54,7 +58,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
     if (product) {
       setSelectedProduct(product);
     } else {
-      setSelectedProduct({ name: '', sku: '', description: '', price: 0, isActive: true });
+      setSelectedProduct({ name: '', sku: '', description: '', price: 0, isActive: true, categoryId: categories[0]?.id || '' });
     }
     setIsModalOpen(true);
   };
@@ -67,6 +71,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
   const handleSaveProduct = async () => {
     if (!selectedProduct?.name) return alert('Product name is required.');
     if (!selectedProduct?.sku) return alert('SKU is required.');
+    if (!selectedProduct?.categoryId) return alert('Product category is required.');
     setIsSaving(true);
     try {
       if (selectedProduct.id) {
@@ -135,7 +140,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
           <div className="flex justify-center items-center h-full text-[#898989]">No products found</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {filteredProducts.map((product) => (
+             {filteredProducts.map((product) => (
               <div 
                 key={product.id} 
                 onClick={() => handleOpenModal(product)}
@@ -146,12 +151,19 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                  </div>
                  <div className="p-4 flex-1 flex flex-col">
                     <h3 className="text-[14px] font-[600] text-[#242424] mb-1 leading-tight line-clamp-2">{product.name}</h3>
-                    <p className="text-[12px] text-[#898989] font-mono mb-3">{product.sku || product.id || 'PRD-UNKNOWN'}</p>
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-[12px] text-[#898989] font-mono">{product.sku || product.id || 'PRD-UNKNOWN'}</p>
+                      {product.category?.name && (
+                        <span className="bg-[#eef2f6] text-[#475569] text-[11px] px-2 py-0.5 rounded font-[500]">
+                          {product.category.name}
+                        </span>
+                      )}
+                    </div>
                     
                     <div className="mt-auto flex justify-between items-end">
                        <div>
                           <span className="block text-[11px] text-[#898989] uppercase font-[600]">Sales Price</span>
-                          <span className="text-[14px] font-mono font-[700] text-[#0066cc]">₫{product.price?.toLocaleString()}</span>
+                          <span className="text-[14px] font-mono font-[700] text-[#0066cc]">${product.price?.toLocaleString()}</span>
                        </div>
                        <div className="text-right">
                           <span className="block text-[11px] text-[#898989] uppercase font-[600]">Status</span>
@@ -213,7 +225,20 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
 
                <div className="grid grid-cols-2 gap-6">
                  <div>
-                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sales Price (₫)</label>
+                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Product Category <span className="text-red-500">*</span></label>
+                   <select
+                     value={selectedProduct.categoryId || ''}
+                     onChange={e => setSelectedProduct({...selectedProduct, categoryId: e.target.value})}
+                     className="w-full h-10 px-3 border border-[#d0d0d0] rounded-[4px] bg-white text-[14px] focus:outline-none focus:border-[#0066cc]"
+                   >
+                     <option value="" disabled>Select a category</option>
+                     {categories.map(cat => (
+                       <option key={cat.id} value={cat.id}>{cat.name}</option>
+                     ))}
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sales Price ($)</label>
                    <Input 
                      type="number"
                      value={selectedProduct.price || 0}
@@ -221,7 +246,10 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                      className="h-10 border-[#d0d0d0] rounded-[4px] font-mono focus-visible:ring-0 focus-visible:border-[#0066cc]"
                    />
                  </div>
-                 <div className="flex flex-col justify-center pt-5">
+               </div>
+
+               {!!selectedProduct.id && (
+                 <div className="flex flex-col justify-center">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input 
                         type="checkbox" 
@@ -232,7 +260,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                       <span className="text-[14px] font-[600] text-[#242424]">Active Product</span>
                     </label>
                  </div>
-               </div>
+               )}
              </div>
 
              <div className="px-6 py-4 bg-[#f8f8f8] border-t border-[#e0e0e0] flex justify-end space-x-2 shrink-0">

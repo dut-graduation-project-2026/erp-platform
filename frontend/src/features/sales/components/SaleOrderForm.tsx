@@ -419,7 +419,11 @@ export function SaleOrderForm({ order, orgId }: Props) {
                           className="w-full h-8 text-[13px] border border-[#d0d0d0] rounded px-1 outline-none bg-white focus:border-[#0066cc]"
                         >
                           <option value="">-- Select --</option>
-                          {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          {products.map((p) => {
+                            const isAlreadySelected = lines.some((l, lIdx) => lIdx !== idx && l.productId === p.id);
+                            if (isAlreadySelected) return null;
+                            return <option key={p.id} value={p.id}>{p.name}</option>;
+                          })}
                         </select>
                       </td>
                       <td className="py-2 px-4">

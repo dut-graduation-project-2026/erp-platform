@@ -3,13 +3,13 @@ import { CrmLead, CreateCrmLeadRequest } from '../types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Clock, MessageSquare, Mail, Phone, Building } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, Mail, Phone, Building, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateLead, createLead } from '../services/crmService';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getSaleTeams } from '../services/crmService';
-import { getPartners } from '@/features/sales/services/salesService';
+import { getPartners, createPartner } from '@/features/sales/services/salesService';
 import { fetchUsersApi } from '@/features/organization/services/userService';
 import { toast } from 'sonner';
 import { PERMISSIONS } from '@/config/permissions';
@@ -41,8 +41,9 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
   const [partners, setPartners] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [showConvertModal, setShowConvertModal] = useState(false);
-  const [convertType, setConvertType] = useState('new');
+  const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState<any>({ name: '', type: 'INDIVIDUAL', code: '', email: '', phone: '', address: '', taxCode: '', contacts: [] });
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   
   useEffect(() => {
     // Load Sale Teams
@@ -69,6 +70,26 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
   ]);
   const [newNote, setNewNote] = useState('');
   const [isLogging, setIsLogging] = useState(false);
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomer.name?.trim()) return alert('Customer name is required.');
+    if (!newCustomer.code?.trim()) return alert('Customer code is required.');
+    setIsSavingCustomer(true);
+    try {
+      const res = await createPartner(orgId, newCustomer);
+      const updatedPartnersRes = await getPartners(orgId, { limit: 100 });
+      const updatedList = updatedPartnersRes.data || [];
+      setPartners(updatedList);
+      setFormData(prev => ({ ...prev, partnerId: res.id }));
+      setIsNewCustomerModalOpen(false);
+      toast.success('Customer created and linked successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to create customer.');
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!formData.name) return alert("Opportunity name is required.");
@@ -121,35 +142,35 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
            )}
         </div>
         <div className="flex space-x-2">
-           {!isNew && (
-             <Button 
-               variant="outline" 
-               className="border-[#0066cc] text-[#0066cc] hover:bg-[#f0f4ff] h-10 px-4 rounded-[4px] font-[600]"
-               onClick={() => {
-                 if (!formData.partnerId) {
-                   toast.error('You must link a Customer/Partner to this lead and save before converting to an order.');
-                   return;
-                 }
-                 setShowConvertModal(true);
-               }}
-             >
-               Convert to Order
-             </Button>
-           )}
-           <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={() => router.push(`/dashboard/${orgId}/crm`)}>
-             Cancel
-           </Button>
-            {(isNew ? hasPermission(PERMISSIONS.LEADS.CREATE) : hasPermission(PERMISSIONS.LEADS.WRITE)) && (
-             <Button 
-               onClick={handleSave} 
-               disabled={isSaving}
-               className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
-             >
-               {isSaving ? 'Saving...' : 'Save'}
-             </Button>
-           )}
-         </div>
-      </div>
+            {!isNew && (
+              <Button 
+                variant="outline" 
+                className="border-[#0066cc] text-[#0066cc] hover:bg-[#f0f4ff] h-10 px-4 rounded-[4px] font-[600]"
+                onClick={() => {
+                  if (!formData.partnerId) {
+                    toast.error('You must link a Customer/Partner to this lead and save before converting to an order.');
+                    return;
+                  }
+                  router.push(`/dashboard/${orgId}/sales/quotations/new?leadId=${lead?.id}`);
+                }}
+              >
+                Convert to Order
+              </Button>
+            )}
+            <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={() => router.push(`/dashboard/${orgId}/crm`)}>
+              Cancel
+            </Button>
+             {(isNew ? hasPermission(PERMISSIONS.LEADS.CREATE) : hasPermission(PERMISSIONS.LEADS.WRITE)) && (
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving}
+                className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            )}
+          </div>
+       </div>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="w-3/5 overflow-y-auto p-6 border-r border-[#e0e0e0]">
@@ -165,33 +186,46 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
               </div>
 
               <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sale Team *</label>
-                  <select
-                    value={formData.saleTeamId || ''}
-                    onChange={e => setFormData({...formData, saleTeamId: e.target.value})}
-                    className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
-                  >
-                    <option value="">Select Sale Team...</option>
-                    {saleTeams.map(team => (
-                      <option key={team.id} value={team.id}>{team.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Salesperson</label>
-                  <select
-                    value={formData.salePersonId || ''}
-                    onChange={e => setFormData({...formData, salePersonId: e.target.value || undefined})}
-                    className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
-                  >
-                    <option value="">Select Salesperson...</option>
-                    {users.map(u => (
-                      <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.email})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                 <div>
+                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sale Team *</label>
+                   <select
+                     value={formData.saleTeamId || ''}
+                     onChange={e => {
+                       const newTeamId = e.target.value;
+                       const newTeam = saleTeams.find(t => t.id === newTeamId);
+                       const isMember = newTeam?.members?.some((m: any) => m.id === formData.salePersonId);
+                       setFormData({
+                         ...formData,
+                         saleTeamId: newTeamId,
+                         salePersonId: isMember ? formData.salePersonId : ''
+                       });
+                     }}
+                     className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
+                   >
+                     <option value="">Select Sale Team...</option>
+                     {saleTeams.map(team => (
+                       <option key={team.id} value={team.id}>{team.name}</option>
+                     ))}
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Salesperson</label>
+                   <select
+                     value={formData.salePersonId || ''}
+                     onChange={e => setFormData({...formData, salePersonId: e.target.value || undefined})}
+                     className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
+                   >
+                     <option value="">Select Salesperson...</option>
+                     {(() => {
+                       const selectedTeam = saleTeams.find(t => t.id === formData.saleTeamId);
+                       const filteredUsers = selectedTeam ? Array.from(selectedTeam.members || []) : [];
+                       return filteredUsers.map((u: any) => (
+                         <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.email})</option>
+                       ));
+                     })()}
+                   </select>
+                 </div>
+               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
@@ -216,7 +250,19 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Customer / Partner</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[14px] font-[600] text-[#242424]">Customer / Partner</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewCustomer({ name: '', type: 'INDIVIDUAL', code: `CUST-${Date.now().toString().slice(-6)}`, email: '', phone: '', address: '', taxCode: '', contacts: [] });
+                        setIsNewCustomerModalOpen(true);
+                      }}
+                      className="text-[12px] text-[#0066cc] hover:underline font-[600]"
+                    >
+                      + Create new customer
+                    </button>
+                  </div>
                   <select
                     value={formData.partnerId || ''}
                     onChange={e => setFormData({...formData, partnerId: e.target.value || undefined})}
@@ -339,55 +385,108 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
         </div>
       </div>
 
-      {showConvertModal && (
+      {/* Inline Customer Creation Modal */}
+      {isNewCustomerModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-[8px] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] w-full max-w-[500px] overflow-hidden">
-             <div className="p-6">
-                <h2 className="text-[24px] font-[700] text-[#242424] mb-6">Convert to Sales Order</h2>
-                
-                <div className="space-y-4">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="convertType" 
-                      value="new"
-                      checked={convertType === 'new'}
-                      onChange={(e) => setConvertType(e.target.value)}
-                      className="w-4 h-4 text-[#0066cc] focus:ring-[#0066cc]"
-                    />
-                    <span className="text-[14px] text-[#242424]">Create a new quotation</span>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="convertType" 
-                      value="link"
-                      checked={convertType === 'link'}
-                      onChange={(e) => setConvertType(e.target.value)}
-                      className="w-4 h-4 text-[#0066cc] focus:ring-[#0066cc]"
-                    />
-                    <span className="text-[14px] text-[#242424]">Link to existing quotation</span>
-                  </label>
+            <div className="px-6 py-4 border-b border-[#e0e0e0] flex justify-between items-center bg-[#f8f8f8]">
+              <h2 className="text-[18px] font-[700] text-[#242424]">New Customer / Partner</h2>
+              <Button variant="ghost" size="icon" onClick={() => setIsNewCustomerModalOpen(false)} className="h-8 w-8 text-[#898989] hover:text-[#242424]">
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <label className="block text-[13px] font-[600] text-[#242424] mb-1">Name *</label>
+                <Input
+                  value={newCustomer.name}
+                  onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                  placeholder="e.g. John Doe"
+                  className="h-9"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#242424] mb-1">Code *</label>
+                  <Input
+                    value={newCustomer.code}
+                    onChange={e => setNewCustomer({ ...newCustomer, code: e.target.value })}
+                    className="h-9 uppercase font-mono"
+                  />
                 </div>
-             </div>
-             <div className="px-6 py-4 bg-[#f8f8f8] border-t border-[#e0e0e0] flex justify-end space-x-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowConvertModal(false)}
-                  className="bg-white border-[#d0d0d0] text-[#242424] h-10 px-4 rounded-[4px] font-[600]"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
-                  onClick={() => {
-                     setShowConvertModal(false);
-                     router.push(`/dashboard/${orgId}/sales/quotations/new?leadId=${lead?.id}`);
-                  }}
-                >
-                  Create Quotation
-                </Button>
-             </div>
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#242424] mb-1">Type *</label>
+                  <select
+                    value={newCustomer.type}
+                    onChange={e => setNewCustomer({ ...newCustomer, type: e.target.value })}
+                    className="h-9 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white text-[13px]"
+                  >
+                    <option value="INDIVIDUAL">Individual</option>
+                    <option value="COMPANY">Company</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#242424] mb-1">Email</label>
+                  <Input
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                    placeholder="e.g. contact@example.com"
+                    className="h-9"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#242424] mb-1">Phone</label>
+                  <Input
+                    value={newCustomer.phone}
+                    onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                    placeholder="e.g. +123456789"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-[600] text-[#242424] mb-1">Address</label>
+                <Input
+                  value={newCustomer.address}
+                  onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                  placeholder="e.g. 123 Main St"
+                  className="h-9"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-[600] text-[#242424] mb-1">Tax Code</label>
+                <Input
+                  value={newCustomer.taxCode}
+                  onChange={e => setNewCustomer({ ...newCustomer, taxCode: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-[#f8f8f8] border-t border-[#e0e0e0] flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsNewCustomerModalOpen(false)}
+                className="h-9 px-4 rounded-[4px]"
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="bg-[#0066cc] hover:bg-[#004499] text-white h-9 px-4 rounded-[4px]"
+                disabled={isSavingCustomer}
+                onClick={handleCreateCustomer}
+              >
+                {isSavingCustomer ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
           </div>
         </div>
       )}

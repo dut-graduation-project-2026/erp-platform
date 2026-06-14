@@ -60,7 +60,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     });
 
     es.onerror = (error) => {
-      console.error('SSE connection error:', error);
+      // Suppress noisy SSE disconnection warnings typically caused by navigating away
       if (es.readyState === EventSource.CLOSED) {
         get().cleanupSSE();
       }

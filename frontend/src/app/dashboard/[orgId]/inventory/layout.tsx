@@ -35,6 +35,7 @@ export default function InventoryLayout({
   const masterDataItems = [
     { name: 'Warehouses', href: `${basePath}/warehouses`, icon: Warehouse },
     { name: 'Stock Balances', href: `${basePath}/balances`, icon: Activity },
+    { name: 'Products', href: `/dashboard/${orgId}/sales/products`, icon: Package },
   ];
 
   const reportItems = [

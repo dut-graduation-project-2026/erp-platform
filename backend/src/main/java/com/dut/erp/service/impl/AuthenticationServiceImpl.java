@@ -314,4 +314,26 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     passwordResetTokenRepository.deleteByUser(user);
     log.info("Password reset successfully for user: {}", user.getEmail());
   }
+
+  @Override
+  @Transactional
+  public void validateResetToken(String token) {
+    log.info("Validating password reset token: {}", token);
+
+    PasswordResetToken resetToken =
+        passwordResetTokenRepository
+            .findByToken(token)
+            .orElseThrow(
+                () -> {
+                  log.warn("Token validation failed: token not found");
+                  return new BadRequestException("Invalid or expired password reset token.");
+                });
+
+    if (resetToken.getExpiresAt().isBefore(Instant.now())) {
+      log.warn("Token validation failed: token expired");
+      passwordResetTokenRepository.delete(resetToken);
+      throw new BadRequestException("Invalid or expired password reset token.");
+    }
+    log.info("Password reset token is valid");
+  }
 }
