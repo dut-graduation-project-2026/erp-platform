@@ -5,6 +5,7 @@ import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
 import com.dut.erp.dto.response.analytics.LeadStageCount;
+import com.dut.erp.dto.response.analytics.PipelineStageSummary;
 import com.dut.erp.dto.response.analytics.TopProductResponse;
 import java.time.Instant;
 import java.util.List;
@@ -24,4 +25,6 @@ public interface AnalyticsService {
       UUID organizationId, Instant startDate, Instant endDate);
 
   List<LeadStageCount> getLeadStageFunnel(UUID organizationId);
+
+  List<PipelineStageSummary> getPipelineSummary(UUID organizationId);
 }

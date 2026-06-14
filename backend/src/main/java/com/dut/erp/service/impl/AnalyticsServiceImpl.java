@@ -5,6 +5,7 @@ import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
 import com.dut.erp.dto.response.analytics.LeadStageCount;
+import com.dut.erp.dto.response.analytics.PipelineStageSummary;
 import com.dut.erp.dto.response.analytics.TopProductResponse;
 import com.dut.erp.enums.LeadStage;
 import com.dut.erp.enums.OrderStatus;
@@ -30,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -306,6 +308,38 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     return countsMap.entrySet().stream()
         .map(entry -> new LeadStageCount(entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<PipelineStageSummary> getPipelineSummary(UUID organizationId) {
+    log.info("Fetching pipeline summary for organization {}", organizationId);
+
+    List<Object[]> rows = leadRepository.findPipelineGroupByStage(organizationId);
+
+    Map<LeadStage, PipelineStageSummary> summaryMap = new EnumMap<>(LeadStage.class);
+    for (LeadStage stage : LeadStage.values()) {
+      summaryMap.put(stage, new PipelineStageSummary(stage, 0, BigDecimal.ZERO, BigDecimal.ZERO, 0.0));
+    }
+
+    for (Object[] row : rows) {
+      LeadStage stage = (LeadStage) row[0];
+      long count = (long) row[1];
+      BigDecimal revenue = (BigDecimal) row[2];
+      double avgProb = row[3] != null ? ((Number) row[3]).doubleValue() : 0.0;
+
+      BigDecimal weightedRevenue = BigDecimal.ZERO;
+      if (count > 0 && revenue.compareTo(BigDecimal.ZERO) > 0) {
+        weightedRevenue = revenue
+            .multiply(BigDecimal.valueOf(avgProb))
+            .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+      }
+
+      summaryMap.put(stage, new PipelineStageSummary(stage, count, revenue, weightedRevenue, avgProb));
+    }
+
+    return List.of(LeadStage.values()).stream()
+        .map(summaryMap::get)
         .collect(Collectors.toList());
   }
 }

@@ -60,6 +60,17 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
       """)
   List<Object[]> countLeadsByStage(@Param("orgId") UUID orgId);
 
+  @Query("""
+      SELECT l.stage,
+        COUNT(l.id),
+        COALESCE(SUM(l.expectedRevenue), 0),
+        COALESCE(AVG(l.probability), 0)
+      FROM Lead l
+      WHERE l.organization.id = :orgId
+      GROUP BY l.stage
+      """)
+  List<Object[]> findPipelineGroupByStage(@Param("orgId") UUID orgId);
+
   @Query(
       """
       SELECT l FROM Lead l

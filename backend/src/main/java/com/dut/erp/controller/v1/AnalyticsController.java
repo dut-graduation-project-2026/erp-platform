@@ -5,6 +5,7 @@ import com.dut.erp.dto.response.analytics.RevenueTrendPoint;
 import com.dut.erp.dto.response.analytics.OrderStatusCount;
 import com.dut.erp.dto.response.analytics.CategorySalesDistribution;
 import com.dut.erp.dto.response.analytics.LeadStageCount;
+import com.dut.erp.dto.response.analytics.PipelineStageSummary;
 import com.dut.erp.dto.response.analytics.TopProductResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.AnalyticsService;
@@ -117,5 +118,18 @@ public class AnalyticsController {
       @PathVariable UUID organizationId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(analyticsService.getLeadStageFunnel(organizationId));
+  }
+
+  @GetMapping("/pipeline/summary")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('leads:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<List<PipelineStageSummary>> getPipelineSummary(
+      @PathVariable UUID organizationId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(analyticsService.getPipelineSummary(organizationId));
   }
 }
