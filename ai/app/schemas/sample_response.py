@@ -111,10 +111,10 @@ class ForecastPoint(BaseModel):
 
 
 class SalesForecastResponse(BaseModel):
-    summary: str = Field(description="AI forecast summary comments (must be in Vietnamese).")
+    summary: str = Field(description="AI forecast summary comments in English.")
     forecast_30d_total_revenue: float = Field(description="Forecasted total revenue for the next 30 days.")
     forecast_points: List[ForecastPoint] = Field(description="List of chart points for actual and forecasted revenue.")
-    insights: List[str] = Field(description="In-depth insights and notes from the AI (must be in Vietnamese).")
+    insights: List[str] = Field(description="In-depth insights and notes from the AI in English.")
 
 
 class ProductAbcXyz(BaseModel):
@@ -129,10 +129,10 @@ class ProductAbcXyz(BaseModel):
 
 
 class InventoryAnalysisResponse(BaseModel):
-    summary: str = Field(description="AI inventory analysis summary comments (must be in Vietnamese).")
+    summary: str = Field(description="AI inventory analysis summary comments in English.")
     abc_xyz_matrix: List[ProductAbcXyz] = Field(description="ABC-XYZ classification matrix and inventory metrics.")
     critical_stock_count: int = Field(description="Number of products in CRITICAL status (stock below ROP).")
-    recommendations: List[str] = Field(description="Stock optimization recommendations (must be in Vietnamese).")
+    recommendations: List[str] = Field(description="Stock optimization recommendations in English.")
 
 
 class ReorderItem(BaseModel):
@@ -145,7 +145,7 @@ class ReorderItem(BaseModel):
     eoq: float = Field(description="Economic Order Quantity (EOQ).")
     recommendedQuantity: float = Field(description="Recommended restocking quantity.")
     urgency: str = Field(description="Urgency level (HIGH, MEDIUM, or LOW).")
-    notes: str = Field(description="Restocking reason or notes (must be in Vietnamese).")
+    notes: str = Field(description="Restocking reason or notes in English.")
 
 
 class ReorderRecommendationResponse(BaseModel):
@@ -153,24 +153,24 @@ class ReorderRecommendationResponse(BaseModel):
 
 
 class DashboardSummaryResponse(BaseModel):
-    summary: str = Field(description="Daily brief summary by the AI (must be in Vietnamese).")
-    alerts: List[str] = Field(description="List of quick alerts (must be in Vietnamese).")
+    summary: str = Field(description="Daily brief summary by the AI in English.")
+    alerts: List[str] = Field(description="List of quick alerts in English.")
 
 
 # ─── LIGHTWEIGHT SCHEMAS FOR LLM RESPONSES (TO PREVENT TRUNCATION) ───
 class SalesForecastLLMResponse(BaseModel):
-    summary: str = Field(description="AI forecast summary comments (must be in Vietnamese).")
-    insights: List[str] = Field(description="In-depth insights and notes from the AI (must be in Vietnamese).")
+    summary: str = Field(description="AI forecast summary comments in English.")
+    insights: List[str] = Field(description="In-depth insights and notes from the AI in English.")
 
 
 class InventoryLLMResponse(BaseModel):
-    summary: str = Field(description="AI inventory analysis summary comments (must be in Vietnamese).")
-    recommendations: List[str] = Field(description="Stock optimization recommendations (must be in Vietnamese).")
+    summary: str = Field(description="AI inventory analysis summary comments in English.")
+    recommendations: List[str] = Field(description="Stock optimization recommendations in English.")
 
 
 class ReorderItemLLM(BaseModel):
     productId: str = Field(description="Product identifier.")
-    notes: str = Field(description="Short restocking reason notes rewritten (must be in Vietnamese, maximum 15 words).")
+    notes: str = Field(description="Short restocking reason notes rewritten in English (maximum 15 words).")
 
 
 class ReorderRecommendationLLMResponse(BaseModel):

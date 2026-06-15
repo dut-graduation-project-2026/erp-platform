@@ -37,7 +37,7 @@ class OpenAIClient:
                 f"\n\nCRITICAL: You MUST respond with a JSON object matching this schema:\n"
                 f"{json.dumps(schema_json, ensure_ascii=False, indent=2)}\n"
                 f"Do NOT wrap the response in markdown blocks (e.g., do NOT use ```json ... ```). "
-                f"Output ONLY the raw JSON string. Ensure all text fields in the JSON are in Vietnamese."
+                f"Output ONLY the raw JSON string. Ensure all text fields in the JSON are in English."
             )
             
             # Find the last user message and append the instruction

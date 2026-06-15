@@ -68,7 +68,7 @@ class AnalysisService:
         messages.append(
             {
                 "role": "user",
-                "content": "Based on the gathered data above, synthesize and return the analysis results in the requested format. Note: Any text fields (such as summary, insights, notes, recommendations, etc.) MUST be written in Vietnamese.",
+                "content": "Based on the gathered data above, synthesize and return the analysis results in the requested format. Note: Any text fields (such as summary, insights, notes, recommendations, etc.) MUST be written in English.",
             }
         )
 
@@ -212,11 +212,11 @@ class AnalysisService:
             f"- Total actual revenue over the last 90 days: {sum(y_hist):,.2f} USD\n"
             f"- Forecasted total revenue for the next 30 days: {forecast_revenue_total:,.2f} USD\n"
             f"- Daily trend slope (Linear Slope): {slope:,.2f} (positive indicates growth, negative indicates decline)\n"
-            f"Please write a brief comment report (about 3-4 sentences) pointing out the sales trend and proposing 3 recommendations to optimize the sales strategy. The entire report and recommendations must be in Vietnamese."
+            f"Please write a brief comment report (about 3-4 sentences) pointing out the sales trend and proposing 3 recommendations to optimize the sales strategy. The entire report and recommendations must be in English."
         )
 
         messages = [
-            {"role": "system", "content": "You are an ERP enterprise financial analyst. Write concise, realistic, and professional comments in Vietnamese."},
+            {"role": "system", "content": "You are an ERP enterprise financial analyst. Write concise, realistic, and professional comments in English."},
             {"role": "user", "content": prompt}
         ]
 
@@ -255,10 +255,10 @@ class AnalysisService:
         if not warehouses:
             # Trả về kết quả rỗng nếu không có kho hàng
             return InventoryAnalysisResponse(
-                summary="Không tìm thấy kho hàng nào trong tổ chức.",
+                summary="No warehouses found in the organization.",
                 abc_xyz_matrix=[],
                 critical_stock_count=0,
-                recommendations=["Hãy tạo kho hàng và nhập sản phẩm để bắt đầu phân tích."]
+                recommendations=["Please create a warehouse and import products to start the analysis."]
             )
 
         # 2. Lấy số dư tồn kho từ tất cả các kho
@@ -440,11 +440,11 @@ class AnalysisService:
             f"- Total analyzed items: {len(abc_xyz_matrix)}\n"
             f"- Number of products below reorder point (ROP) (needs restock): {len(critical_items)} (including {critical_count} at CRITICAL level)\n"
             f"- Representative shortage products: {', '.join([f'{x.productName} (Stock: {x.currentStock}/{x.rop} ROP)' for x in critical_items[:5]])}\n"
-            f"Please write a brief inventory analysis report (3-4 sentences) pointing out the risk of supply chain disruption and propose 3 solutions to improve inventory management. The entire analysis and recommendations must be in Vietnamese."
+            f"Please write a brief inventory analysis report (3-4 sentences) pointing out the risk of supply chain disruption and propose 3 solutions to improve inventory management. The entire analysis and recommendations must be in English."
         )
 
         messages = [
-            {"role": "system", "content": "You are a smart ERP logistics manager. Write professional comments in Vietnamese."},
+            {"role": "system", "content": "You are a smart ERP logistics manager. Write professional comments in English."},
             {"role": "user", "content": summary_prompt}
         ]
 
@@ -514,7 +514,7 @@ class AnalysisService:
                 # Mức độ ưu tiên
                 urgency = "HIGH" if prod.status == "CRITICAL" or prod.abcClass == "A" else "MEDIUM"
                 
-                note = f"Tồn kho thực tế ({prod.currentStock}) thấp hơn điểm ROP ({prod.rop}). Khuyên dùng nhập {recommended_qty} sản phẩm nhóm {prod.abcClass}-{prod.xyzClass}."
+                note = f"Actual stock ({prod.currentStock}) is below the ROP ({prod.rop}). Recommended to order {recommended_qty} units of product group {prod.abcClass}-{prod.xyzClass}."
 
                 reorder_items.append(
                     ReorderItem(
@@ -542,7 +542,7 @@ class AnalysisService:
                 )
             
             prompt = (
-                "Please rewrite the restocking reason (notes) in professional Vietnamese for the following list of warehouse recommendations. "
+                "Please rewrite the restocking reason (notes) in professional English for the following list of warehouse recommendations. "
                 "Highlight the importance of the product based on its ABC-XYZ classification:\n"
                 + "\n".join(llm_input_lines)
             )
@@ -550,7 +550,7 @@ class AnalysisService:
             messages = [
                 {
                     "role": "system",
-                    "content": "You are an AI supply chain assistant. Write extremely concise note fields (maximum 15 words) for each product in Vietnamese, clearly stating the ROP reason/product group. Return the correct product ID.",
+                    "content": "You are an AI supply chain assistant. Write extremely concise note fields (maximum 15 words) for each product in English, clearly stating the ROP reason/product group. Return the correct product ID.",
                 },
                 {"role": "user", "content": prompt}
             ]
@@ -587,14 +587,14 @@ class AnalysisService:
             predicted_sales = 0.0
 
         prompt = (
-            f"Please compose a Daily Brief in Vietnamese, extremely concise (about 3 sentences), for the CEO:\n"
+            f"Please compose a Daily Brief in English, extremely concise (about 3 sentences), for the CEO:\n"
             f"- Forecasted sales for the next 30 days: {predicted_sales:,.2f} USD\n"
             f"- Stock alerts: {critical_count} products are running low below the ROP.\n"
             f"Use an inspiring, concise tone, highlighting the immediate action to take today."
         )
 
         messages = [
-            {"role": "system", "content": "You are the CEO's executive AI assistant. Write a concise, polite summary focusing on immediate actions, written in Vietnamese."},
+            {"role": "system", "content": "You are the CEO's executive AI assistant. Write a concise, polite summary focusing on immediate actions, written in English."},
             {"role": "user", "content": prompt}
         ]
 

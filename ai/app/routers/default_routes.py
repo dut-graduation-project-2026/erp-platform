@@ -34,7 +34,7 @@ async def sample_response():
     messages = [
         {
             "role": "system",
-            "content": "You are a text data analysis expert. Analyze the provided text. Output your summary, topics, and warnings in Vietnamese.",
+            "content": "You are a text data analysis expert. Analyze the provided text. Output your summary, topics, and warnings in English.",
         },
         {"role": "user", "content": sample_text},
     ]
