@@ -13,6 +13,7 @@ import com.dut.erp.entity.Partner;
 import com.dut.erp.entity.PartnerContact;
 import com.dut.erp.entity.Permission;
 import com.dut.erp.entity.Product;
+import com.dut.erp.entity.ProductCategory;
 import com.dut.erp.entity.ReplenishmentRequest;
 import com.dut.erp.entity.Role;
 import com.dut.erp.entity.SaleTeam;
@@ -31,6 +32,7 @@ import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.PartnerContactRepository;
 import com.dut.erp.repository.PartnerRepository;
 import com.dut.erp.repository.PermissionRepository;
+import com.dut.erp.repository.ProductCategoryRepository;
 import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.repository.ReplenishmentRequestRepository;
 import com.dut.erp.repository.RoleRepository;
@@ -39,15 +41,12 @@ import com.dut.erp.repository.StockValuationRepository;
 import com.dut.erp.repository.TaxRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.repository.WarehouseRepository;
-import com.dut.erp.entity.ProductCategory;
-import com.dut.erp.repository.ProductCategoryRepository;
 import com.dut.erp.service.AuthenticationService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,15 +91,45 @@ public class SampleDataSeeder implements CommandLineRunner {
   public void run(String... args) {
     seedModulesAndPermissions();
 
+    // Clean up old seed if it exists, to force re-seeding with updated low stock
+    // and alerts
+    boolean hasOldSeed = false;
+    Optional<Product> macbookOpt = productRepository.findAll().stream()
+        .filter(p -> "MacBook Pro M3 Max".equals(p.getName()))
+        .findFirst();
+    if (macbookOpt.isPresent()) {
+      UUID macbookId = macbookOpt.get().getId();
+      hasOldSeed = inventoryBalanceRepository.findAll().stream()
+          .anyMatch(
+              b -> b.getProduct().getId().equals(macbookId)
+                  && b.getQuantity().compareTo(BigDecimal.valueOf(100.0)) == 0);
+    }
+
+    if (hasOldSeed) {
+      replenishmentRequestRepository.deleteAll();
+      stockValuationRepository.deleteAll();
+      inventoryDocumentLineRepository.deleteAll();
+      inventoryDocumentRepository.deleteAll();
+      inventoryBalanceRepository.deleteAll();
+      invoiceRepository.deleteAll();
+      orderRepository.deleteAll();
+      leadRepository.deleteAll();
+      partnerContactRepository.deleteAll();
+      partnerRepository.deleteAll();
+      productRepository.deleteAll();
+      productCategoryRepository.deleteAll();
+    }
+
     Map<String, Organization> organizationsByName = loadOrganizationsByName();
-    Organization organization =
-        getOrCreateOrganization(
-            organizationsByName,
-            ORG_NAME,
-            "Default seeded organization for initial setup",
-            "1 Default Street",
-            "19001001",
-            ORG_TAX_CODE);
+    Map<String, Organization> organizationsByTaxCode = loadOrganizationsByTaxCode();
+    Organization organization = getOrCreateOrganization(
+        organizationsByName,
+        organizationsByTaxCode,
+        ORG_NAME,
+        "Default seeded organization for initial setup",
+        "1 Default Street",
+        "19001001",
+        ORG_TAX_CODE);
 
     Set<Permission> allPermissions = new HashSet<>(permissionRepository.findAll());
     Role adminRole = getOrCreateRole(ADMIN_ROLE_NAME, organization, allPermissions);
@@ -111,83 +140,76 @@ public class SampleDataSeeder implements CommandLineRunner {
     userRepository.save(adminUser);
 
     // Seed original Partner mienhin123@gmail.com
-    Partner originalPartner =
-        partnerRepository.findAllByOrganizationId(organization.getId()).stream()
-            .filter(p -> "mienhin123@gmail.com".equals(p.getEmail()))
-            .findFirst()
-            .orElseGet(
-                () ->
-                    partnerRepository.save(
-                        Partner.builder()
-                            .name("Otomolondo Partner")
-                            .email("mienhin123@gmail.com")
-                            .phone("0123456789")
-                            .address("Da Nang, Vietnam")
-                            .partnerType(com.dut.erp.enums.PartnerType.INDIVIDUAL)
-                            .organization(organization)
-                            .build()));
+    Partner originalPartner = partnerRepository.findAllByOrganizationId(organization.getId()).stream()
+        .filter(p -> "mienhin123@gmail.com".equals(p.getEmail()))
+        .findFirst()
+        .orElseGet(
+            () -> partnerRepository.save(
+                Partner.builder()
+                    .name("Otomolondo Partner")
+                    .email("mienhin123@gmail.com")
+                    .phone("0123456789")
+                    .address("Da Nang, Vietnam")
+                    .partnerType(com.dut.erp.enums.PartnerType.INDIVIDUAL)
+                    .organization(organization)
+                    .build()));
 
     // Seed default Product Category
-    ProductCategory defaultCategory =
-        productCategoryRepository.findAll().stream()
-            .filter(pc -> "General".equals(pc.getName()) && pc.getOrganization().getId().equals(organization.getId()))
-            .findFirst()
-            .orElseGet(
-                () ->
-                    productCategoryRepository.save(
-                        ProductCategory.builder()
-                            .name("General")
-                            .description("Default product category")
-                            .organization(organization)
-                            .build()));
+    ProductCategory defaultCategory = productCategoryRepository.findAll().stream()
+        .filter(
+            pc -> "General".equals(pc.getName())
+                && pc.getOrganization().getId().equals(organization.getId()))
+        .findFirst()
+        .orElseGet(
+            () -> productCategoryRepository.save(
+                ProductCategory.builder()
+                    .name("General")
+                    .description("Default product category")
+                    .organization(organization)
+                    .build()));
 
     // Seed original Product
-    Product originalProduct =
-        productRepository.findAll().stream()
-            .filter(p -> "Seeded Product".equals(p.getName()))
-            .findFirst()
-            .orElseGet(
-                () ->
-                    productRepository.save(
-                        Product.builder()
-                            .name("Seeded Product")
-                            .price(BigDecimal.valueOf(150.00))
-                            .description("High quality seeded product for testing")
-                            .organization(organization)
-                            .category(defaultCategory)
-                            .build()));
+    Product originalProduct = productRepository.findAll().stream()
+        .filter(p -> "Seeded Product".equals(p.getName()))
+        .findFirst()
+        .orElseGet(
+            () -> productRepository.save(
+                Product.builder()
+                    .name("Seeded Product")
+                    .price(BigDecimal.valueOf(150.00))
+                    .description("High quality seeded product for testing")
+                    .organization(organization)
+                    .category(defaultCategory)
+                    .build()));
 
     // Seed original Quotation (Order in DRAFT status)
-    boolean quotationExists =
-        orderRepository.existsByOrganizationIdAndOrderNumber(organization.getId(), "QUO-SEED-0001");
+    boolean quotationExists = orderRepository.existsByOrganizationIdAndOrderNumber(organization.getId(),
+        "QUO-SEED-0001");
     if (!quotationExists) {
-      Order order =
-          Order.builder()
-              .organization(organization)
-              .partner(originalPartner)
-              .orderNumber("QUO-SEED-0001")
-              .status(com.dut.erp.enums.OrderStatus.DRAFT)
-              .expirationDate(Instant.now().plus(java.time.Duration.ofDays(7)))
-              .totalAmount(BigDecimal.valueOf(300.00))
-              .build();
+      Order order = Order.builder()
+          .organization(organization)
+          .partner(originalPartner)
+          .orderNumber("QUO-SEED-0001")
+          .status(com.dut.erp.enums.OrderStatus.DRAFT)
+          .expirationDate(Instant.now().plus(java.time.Duration.ofDays(7)))
+          .totalAmount(BigDecimal.valueOf(300.00))
+          .build();
 
-      OrderItem item =
-          OrderItem.builder()
-              .organization(organization)
-              .order(order)
-              .product(originalProduct)
-              .quantity(BigDecimal.valueOf(2))
-              .unitPrice(BigDecimal.valueOf(150.00))
-              .subtotal(BigDecimal.valueOf(300.00))
-              .build();
+      OrderItem item = OrderItem.builder()
+          .organization(organization)
+          .order(order)
+          .product(originalProduct)
+          .quantity(BigDecimal.valueOf(2))
+          .unitPrice(BigDecimal.valueOf(150.00))
+          .subtotal(BigDecimal.valueOf(300.00))
+          .build();
 
       order.setItems(List.of(item));
       orderRepository.save(order);
     }
 
     // Seed original Warehouse
-    boolean warehouseExists =
-        warehouseRepository.existsByOrganizationIdAndCode(organization.getId(), "WH-MAIN");
+    boolean warehouseExists = warehouseRepository.existsByOrganizationIdAndCode(organization.getId(), "WH-MAIN");
     if (!warehouseExists) {
       warehouseRepository.save(
           Warehouse.builder()
@@ -228,14 +250,12 @@ public class SampleDataSeeder implements CommandLineRunner {
     keeperMgr.getRoles().add(keeperRole);
     userRepository.save(keeperMgr);
 
-    User keeperStaff1 =
-        getOrCreateUser("keeper.staff1@erp.local", "Keeper@123", "Keeper", "Staff 1");
+    User keeperStaff1 = getOrCreateUser("keeper.staff1@erp.local", "Keeper@123", "Keeper", "Staff 1");
     keeperStaff1.getOrganizations().add(organization);
     keeperStaff1.getRoles().add(keeperRole);
     userRepository.save(keeperStaff1);
 
-    User keeperStaff2 =
-        getOrCreateUser("keeper.staff2@erp.local", "Keeper@123", "Keeper", "Staff 2");
+    User keeperStaff2 = getOrCreateUser("keeper.staff2@erp.local", "Keeper@123", "Keeper", "Staff 2");
     keeperStaff2.getOrganizations().add(organization);
     keeperStaff2.getRoles().add(keeperRole);
     userRepository.save(keeperStaff2);
@@ -255,58 +275,58 @@ public class SampleDataSeeder implements CommandLineRunner {
 
   private Role getOrCreateSalesRole(Organization org, Map<String, Permission> permissions) {
     Set<Permission> salesPerms = new HashSet<>();
-    for (String permCode :
-        List.of(
-            "leads:read",
-            "leads:select",
-            "leads:create",
-            "leads:write",
-            "leads:delete",
-            "partners:read",
-            "partners:select",
-            "partners:create",
-            "partners:write",
-            "partners:delete",
-            "orders:read",
-            "orders:select",
-            "orders:create",
-            "orders:write",
-            "orders:delete",
-            "sale_teams:read",
-            "sale_teams:select",
-            "sale_teams:create",
-            "sale_teams:write",
-            "sale_teams:delete",
-            "products:read",
-            "products:select",
-            "taxes:read",
-            "taxes:select",
-            "invoices:read",
-            "invoices:select")) {
+    for (String permCode : List.of(
+        "leads:read",
+        "leads:select",
+        "leads:create",
+        "leads:write",
+        "leads:delete",
+        "partners:read",
+        "partners:select",
+        "partners:create",
+        "partners:write",
+        "partners:delete",
+        "orders:read",
+        "orders:select",
+        "orders:create",
+        "orders:write",
+        "orders:delete",
+        "sale_teams:read",
+        "sale_teams:select",
+        "sale_teams:create",
+        "sale_teams:write",
+        "sale_teams:delete",
+        "products:read",
+        "products:select",
+        "taxes:read",
+        "taxes:select",
+        "invoices:read",
+        "invoices:select")) {
       Permission p = permissions.get(permCode);
-      if (p != null) salesPerms.add(p);
+      if (p != null)
+        salesPerms.add(p);
     }
     return getOrCreateRole("SALES", org, salesPerms);
   }
 
   private Role getOrCreateKeeperRole(Organization org, Map<String, Permission> permissions) {
     Set<Permission> whPerms = new HashSet<>();
-    for (String permCode :
-        List.of(
-            "warehouses:read",
-            "warehouses:select",
-            "warehouses:create",
-            "warehouses:write",
-            "warehouses:delete",
-            "products:read",
-            "products:select",
-            "products:create",
-            "products:write",
-            "products:delete",
-            "orders:read",
-            "orders:select")) {
+    for (String permCode : List.of(
+        "warehouses:read",
+        "warehouses:select",
+        "warehouses:create",
+        "warehouses:write",
+        "warehouses:delete",
+        "products:read",
+        "products:select",
+        "products:create",
+        "products:write",
+        "products:delete",
+        "orders:read",
+        "orders:select")) {
       Permission p = permissions.get(permCode);
-      if (p != null) whPerms.add(p);
+      if (p != null)
+        whPerms.add(p);
     }
     return getOrCreateRole("WAREHOUSE_KEEPER", org, whPerms);
   }
@@ -322,10 +342,8 @@ public class SampleDataSeeder implements CommandLineRunner {
 
     // 1. Taxes
     List<Tax> taxes = seedTaxes(org);
-    Tax vat10 =
-        taxes.stream().filter(t -> "VAT 10%".equals(t.getName())).findFirst().orElse(taxes.get(0));
-    Tax vat5 =
-        taxes.stream().filter(t -> "VAT 5%".equals(t.getName())).findFirst().orElse(taxes.get(0));
+    Tax vat10 = taxes.stream().filter(t -> "VAT 10%".equals(t.getName())).findFirst().orElse(taxes.get(0));
+    Tax vat5 = taxes.stream().filter(t -> "VAT 5%".equals(t.getName())).findFirst().orElse(taxes.get(0));
 
     // 2. Products
     List<Product> products = seedProducts(org);
@@ -341,11 +359,10 @@ public class SampleDataSeeder implements CommandLineRunner {
 
     // 6. Warehouses
     List<Warehouse> warehouses = seedWarehouses(org, keeperMgr, keeperStaff);
-    Warehouse chicagoWh =
-        warehouses.stream()
-            .filter(w -> "WH-CHI".equals(w.getCode()))
-            .findFirst()
-            .orElse(warehouses.get(0));
+    Warehouse chicagoWh = warehouses.stream()
+        .filter(w -> "WH-CHI".equals(w.getCode()))
+        .findFirst()
+        .orElse(warehouses.get(0));
 
     // 7. Inbound Inventory (Stock Receipts)
     seedInboundInventory(org, warehouses, products);
@@ -360,32 +377,30 @@ public class SampleDataSeeder implements CommandLineRunner {
   private List<Tax> seedTaxes(Organization org) {
     List<Tax> taxes = new ArrayList<>();
     String[][] taxData = {
-      {"VAT 10%", "10.00", "Value Added Tax 10%"},
-      {"VAT 8%", "8.00", "Value Added Tax 8%"},
-      {"VAT 5%", "5.00", "Value Added Tax 5%"},
-      {"VAT 0%", "0.00", "Value Added Tax 0%"}
+        { "VAT 10%", "10.00", "Value Added Tax 10%" },
+        { "VAT 8%", "8.00", "Value Added Tax 8%" },
+        { "VAT 5%", "5.00", "Value Added Tax 5%" },
+        { "VAT 0%", "0.00", "Value Added Tax 0%" }
     };
     for (String[] data : taxData) {
       String name = data[0];
       BigDecimal amount = new BigDecimal(data[1]);
       String desc = data[2];
 
-      Tax tax =
-          taxRepository.findAll().stream()
-              .filter(
-                  t -> t.getOrganization().getId().equals(org.getId()) && name.equals(t.getName()))
-              .findFirst()
-              .orElseGet(
-                  () ->
-                      taxRepository.save(
-                          Tax.builder()
-                              .organization(org)
-                              .name(name)
-                              .computation(com.dut.erp.enums.TaxComputation.PERCENTAGE)
-                              .amount(amount)
-                              .description(desc)
-                              .isArchived(false)
-                              .build()));
+      Tax tax = taxRepository.findAll().stream()
+          .filter(
+              t -> t.getOrganization().getId().equals(org.getId()) && name.equals(t.getName()))
+          .findFirst()
+          .orElseGet(
+              () -> taxRepository.save(
+                  Tax.builder()
+                      .organization(org)
+                      .name(name)
+                      .computation(com.dut.erp.enums.TaxComputation.PERCENTAGE)
+                      .amount(amount)
+                      .description(desc)
+                      .isArchived(false)
+                      .build()));
       taxes.add(tax);
     }
     return taxes;
@@ -394,107 +409,109 @@ public class SampleDataSeeder implements CommandLineRunner {
   private List<Product> seedProducts(Organization org) {
     List<Product> products = new ArrayList<>();
     Object[][] productData = {
-      {
-        "XPS Developer Laptop",
-        "2200.00",
-        "Powerful workstation for developers",
-        com.dut.erp.enums.CogsMethod.FIFO
-      },
-      {
-        "MacBook Pro M3 Max", "3500.00", "Premium Apple notebook", com.dut.erp.enums.CogsMethod.FIFO
-      },
-      {
-        "ThinkPad X1 Carbon",
-        "1800.00",
-        "Business ultra-portable laptop",
-        com.dut.erp.enums.CogsMethod.FIFO
-      },
-      {
-        "4K Curved Monitor 34\"",
-        "650.00",
-        "Ultrawide high resolution monitor",
-        com.dut.erp.enums.CogsMethod.AVERAGE
-      },
-      {
-        "Ergonomic Office Chair Premium",
-        "450.00",
-        "Ergonomic chair with mesh backing",
-        com.dut.erp.enums.CogsMethod.AVERAGE
-      },
-      {
-        "Mechanical Keyboard RGB",
-        "180.00",
-        "Premium mechanical gaming keyboard",
-        com.dut.erp.enums.CogsMethod.LIFO
-      },
-      {
-        "Precision Wireless Mouse",
-        "90.00",
-        "Ergonomic productivity mouse",
-        com.dut.erp.enums.CogsMethod.AVERAGE
-      },
-      {
-        "USB-C Dual Docking Station",
-        "200.00",
-        "Docking station with dual monitor output",
-        com.dut.erp.enums.CogsMethod.FIFO
-      },
-      {
-        "Active Noise Cancelling Headset",
-        "250.00",
-        "Wireless headphones with ANC",
-        com.dut.erp.enums.CogsMethod.FIFO
-      },
-      {
-        "HD Web Camera 1080p",
-        "120.00",
-        "High definition camera for meetings",
-        com.dut.erp.enums.CogsMethod.AVERAGE
-      },
-      {
-        "Smart LED Desk Lamp",
-        "80.00",
-        "Dimmable desk lamp with wireless charger",
-        com.dut.erp.enums.CogsMethod.LIFO
-      },
-      {
-        "External SSD 2TB Rugged",
-        "160.00",
-        "High speed water-resistant drive",
-        com.dut.erp.enums.CogsMethod.FIFO
-      },
-      {
-        "Smart Stand Desk Frame",
-        "400.00",
-        "Dual-motor motorized standing desk frame",
-        com.dut.erp.enums.CogsMethod.AVERAGE
-      },
-      {
-        "Bamboo Standing Desk Top",
-        "150.00",
-        "Sustainable solid bamboo desk top",
-        com.dut.erp.enums.CogsMethod.AVERAGE
-      },
-      {
-        "Multi-device Bluetooth Trackpad",
-        "110.00",
-        "Wireless trackpad with gesture support",
-        com.dut.erp.enums.CogsMethod.LIFO
-      }
+        {
+            "XPS Developer Laptop",
+            "2200.00",
+            "Powerful workstation for developers",
+            com.dut.erp.enums.CogsMethod.FIFO
+        },
+        {
+            "MacBook Pro M3 Max", "3500.00", "Premium Apple notebook", com.dut.erp.enums.CogsMethod.FIFO
+        },
+        {
+            "ThinkPad X1 Carbon",
+            "1800.00",
+            "Business ultra-portable laptop",
+            com.dut.erp.enums.CogsMethod.FIFO
+        },
+        {
+            "4K Curved Monitor 34\"",
+            "650.00",
+            "Ultrawide high resolution monitor",
+            com.dut.erp.enums.CogsMethod.AVERAGE
+        },
+        {
+            "Ergonomic Office Chair Premium",
+            "450.00",
+            "Ergonomic chair with mesh backing",
+            com.dut.erp.enums.CogsMethod.AVERAGE
+        },
+        {
+            "Mechanical Keyboard RGB",
+            "180.00",
+            "Premium mechanical gaming keyboard",
+            com.dut.erp.enums.CogsMethod.LIFO
+        },
+        {
+            "Precision Wireless Mouse",
+            "90.00",
+            "Ergonomic productivity mouse",
+            com.dut.erp.enums.CogsMethod.AVERAGE
+        },
+        {
+            "USB-C Dual Docking Station",
+            "200.00",
+            "Docking station with dual monitor output",
+            com.dut.erp.enums.CogsMethod.FIFO
+        },
+        {
+            "Active Noise Cancelling Headset",
+            "250.00",
+            "Wireless headphones with ANC",
+            com.dut.erp.enums.CogsMethod.FIFO
+        },
+        {
+            "HD Web Camera 1080p",
+            "120.00",
+            "High definition camera for meetings",
+            com.dut.erp.enums.CogsMethod.AVERAGE
+        },
+        {
+            "Smart LED Desk Lamp",
+            "80.00",
+            "Dimmable desk lamp with wireless charger",
+            com.dut.erp.enums.CogsMethod.LIFO
+        },
+        {
+            "External SSD 2TB Rugged",
+            "160.00",
+            "High speed water-resistant drive",
+            com.dut.erp.enums.CogsMethod.FIFO
+        },
+        {
+            "Smart Stand Desk Frame",
+            "400.00",
+            "Dual-motor motorized standing desk frame",
+            com.dut.erp.enums.CogsMethod.AVERAGE
+        },
+        {
+            "Bamboo Standing Desk Top",
+            "150.00",
+            "Sustainable solid bamboo desk top",
+            com.dut.erp.enums.CogsMethod.AVERAGE
+        },
+        {
+            "Multi-device Bluetooth Trackpad",
+            "110.00",
+            "Wireless trackpad with gesture support",
+            com.dut.erp.enums.CogsMethod.LIFO
+        }
     };
 
     Map<String, ProductCategory> categoriesByName = new HashMap<>();
     for (String catName : List.of("Electronics", "Office Supplies", "Hardware", "Apparel", "General")) {
       ProductCategory cat = productCategoryRepository.findAll().stream()
-          .filter(pc -> catName.equals(pc.getName()) && pc.getOrganization().getId().equals(org.getId()))
+          .filter(
+              pc -> catName.equals(pc.getName())
+                  && pc.getOrganization().getId().equals(org.getId()))
           .findFirst()
-          .orElseGet(() -> productCategoryRepository.save(
-              ProductCategory.builder()
-                  .name(catName)
-                  .description(catName + " category")
-                  .organization(org)
-                  .build()
-          ));
+          .orElseGet(
+              () -> productCategoryRepository.save(
+                  ProductCategory.builder()
+                      .name(catName)
+                      .description(catName + " category")
+                      .organization(org)
+                      .build()));
       categoriesByName.put(catName, cat);
     }
 
@@ -505,31 +522,40 @@ public class SampleDataSeeder implements CommandLineRunner {
       com.dut.erp.enums.CogsMethod method = (com.dut.erp.enums.CogsMethod) data[3];
 
       String categoryName = "General";
-      if (name.contains("Laptop") || name.contains("MacBook") || name.contains("ThinkPad") || name.contains("Keyboard") || name.contains("Mouse") || name.contains("Docking") || name.contains("Headset") || name.contains("Camera") || name.contains("Trackpad")) {
+      if (name.contains("Laptop")
+          || name.contains("MacBook")
+          || name.contains("ThinkPad")
+          || name.contains("Keyboard")
+          || name.contains("Mouse")
+          || name.contains("Docking")
+          || name.contains("Headset")
+          || name.contains("Camera")
+          || name.contains("Trackpad")) {
         categoryName = "Electronics";
-      } else if (name.contains("Chair") || name.contains("Lamp") || name.contains("Frame") || name.contains("Top")) {
+      } else if (name.contains("Chair")
+          || name.contains("Lamp")
+          || name.contains("Frame")
+          || name.contains("Top")) {
         categoryName = "Office Supplies";
       } else if (name.contains("Monitor")) {
         categoryName = "Hardware";
       }
       ProductCategory category = categoriesByName.get(categoryName);
 
-      Product product =
-          productRepository.findAllByOrganizationId(org.getId()).stream()
-              .filter(p -> name.equals(p.getName()))
-              .findFirst()
-              .orElseGet(
-                  () ->
-                      productRepository.save(
-                          Product.builder()
-                              .name(name)
-                              .price(price)
-                              .description(desc)
-                              .cogsMethod(method)
-                              .isArchived(false)
-                              .organization(org)
-                              .category(category)
-                              .build()));
+      Product product = productRepository.findAllByOrganizationId(org.getId()).stream()
+          .filter(p -> name.equals(p.getName()))
+          .findFirst()
+          .orElseGet(
+              () -> productRepository.save(
+                  Product.builder()
+                      .name(name)
+                      .price(price)
+                      .description(desc)
+                      .cogsMethod(method)
+                      .isArchived(false)
+                      .organization(org)
+                      .category(category)
+                      .build()));
       products.add(product);
     }
     return products;
@@ -538,186 +564,186 @@ public class SampleDataSeeder implements CommandLineRunner {
   private List<Partner> seedPartners(Organization org) {
     List<Partner> partners = new ArrayList<>();
     Object[][] partnerData = {
-      {
-        "AeroSpace Tech Corp",
-        "info@aerotech.example.com",
-        "0901234567",
-        "123 Apex Blvd, New York",
-        "TAX-AERO-01",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Glenn",
-        "john@aerotech.example.com",
-        "0901234568",
-        "Purchasing Manager"
-      },
-      {
-        "Blue Ocean Logistics",
-        "contact@blueocean.example.com",
-        "0907654321",
-        "456 Ocean Way, Miami",
-        "TAX-BLUE-02",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Nemo",
-        "nemo@blueocean.example.com",
-        "0907654322",
-        "Operations Lead"
-      },
-      {
-        "Cyberdyne Systems",
-        "procurement@cyberdyne.example.com",
-        "0911223344",
-        "789 Cybernetic Way, Los Angeles",
-        "TAX-CYBER-03",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Miles Dyson",
-        "mdyson@cyberdyne.example.com",
-        "0911223345",
-        "Director of R&D"
-      },
-      {
-        "Dynamo Energy Corp",
-        "info@dynamo.example.com",
-        "0922334455",
-        "321 Power Ave, Houston",
-        "TAX-DYNA-04",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Sarah",
-        "sarah@dynamo.example.com",
-        "0922334456",
-        "General Procurement"
-      },
-      {
-        "Epsilon Retailers",
-        "sales@epsilon.example.com",
-        "0933445566",
-        "159 Epsilon Rd, Chicago",
-        "TAX-EPSI-05",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Eric",
-        "eric@epsilon.example.com",
-        "0933445567",
-        "Store Manager"
-      },
-      {
-        "Falcon Aerospace",
-        "purchasing@falcon.example.com",
-        "0944556677",
-        "987 Falcon St, Seattle",
-        "TAX-FALC-06",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Sam",
-        "sam@falcon.example.com",
-        "0944556678",
-        "Procurement Officer"
-      },
-      {
-        "Genesis BioTech",
-        "office@genesis.example.com",
-        "0955667788",
-        "147 Science Lane, Boston",
-        "TAX-GENE-07",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Dr. Alice",
-        "alice@genesis.example.com",
-        "0955667789",
-        "Lab Director"
-      },
-      {
-        "Horizon Software",
-        "billing@horizon.example.com",
-        "0966778899",
-        "369 Cloud Street, Denver",
-        "TAX-HORI-08",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Bob",
-        "bob@horizon.example.com",
-        "0966778900",
-        "Finance Lead"
-      },
-      {
-        "Infinity Electronics",
-        "orders@infinity.example.com",
-        "0977889900",
-        "258 Loop Rd, Atlanta",
-        "TAX-INFI-09",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Isaac",
-        "isaac@infinity.example.com",
-        "0977889901",
-        "Inventory Mgr"
-      },
-      {
-        "Jupiter Manufacturing",
-        "supply@jupiter.example.com",
-        "0988990011",
-        "951 Gas Giant Way, Detroit",
-        "TAX-JUPI-10",
-        com.dut.erp.enums.PartnerType.COMPANY,
-        "Jane",
-        "jane@jupiter.example.com",
-        "0988990012",
-        "Supply Chain Director"
-      },
-      {
-        "David Miller",
-        "david.miller@gmail.com",
-        "0900111222",
-        "111 Elm St, Chicago",
-        null,
-        com.dut.erp.enums.PartnerType.INDIVIDUAL,
-        null,
-        null,
-        null,
-        null
-      },
-      {
-        "Sarah Connor",
-        "sconnor@gmail.com",
-        "0900222333",
-        "222 Oak St, Los Angeles",
-        null,
-        com.dut.erp.enums.PartnerType.INDIVIDUAL,
-        null,
-        null,
-        null,
-        null
-      },
-      {
-        "Bruce Wayne",
-        "bwayne@waynecorp.com",
-        "0900333444",
-        "Wayne Manor, Gotham",
-        null,
-        com.dut.erp.enums.PartnerType.INDIVIDUAL,
-        "Alfred",
-        "alfred@waynecorp.com",
-        "0900333445",
-        "Butler/Advisor"
-      },
-      {
-        "Tony Stark",
-        "tstark@starkindustries.com",
-        "0900444555",
-        "10880 Malibu Point, Malibu",
-        null,
-        com.dut.erp.enums.PartnerType.INDIVIDUAL,
-        "Pepper Potts",
-        "pepper@starkindustries.com",
-        "0900444556",
-        "CEO/Admin"
-      },
-      {
-        "Peter Parker",
-        "pparker@dailybugle.com",
-        "0900555666",
-        "20 Ingram St, Queens, NY",
-        null,
-        com.dut.erp.enums.PartnerType.INDIVIDUAL,
-        null,
-        null,
-        null,
-        null
-      }
+        {
+            "AeroSpace Tech Corp",
+            "info@aerotech.example.com",
+            "0901234567",
+            "123 Apex Blvd, New York",
+            "TAX-AERO-01",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Glenn",
+            "john@aerotech.example.com",
+            "0901234568",
+            "Purchasing Manager"
+        },
+        {
+            "Blue Ocean Logistics",
+            "contact@blueocean.example.com",
+            "0907654321",
+            "456 Ocean Way, Miami",
+            "TAX-BLUE-02",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Nemo",
+            "nemo@blueocean.example.com",
+            "0907654322",
+            "Operations Lead"
+        },
+        {
+            "Cyberdyne Systems",
+            "procurement@cyberdyne.example.com",
+            "0911223344",
+            "789 Cybernetic Way, Los Angeles",
+            "TAX-CYBER-03",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Miles Dyson",
+            "mdyson@cyberdyne.example.com",
+            "0911223345",
+            "Director of R&D"
+        },
+        {
+            "Dynamo Energy Corp",
+            "info@dynamo.example.com",
+            "0922334455",
+            "321 Power Ave, Houston",
+            "TAX-DYNA-04",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Sarah",
+            "sarah@dynamo.example.com",
+            "0922334456",
+            "General Procurement"
+        },
+        {
+            "Epsilon Retailers",
+            "sales@epsilon.example.com",
+            "0933445566",
+            "159 Epsilon Rd, Chicago",
+            "TAX-EPSI-05",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Eric",
+            "eric@epsilon.example.com",
+            "0933445567",
+            "Store Manager"
+        },
+        {
+            "Falcon Aerospace",
+            "purchasing@falcon.example.com",
+            "0944556677",
+            "987 Falcon St, Seattle",
+            "TAX-FALC-06",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Sam",
+            "sam@falcon.example.com",
+            "0944556678",
+            "Procurement Officer"
+        },
+        {
+            "Genesis BioTech",
+            "office@genesis.example.com",
+            "0955667788",
+            "147 Science Lane, Boston",
+            "TAX-GENE-07",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Dr. Alice",
+            "alice@genesis.example.com",
+            "0955667789",
+            "Lab Director"
+        },
+        {
+            "Horizon Software",
+            "billing@horizon.example.com",
+            "0966778899",
+            "369 Cloud Street, Denver",
+            "TAX-HORI-08",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Bob",
+            "bob@horizon.example.com",
+            "0966778900",
+            "Finance Lead"
+        },
+        {
+            "Infinity Electronics",
+            "orders@infinity.example.com",
+            "0977889900",
+            "258 Loop Rd, Atlanta",
+            "TAX-INFI-09",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Isaac",
+            "isaac@infinity.example.com",
+            "0977889901",
+            "Inventory Mgr"
+        },
+        {
+            "Jupiter Manufacturing",
+            "supply@jupiter.example.com",
+            "0988990011",
+            "951 Gas Giant Way, Detroit",
+            "TAX-JUPI-10",
+            com.dut.erp.enums.PartnerType.COMPANY,
+            "Jane",
+            "jane@jupiter.example.com",
+            "0988990012",
+            "Supply Chain Director"
+        },
+        {
+            "David Miller",
+            "david.miller@gmail.com",
+            "0900111222",
+            "111 Elm St, Chicago",
+            null,
+            com.dut.erp.enums.PartnerType.INDIVIDUAL,
+            null,
+            null,
+            null,
+            null
+        },
+        {
+            "Sarah Connor",
+            "sconnor@gmail.com",
+            "0900222333",
+            "222 Oak St, Los Angeles",
+            null,
+            com.dut.erp.enums.PartnerType.INDIVIDUAL,
+            null,
+            null,
+            null,
+            null
+        },
+        {
+            "Bruce Wayne",
+            "bwayne@waynecorp.com",
+            "0900333444",
+            "Wayne Manor, Gotham",
+            null,
+            com.dut.erp.enums.PartnerType.INDIVIDUAL,
+            "Alfred",
+            "alfred@waynecorp.com",
+            "0900333445",
+            "Butler/Advisor"
+        },
+        {
+            "Tony Stark",
+            "tstark@starkindustries.com",
+            "0900444555",
+            "10880 Malibu Point, Malibu",
+            null,
+            com.dut.erp.enums.PartnerType.INDIVIDUAL,
+            "Pepper Potts",
+            "pepper@starkindustries.com",
+            "0900444556",
+            "CEO/Admin"
+        },
+        {
+            "Peter Parker",
+            "pparker@dailybugle.com",
+            "0900555666",
+            "20 Ingram St, Queens, NY",
+            null,
+            com.dut.erp.enums.PartnerType.INDIVIDUAL,
+            null,
+            null,
+            null,
+            null
+        }
     };
 
     for (Object[] data : partnerData) {
@@ -728,22 +754,20 @@ public class SampleDataSeeder implements CommandLineRunner {
       String taxCode = (String) data[4];
       com.dut.erp.enums.PartnerType type = (com.dut.erp.enums.PartnerType) data[5];
 
-      Partner partner =
-          partnerRepository.findAllByOrganizationId(org.getId()).stream()
-              .filter(p -> email.equals(p.getEmail()))
-              .findFirst()
-              .orElseGet(
-                  () ->
-                      partnerRepository.save(
-                          Partner.builder()
-                              .name(name)
-                              .email(email)
-                              .phone(phone)
-                              .address(address)
-                              .taxCode(taxCode)
-                              .partnerType(type)
-                              .organization(org)
-                              .build()));
+      Partner partner = partnerRepository.findAllByOrganizationId(org.getId()).stream()
+          .filter(p -> email.equals(p.getEmail()))
+          .findFirst()
+          .orElseGet(
+              () -> partnerRepository.save(
+                  Partner.builder()
+                      .name(name)
+                      .email(email)
+                      .phone(phone)
+                      .address(address)
+                      .taxCode(taxCode)
+                      .partnerType(type)
+                      .organization(org)
+                      .build()));
 
       String contactName = (String) data[6];
       if (contactName != null) {
@@ -751,12 +775,10 @@ public class SampleDataSeeder implements CommandLineRunner {
         String contactPhone = (String) data[8];
         String contactPosition = (String) data[9];
 
-        boolean contactExists =
-            partnerContactRepository.findAll().stream()
-                .anyMatch(
-                    c ->
-                        c.getPartner().getId().equals(partner.getId())
-                            && contactName.equals(c.getName()));
+        boolean contactExists = partnerContactRepository.findAll().stream()
+            .anyMatch(
+                c -> c.getPartner().getId().equals(partner.getId())
+                    && contactName.equals(c.getName()));
         if (!contactExists) {
           partnerContactRepository.save(
               PartnerContact.builder()
@@ -776,8 +798,8 @@ public class SampleDataSeeder implements CommandLineRunner {
   private List<SaleTeam> seedSaleTeams(Organization org, User salesMgr, List<User> salesAgents) {
     List<SaleTeam> teams = new ArrayList<>();
     String[][] teamData = {
-      {"Enterprise Sales Team", "sales.mgr@erp.local"},
-      {"Retail Sales Team", "sales.agent1@erp.local"}
+        { "Enterprise Sales Team", "sales.mgr@erp.local" },
+        { "Retail Sales Team", "sales.agent1@erp.local" }
     };
 
     for (String[] data : teamData) {
@@ -788,23 +810,20 @@ public class SampleDataSeeder implements CommandLineRunner {
       boolean exists = saleTeamRepository.existsByOrganizationIdAndName(org.getId(), name);
       SaleTeam team;
       if (!exists) {
-        team =
-            saleTeamRepository.save(
-                SaleTeam.builder()
-                    .name(name)
-                    .organization(org)
-                    .leader(leader)
-                    .members(new HashSet<>(salesAgents))
-                    .isArchived(false)
-                    .build());
+        team = saleTeamRepository.save(
+            SaleTeam.builder()
+                .name(name)
+                .organization(org)
+                .leader(leader)
+                .members(new HashSet<>(salesAgents))
+                .isArchived(false)
+                .build());
       } else {
-        team =
-            saleTeamRepository.findAll().stream()
-                .filter(
-                    t ->
-                        t.getOrganization().getId().equals(org.getId()) && name.equals(t.getName()))
-                .findFirst()
-                .orElseThrow();
+        team = saleTeamRepository.findAll().stream()
+            .filter(
+                t -> t.getOrganization().getId().equals(org.getId()) && name.equals(t.getName()))
+            .findFirst()
+            .orElseThrow();
       }
       teams.add(team);
     }
@@ -815,146 +834,146 @@ public class SampleDataSeeder implements CommandLineRunner {
       Organization org, List<Partner> partners, List<User> salesAgents, List<SaleTeam> teams) {
     List<Lead> leads = new ArrayList<>();
     Object[][] leadData = {
-      {
-        "Blue Ocean Cloud Migration",
-        "TAX-BLUE-02",
-        "contact@blueocean.example.com",
-        "0907654321",
-        "456 Ocean Way, Miami",
-        "Moving legacy systems to AWS",
-        "45000.00",
-        com.dut.erp.enums.LeadStage.NEW,
-        "10.00",
-        0,
-        0,
-        1
-      },
-      {
-        "Falcon Fleet Modernization",
-        "TAX-FALC-06",
-        "purchasing@falcon.example.com",
-        "0944556677",
-        "987 Falcon St, Seattle",
-        "Upgrading aircraft logistics",
-        "120000.00",
-        com.dut.erp.enums.LeadStage.NEW,
-        "15.00",
-        1,
-        0,
-        5
-      },
-      {
-        "Horizon Security Systems",
-        "TAX-HORI-08",
-        "billing@horizon.example.com",
-        "0966778899",
-        "369 Cloud Street, Denver",
-        "Installing corporate firewalls",
-        "35000.00",
-        com.dut.erp.enums.LeadStage.QUALIFIED,
-        "30.00",
-        0,
-        1,
-        7
-      },
-      {
-        "Genesis Tech Refresh",
-        "TAX-GENE-07",
-        "office@genesis.example.com",
-        "0955667788",
-        "147 Science Lane, Boston",
-        "Replacing lab computers",
-        "25000.00",
-        com.dut.erp.enums.LeadStage.QUALIFIED,
-        "40.00",
-        1,
-        1,
-        6
-      },
-      {
-        "AeroSpace Workstation Proposal",
-        "TAX-AERO-01",
-        "info@aerotech.example.com",
-        "0901234567",
-        "123 Apex Blvd, New York",
-        "Custom developer workstations",
-        "50000.00",
-        com.dut.erp.enums.LeadStage.PROPOSAL,
-        "65.00",
-        0,
-        0,
-        0
-      },
-      {
-        "Dynamo Energy Infrastructure",
-        "TAX-DYNA-04",
-        "info@dynamo.example.com",
-        "0922334455",
-        "321 Power Ave, Houston",
-        "Grid management servers",
-        "95000.00",
-        com.dut.erp.enums.LeadStage.PROPOSAL,
-        "70.00",
-        1,
-        0,
-        3
-      },
-      {
-        "Cyberdyne Server Upgrade",
-        "TAX-CYBER-03",
-        "procurement@cyberdyne.example.com",
-        "0911223344",
-        "789 Cybernetic Way, Los Angeles",
-        "Upgrading core AI servers",
-        "150000.00",
-        com.dut.erp.enums.LeadStage.LOST,
-        "0.00",
-        0,
-        0,
-        2
-      },
-      {
-        "Jupiter Supply Chain",
-        "TAX-JUPI-10",
-        "supply@jupiter.example.com",
-        "0988990011",
-        "951 Gas Giant Way, Detroit",
-        "Factory logistics automation",
-        "80000.00",
-        com.dut.erp.enums.LeadStage.LOST,
-        "0.00",
-        1,
-        1,
-        9
-      },
-      {
-        "Waynecorp IT Procurement",
-        null,
-        "bwayne@waynecorp.com",
-        "0900333444",
-        "Wayne Manor, Gotham",
-        "Confidential Wayne Enterprises hardware",
-        "200000.00",
-        com.dut.erp.enums.LeadStage.WON,
-        "100.00",
-        0,
-        0,
-        12
-      },
-      {
-        "Stark Industries Lab Equip",
-        null,
-        "tstark@starkindustries.com",
-        "0900444555",
-        "10880 Malibu Point, Malibu",
-        "Clean room tech refresh",
-        "180000.00",
-        com.dut.erp.enums.LeadStage.WON,
-        "100.00",
-        1,
-        0,
-        13
-      }
+        {
+            "Blue Ocean Cloud Migration",
+            "TAX-BLUE-02",
+            "contact@blueocean.example.com",
+            "0907654321",
+            "456 Ocean Way, Miami",
+            "Moving legacy systems to AWS",
+            "45000.00",
+            com.dut.erp.enums.LeadStage.NEW,
+            "10.00",
+            0,
+            0,
+            1
+        },
+        {
+            "Falcon Fleet Modernization",
+            "TAX-FALC-06",
+            "purchasing@falcon.example.com",
+            "0944556677",
+            "987 Falcon St, Seattle",
+            "Upgrading aircraft logistics",
+            "120000.00",
+            com.dut.erp.enums.LeadStage.NEW,
+            "15.00",
+            1,
+            0,
+            5
+        },
+        {
+            "Horizon Security Systems",
+            "TAX-HORI-08",
+            "billing@horizon.example.com",
+            "0966778899",
+            "369 Cloud Street, Denver",
+            "Installing corporate firewalls",
+            "35000.00",
+            com.dut.erp.enums.LeadStage.QUALIFIED,
+            "30.00",
+            0,
+            1,
+            7
+        },
+        {
+            "Genesis Tech Refresh",
+            "TAX-GENE-07",
+            "office@genesis.example.com",
+            "0955667788",
+            "147 Science Lane, Boston",
+            "Replacing lab computers",
+            "25000.00",
+            com.dut.erp.enums.LeadStage.QUALIFIED,
+            "40.00",
+            1,
+            1,
+            6
+        },
+        {
+            "AeroSpace Workstation Proposal",
+            "TAX-AERO-01",
+            "info@aerotech.example.com",
+            "0901234567",
+            "123 Apex Blvd, New York",
+            "Custom developer workstations",
+            "50000.00",
+            com.dut.erp.enums.LeadStage.PROPOSAL,
+            "65.00",
+            0,
+            0,
+            0
+        },
+        {
+            "Dynamo Energy Infrastructure",
+            "TAX-DYNA-04",
+            "info@dynamo.example.com",
+            "0922334455",
+            "321 Power Ave, Houston",
+            "Grid management servers",
+            "95000.00",
+            com.dut.erp.enums.LeadStage.PROPOSAL,
+            "70.00",
+            1,
+            0,
+            3
+        },
+        {
+            "Cyberdyne Server Upgrade",
+            "TAX-CYBER-03",
+            "procurement@cyberdyne.example.com",
+            "0911223344",
+            "789 Cybernetic Way, Los Angeles",
+            "Upgrading core AI servers",
+            "150000.00",
+            com.dut.erp.enums.LeadStage.LOST,
+            "0.00",
+            0,
+            0,
+            2
+        },
+        {
+            "Jupiter Supply Chain",
+            "TAX-JUPI-10",
+            "supply@jupiter.example.com",
+            "0988990011",
+            "951 Gas Giant Way, Detroit",
+            "Factory logistics automation",
+            "80000.00",
+            com.dut.erp.enums.LeadStage.LOST,
+            "0.00",
+            1,
+            1,
+            9
+        },
+        {
+            "Waynecorp IT Procurement",
+            null,
+            "bwayne@waynecorp.com",
+            "0900333444",
+            "Wayne Manor, Gotham",
+            "Confidential Wayne Enterprises hardware",
+            "200000.00",
+            com.dut.erp.enums.LeadStage.WON,
+            "100.00",
+            0,
+            0,
+            12
+        },
+        {
+            "Stark Industries Lab Equip",
+            null,
+            "tstark@starkindustries.com",
+            "0900444555",
+            "10880 Malibu Point, Malibu",
+            "Clean room tech refresh",
+            "180000.00",
+            com.dut.erp.enums.LeadStage.WON,
+            "100.00",
+            1,
+            0,
+            13
+        }
     };
 
     for (Object[] data : leadData) {
@@ -971,29 +990,27 @@ public class SampleDataSeeder implements CommandLineRunner {
       SaleTeam team = teams.get((int) data[10]);
       Partner partner = partners.get((int) data[11]);
 
-      Lead lead =
-          leadRepository.findAll().stream()
-              .filter(
-                  l -> l.getOrganization().getId().equals(org.getId()) && name.equals(l.getName()))
-              .findFirst()
-              .orElseGet(
-                  () ->
-                      leadRepository.save(
-                          Lead.builder()
-                              .organization(org)
-                              .name(name)
-                              .taxCode(taxCode)
-                              .email(email)
-                              .phone(phone)
-                              .address(address)
-                              .notes(notes)
-                              .expectedRevenue(revenue)
-                              .stage(stage)
-                              .probability(prob)
-                              .salePerson(agent)
-                              .saleTeam(team)
-                              .partner(partner)
-                              .build()));
+      Lead lead = leadRepository.findAll().stream()
+          .filter(
+              l -> l.getOrganization().getId().equals(org.getId()) && name.equals(l.getName()))
+          .findFirst()
+          .orElseGet(
+              () -> leadRepository.save(
+                  Lead.builder()
+                      .organization(org)
+                      .name(name)
+                      .taxCode(taxCode)
+                      .email(email)
+                      .phone(phone)
+                      .address(address)
+                      .notes(notes)
+                      .expectedRevenue(revenue)
+                      .stage(stage)
+                      .probability(prob)
+                      .salePerson(agent)
+                      .saleTeam(team)
+                      .partner(partner)
+                      .build()));
       leads.add(lead);
     }
     return leads;
@@ -1002,24 +1019,24 @@ public class SampleDataSeeder implements CommandLineRunner {
   private List<Warehouse> seedWarehouses(Organization org, User keeperMgr, List<User> keeperStaff) {
     List<Warehouse> warehouses = new ArrayList<>();
     Object[][] whData = {
-      {
-        "Central Chicago Warehouse",
-        "WH-CHI",
-        "100 Logistics Blvd, Chicago, IL",
-        "Main distribution hub"
-      },
-      {
-        "Dallas Regional Warehouse",
-        "WH-DAL",
-        "200 Delivery Rd, Dallas, TX",
-        "South regional warehouse"
-      },
-      {
-        "Seattle West Warehouse",
-        "WH-SEA",
-        "300 Freight Ave, Seattle, WA",
-        "Pacific Northwest warehouse"
-      }
+        {
+            "Central Chicago Warehouse",
+            "WH-CHI",
+            "100 Logistics Blvd, Chicago, IL",
+            "Main distribution hub"
+        },
+        {
+            "Dallas Regional Warehouse",
+            "WH-DAL",
+            "200 Delivery Rd, Dallas, TX",
+            "South regional warehouse"
+        },
+        {
+            "Seattle West Warehouse",
+            "WH-SEA",
+            "300 Freight Ave, Seattle, WA",
+            "Pacific Northwest warehouse"
+        }
     };
 
     for (Object[] data : whData) {
@@ -1028,23 +1045,21 @@ public class SampleDataSeeder implements CommandLineRunner {
       String address = (String) data[2];
       String desc = (String) data[3];
 
-      Warehouse wh =
-          warehouseRepository.findAllByOrganizationId(org.getId()).stream()
-              .filter(w -> code.equals(w.getCode()))
-              .findFirst()
-              .orElseGet(
-                  () ->
-                      warehouseRepository.save(
-                          Warehouse.builder()
-                              .organization(org)
-                              .name(name)
-                              .code(code)
-                              .address(address)
-                              .description(desc)
-                              .isActive(true)
-                              .manager(keeperMgr)
-                              .staff(new ArrayList<>(keeperStaff))
-                              .build()));
+      Warehouse wh = warehouseRepository.findAllByOrganizationId(org.getId()).stream()
+          .filter(w -> code.equals(w.getCode()))
+          .findFirst()
+          .orElseGet(
+              () -> warehouseRepository.save(
+                  Warehouse.builder()
+                      .organization(org)
+                      .name(name)
+                      .code(code)
+                      .address(address)
+                      .description(desc)
+                      .isActive(true)
+                      .manager(keeperMgr)
+                      .staff(new ArrayList<>(keeperStaff))
+                      .build()));
       warehouses.add(wh);
     }
     return warehouses;
@@ -1059,40 +1074,46 @@ public class SampleDataSeeder implements CommandLineRunner {
         continue;
       }
 
-      InventoryDocument doc =
-          inventoryDocumentRepository.save(
-              InventoryDocument.builder()
-                  .warehouse(wh)
-                  .name(docName)
-                  .documentType(com.dut.erp.enums.DocumentType.RECEIPT)
-                  .referenceType(com.dut.erp.enums.ReferenceType.MANUAL)
-                  .documentStatus(com.dut.erp.enums.DocumentStatus.COMPLETED)
-                  .notes("Initial warehouse stock seeding")
-                  .scheduledDate(Instant.now().minus(java.time.Duration.ofDays(10)))
-                  .dateDone(Instant.now().minus(java.time.Duration.ofDays(10)))
-                  .build());
+      InventoryDocument doc = inventoryDocumentRepository.save(
+          InventoryDocument.builder()
+              .warehouse(wh)
+              .name(docName)
+              .documentType(com.dut.erp.enums.DocumentType.RECEIPT)
+              .referenceType(com.dut.erp.enums.ReferenceType.MANUAL)
+              .documentStatus(com.dut.erp.enums.DocumentStatus.COMPLETED)
+              .notes("Initial warehouse stock seeding")
+              .scheduledDate(Instant.now().minus(java.time.Duration.ofDays(10)))
+              .dateDone(Instant.now().minus(java.time.Duration.ofDays(10)))
+              .build());
 
       List<InventoryDocumentLine> lines = new ArrayList<>();
       for (Product prod : products) {
-        BigDecimal qty =
-            BigDecimal.valueOf(
-                wh.getCode().contains("CHI") ? 100 : (wh.getCode().contains("DAL") ? 80 : 50));
-        BigDecimal unitCost =
-            prod.getPrice()
-                .multiply(BigDecimal.valueOf(0.70))
-                .setScale(4, java.math.RoundingMode.HALF_UP);
+        BigDecimal qty = BigDecimal.valueOf(
+            wh.getCode().contains("CHI") ? 100 : (wh.getCode().contains("DAL") ? 80 : 50));
+
+        // Create low stock items for ROP/Warning test scenarios
+        if ("MacBook Pro M3 Max".equals(prod.getName())
+            || "Mechanical Keyboard RGB".equals(prod.getName())) {
+          qty = BigDecimal.valueOf(wh.getCode().contains("CHI") ? 2 : 0);
+        } else if ("ThinkPad X1 Carbon".equals(prod.getName())
+            || "Active Noise Cancelling Headset".equals(prod.getName())) {
+          qty = BigDecimal.valueOf(wh.getCode().contains("CHI") ? 4 : 1);
+        }
+
+        BigDecimal unitCost = prod.getPrice()
+            .multiply(BigDecimal.valueOf(0.70))
+            .setScale(4, java.math.RoundingMode.HALF_UP);
         BigDecimal valuation = qty.multiply(unitCost);
 
-        InventoryDocumentLine line =
-            inventoryDocumentLineRepository.save(
-                InventoryDocumentLine.builder()
-                    .inventoryDocument(doc)
-                    .product(prod)
-                    .quantity(qty)
-                    .unitCost(unitCost)
-                    .valuation(valuation)
-                    .remainingQuantity(qty)
-                    .build());
+        InventoryDocumentLine line = inventoryDocumentLineRepository.save(
+            InventoryDocumentLine.builder()
+                .inventoryDocument(doc)
+                .product(prod)
+                .quantity(qty)
+                .unitCost(unitCost)
+                .valuation(valuation)
+                .remainingQuantity(qty)
+                .build());
         lines.add(line);
 
         inventoryBalanceRepository.save(
@@ -1177,16 +1198,15 @@ public class SampleDataSeeder implements CommandLineRunner {
       if (orderRepository.existsByOrganizationIdAndOrderNumber(org.getId(), orderNumber)) {
         continue;
       }
-      Order order =
-          createSampleOrder(
-              org,
-              orderNumber,
-              com.dut.erp.enums.OrderStatus.CANCELLED,
-              partners.get(i % partners.size()),
-              products,
-              vat10,
-              vat5,
-              leads.get(i % leads.size()));
+      Order order = createSampleOrder(
+          org,
+          orderNumber,
+          com.dut.erp.enums.OrderStatus.CANCELLED,
+          partners.get(i % partners.size()),
+          products,
+          vat10,
+          vat5,
+          leads.get(i % leads.size()));
       createSampleInvoice(org, order, "INV-2026-C" + i, com.dut.erp.enums.InvoiceStatus.CANCELLED);
     }
 
@@ -1212,45 +1232,41 @@ public class SampleDataSeeder implements CommandLineRunner {
         continue;
       }
 
-      Order order =
-          createSampleOrder(
-              org,
-              orderNumber,
-              com.dut.erp.enums.OrderStatus.COMPLETED,
-              partners.get(i % partners.size()),
-              products,
-              vat10,
-              vat5,
-              leads.get(i % leads.size()));
+      Order order = createSampleOrder(
+          org,
+          orderNumber,
+          com.dut.erp.enums.OrderStatus.COMPLETED,
+          partners.get(i % partners.size()),
+          products,
+          vat10,
+          vat5,
+          leads.get(i % leads.size()));
 
       String outDocName = "WH-CHI/OUT/2026/" + String.format("%04d", i);
       if (!inventoryDocumentRepository.existsByName(outDocName)) {
-        InventoryDocument outDoc =
-            inventoryDocumentRepository.save(
-                InventoryDocument.builder()
-                    .warehouse(centralWh)
-                    .name(outDocName)
-                    .documentType(com.dut.erp.enums.DocumentType.ISSUE)
-                    .referenceType(com.dut.erp.enums.ReferenceType.SALES_ORDER)
-                    .referenceId(order.getId())
-                    .documentStatus(com.dut.erp.enums.DocumentStatus.COMPLETED)
-                    .notes("Stock issue for order " + orderNumber)
-                    .scheduledDate(Instant.now().minus(java.time.Duration.ofDays(2)))
-                    .dateDone(Instant.now().minus(java.time.Duration.ofDays(2)))
-                    .build());
+        InventoryDocument outDoc = inventoryDocumentRepository.save(
+            InventoryDocument.builder()
+                .warehouse(centralWh)
+                .name(outDocName)
+                .documentType(com.dut.erp.enums.DocumentType.ISSUE)
+                .referenceType(com.dut.erp.enums.ReferenceType.SALES_ORDER)
+                .referenceId(order.getId())
+                .documentStatus(com.dut.erp.enums.DocumentStatus.COMPLETED)
+                .notes("Stock issue for order " + orderNumber)
+                .scheduledDate(Instant.now().minus(java.time.Duration.ofDays(2)))
+                .dateDone(Instant.now().minus(java.time.Duration.ofDays(2)))
+                .build());
 
         List<InventoryDocumentLine> outLines = new ArrayList<>();
         for (OrderItem item : order.getItems()) {
           Product prod = item.getProduct();
           BigDecimal qty = item.getQuantity();
 
-          Optional<InventoryDocumentLine> receiptLineOpt =
-              inventoryDocumentLineRepository.findAll().stream()
-                  .filter(
-                      l ->
-                          l.getInventoryDocument().getName().equals("WH-CHI/IN/2026/0001")
-                              && l.getProduct().getId().equals(prod.getId()))
-                  .findFirst();
+          Optional<InventoryDocumentLine> receiptLineOpt = inventoryDocumentLineRepository.findAll().stream()
+              .filter(
+                  l -> l.getInventoryDocument().getName().equals("WH-CHI/IN/2026/0001")
+                      && l.getProduct().getId().equals(prod.getId()))
+              .findFirst();
 
           BigDecimal unitCost = prod.getPrice().multiply(BigDecimal.valueOf(0.70));
           if (receiptLineOpt.isPresent()) {
@@ -1267,21 +1283,19 @@ public class SampleDataSeeder implements CommandLineRunner {
 
           BigDecimal valuation = qty.multiply(unitCost);
 
-          InventoryDocumentLine outLine =
-              inventoryDocumentLineRepository.save(
-                  InventoryDocumentLine.builder()
-                      .inventoryDocument(outDoc)
-                      .product(prod)
-                      .quantity(qty)
-                      .unitCost(unitCost)
-                      .valuation(valuation)
-                      .remainingQuantity(BigDecimal.ZERO)
-                      .build());
+          InventoryDocumentLine outLine = inventoryDocumentLineRepository.save(
+              InventoryDocumentLine.builder()
+                  .inventoryDocument(outDoc)
+                  .product(prod)
+                  .quantity(qty)
+                  .unitCost(unitCost)
+                  .valuation(valuation)
+                  .remainingQuantity(BigDecimal.ZERO)
+                  .build());
           outLines.add(outLine);
 
-          Optional<InventoryBalance> balanceOpt =
-              inventoryBalanceRepository.findByWarehouseIdAndProductId(
-                  centralWh.getId(), prod.getId());
+          Optional<InventoryBalance> balanceOpt = inventoryBalanceRepository.findByWarehouseIdAndProductId(
+              centralWh.getId(), prod.getId());
           if (balanceOpt.isPresent()) {
             InventoryBalance balance = balanceOpt.get();
             BigDecimal newQty = balance.getQuantity().subtract(qty);
@@ -1323,17 +1337,16 @@ public class SampleDataSeeder implements CommandLineRunner {
       Tax vat5,
       Lead lead) {
 
-    Order order =
-        Order.builder()
-            .organization(org)
-            .partner(partner)
-            .orderNumber(orderNumber)
-            .status(status)
-            .lead(lead)
-            .deliveryDate(Instant.now().plus(java.time.Duration.ofDays(5)))
-            .expirationDate(Instant.now().plus(java.time.Duration.ofDays(15)))
-            .totalAmount(BigDecimal.ZERO)
-            .build();
+    Order order = Order.builder()
+        .organization(org)
+        .partner(partner)
+        .orderNumber(orderNumber)
+        .status(status)
+        .lead(lead)
+        .deliveryDate(Instant.now().plus(java.time.Duration.ofDays(5)))
+        .expirationDate(Instant.now().plus(java.time.Duration.ofDays(15)))
+        .totalAmount(BigDecimal.ZERO)
+        .build();
 
     order = orderRepository.save(order);
 
@@ -1348,16 +1361,15 @@ public class SampleDataSeeder implements CommandLineRunner {
       BigDecimal unitPrice = prod.getPrice();
       BigDecimal subtotal = qty.multiply(unitPrice);
 
-      OrderItem item =
-          OrderItem.builder()
-              .organization(org)
-              .order(order)
-              .product(prod)
-              .tax(tax)
-              .quantity(qty)
-              .unitPrice(unitPrice)
-              .subtotal(subtotal)
-              .build();
+      OrderItem item = OrderItem.builder()
+          .organization(org)
+          .order(order)
+          .product(prod)
+          .tax(tax)
+          .quantity(qty)
+          .unitPrice(unitPrice)
+          .subtotal(subtotal)
+          .build();
 
       items.add(item);
       totalOrderAmt = totalOrderAmt.add(subtotal);
@@ -1390,13 +1402,11 @@ public class SampleDataSeeder implements CommandLineRunner {
   private void seedReplenishmentRequests(List<Warehouse> warehouses) {
     int index = 1;
     for (Warehouse wh : warehouses) {
-      Optional<InventoryDocument> docOpt =
-          inventoryDocumentRepository.findAll().stream()
-              .filter(
-                  d ->
-                      d.getWarehouse().getId().equals(wh.getId())
-                          && d.getDocumentType() == com.dut.erp.enums.DocumentType.RECEIPT)
-              .findFirst();
+      Optional<InventoryDocument> docOpt = inventoryDocumentRepository.findAll().stream()
+          .filter(
+              d -> d.getWarehouse().getId().equals(wh.getId())
+                  && d.getDocumentType() == com.dut.erp.enums.DocumentType.RECEIPT)
+          .findFirst();
 
       if (docOpt.isPresent()) {
         InventoryDocument receiptDoc = docOpt.get();
@@ -1431,8 +1441,7 @@ public class SampleDataSeeder implements CommandLineRunner {
     }
 
     // Products module
-    ErpModule productsModule =
-        getOrCreateModule(modulesByCode, "Products", "products", "Product management");
+    ErpModule productsModule = getOrCreateModule(modulesByCode, "Products", "products", "Product management");
     createPermissionIfNotExists(
         permissionsByCode, productsModule, "products:read", "Read and list products");
     createPermissionIfNotExists(
@@ -1445,8 +1454,7 @@ public class SampleDataSeeder implements CommandLineRunner {
         permissionsByCode, productsModule, "products:delete", "Delete products");
 
     // Partners module
-    ErpModule partnersModule =
-        getOrCreateModule(modulesByCode, "Partners", "partners", "Partner management");
+    ErpModule partnersModule = getOrCreateModule(modulesByCode, "Partners", "partners", "Partner management");
     createPermissionIfNotExists(
         permissionsByCode, partnersModule, "partners:create", "Create partners");
     createPermissionIfNotExists(
@@ -1469,15 +1477,13 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(permissionsByCode, rolesModule, "roles:delete", "Delete roles");
 
     // Organizations module
-    ErpModule organizationsModule =
-        getOrCreateModule(
-            modulesByCode, "Organizations", "organizations", "Organization management");
+    ErpModule organizationsModule = getOrCreateModule(
+        modulesByCode, "Organizations", "organizations", "Organization management");
     createPermissionIfNotExists(
         permissionsByCode, organizationsModule, "organizations:write", "Update organizations");
 
     // ERP Modules module
-    ErpModule erpModule =
-        getOrCreateModule(modulesByCode, "ERP Modules", "erp_module", "ERP module management");
+    ErpModule erpModule = getOrCreateModule(modulesByCode, "ERP Modules", "erp_module", "ERP module management");
     createPermissionIfNotExists(permissionsByCode, erpModule, "erp_module:read", "Read modules");
 
     // Users module
@@ -1495,9 +1501,8 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(permissionsByCode, leadsModule, "leads:delete", "Delete leads");
 
     // Taxes module
-    ErpModule taxesModule =
-        getOrCreateModule(
-            modulesByCode, "Taxes", "taxes", "Taxes configurations and rates management");
+    ErpModule taxesModule = getOrCreateModule(
+        modulesByCode, "Taxes", "taxes", "Taxes configurations and rates management");
     createPermissionIfNotExists(permissionsByCode, taxesModule, "taxes:create", "Create taxes");
     createPermissionIfNotExists(
         permissionsByCode, taxesModule, "taxes:read", "Read and list taxes");
@@ -1507,9 +1512,8 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(permissionsByCode, taxesModule, "taxes:delete", "Delete taxes");
 
     // Orders module
-    ErpModule ordersModule =
-        getOrCreateModule(
-            modulesByCode, "Orders", "orders", "Sales orders and quotation management");
+    ErpModule ordersModule = getOrCreateModule(
+        modulesByCode, "Orders", "orders", "Sales orders and quotation management");
     createPermissionIfNotExists(permissionsByCode, ordersModule, "orders:create", "Create orders");
     createPermissionIfNotExists(
         permissionsByCode, ordersModule, "orders:read", "Read and list orders");
@@ -1519,8 +1523,7 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(permissionsByCode, ordersModule, "orders:delete", "Delete orders");
 
     // Invoices module
-    ErpModule invoicesModule =
-        getOrCreateModule(modulesByCode, "Invoices", "invoices", "Invoices management");
+    ErpModule invoicesModule = getOrCreateModule(modulesByCode, "Invoices", "invoices", "Invoices management");
     createPermissionIfNotExists(
         permissionsByCode, invoicesModule, "invoices:create", "Create invoices");
     createPermissionIfNotExists(
@@ -1533,8 +1536,7 @@ public class SampleDataSeeder implements CommandLineRunner {
         permissionsByCode, invoicesModule, "invoices:delete", "Delete invoices");
 
     // Warehouses module
-    ErpModule warehousesModule =
-        getOrCreateModule(modulesByCode, "Warehouses", "warehouses", "Warehouse management");
+    ErpModule warehousesModule = getOrCreateModule(modulesByCode, "Warehouses", "warehouses", "Warehouse management");
     createPermissionIfNotExists(
         permissionsByCode, warehousesModule, "warehouses:create", "Create warehouses");
     createPermissionIfNotExists(
@@ -1547,8 +1549,7 @@ public class SampleDataSeeder implements CommandLineRunner {
         permissionsByCode, warehousesModule, "warehouses:delete", "Delete warehouses");
 
     // Sale Teams module
-    ErpModule saleTeamsModule =
-        getOrCreateModule(modulesByCode, "Sale Teams", "sale_teams", "Sale teams management");
+    ErpModule saleTeamsModule = getOrCreateModule(modulesByCode, "Sale Teams", "sale_teams", "Sale teams management");
     createPermissionIfNotExists(
         permissionsByCode, saleTeamsModule, "sale_teams:create", "Create sale teams");
     createPermissionIfNotExists(
@@ -1569,28 +1570,44 @@ public class SampleDataSeeder implements CommandLineRunner {
     return organizationsByName;
   }
 
+  private Map<String, Organization> loadOrganizationsByTaxCode() {
+    Map<String, Organization> organizationsByTaxCode = new HashMap<>();
+    for (Organization organization : organizationRepository.findAll()) {
+      if (organization.getTaxCode() != null) {
+        organizationsByTaxCode.putIfAbsent(organization.getTaxCode(), organization);
+      }
+    }
+    return organizationsByTaxCode;
+  }
+
   private Organization getOrCreateOrganization(
       Map<String, Organization> organizationsByName,
+      Map<String, Organization> organizationsByTaxCode,
       String name,
       String description,
       String address,
       String hotline,
       String taxCode) {
     Organization existing = organizationsByName.get(name);
+    if (existing == null && taxCode != null) {
+      existing = organizationsByTaxCode.get(taxCode);
+    }
     if (existing != null) {
       return existing;
     }
 
-    Organization created =
-        organizationRepository.save(
-            Organization.builder()
-                .name(name)
-                .description(description)
-                .address(address)
-                .hotline(hotline)
-                .taxCode(taxCode)
-                .build());
+    Organization created = organizationRepository.save(
+        Organization.builder()
+            .name(name)
+            .description(description)
+            .address(address)
+            .hotline(hotline)
+            .taxCode(taxCode)
+            .build());
     organizationsByName.put(name, created);
+    if (taxCode != null) {
+      organizationsByTaxCode.put(taxCode, created);
+    }
     return created;
   }
 
@@ -1601,9 +1618,8 @@ public class SampleDataSeeder implements CommandLineRunner {
       return existing;
     }
 
-    ErpModule created =
-        erpModuleRepository.save(
-            ErpModule.builder().name(name).code(code).description(description).build());
+    ErpModule created = erpModuleRepository.save(
+        ErpModule.builder().name(name).code(code).description(description).build());
     modulesByCode.put(code, created);
     return created;
   }
@@ -1617,14 +1633,13 @@ public class SampleDataSeeder implements CommandLineRunner {
       return;
     }
 
-    Permission created =
-        permissionRepository.save(
-            Permission.builder()
-                .code(code)
-                .name(description)
-                .description(description)
-                .module(module)
-                .build());
+    Permission created = permissionRepository.save(
+        Permission.builder()
+            .code(code)
+            .name(description)
+            .description(description)
+            .module(module)
+            .build());
     permissionsByCode.put(code, created);
   }
 
@@ -1641,13 +1656,12 @@ public class SampleDataSeeder implements CommandLineRunner {
               return existingRole;
             })
         .orElseGet(
-            () ->
-                roleRepository.save(
-                    Role.builder()
-                        .name(roleName)
-                        .organization(organization)
-                        .permissions(new HashSet<>(permissions))
-                        .build()));
+            () -> roleRepository.save(
+                Role.builder()
+                    .name(roleName)
+                    .organization(organization)
+                    .permissions(new HashSet<>(permissions))
+                    .build()));
   }
 
   private User getOrCreateUser(
@@ -1655,15 +1669,14 @@ public class SampleDataSeeder implements CommandLineRunner {
     return userRepository
         .findByEmail(email)
         .orElseGet(
-            () ->
-                userRepository.save(
-                    User.builder()
-                        .firstName(firstName)
-                        .lastName(lastName)
-                        .email(email)
-                        .password(passwordEncoder.encode(rawPassword))
-                        .roles(new HashSet<>())
-                        .organizations(new HashSet<>())
-                        .build()));
+            () -> userRepository.save(
+                User.builder()
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .email(email)
+                    .password(passwordEncoder.encode(rawPassword))
+                    .roles(new HashSet<>())
+                    .organizations(new HashSet<>())
+                    .build()));
   }
 }

@@ -40,6 +40,7 @@ export const API_ENDPOINTS = {
   },
   INVENTORY: {
     WAREHOUSES: (orgId: string) => `/organizations/${orgId}/warehouses`,
+    METRICS: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/metrics`,
     BALANCES: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/balances`,
     DOCUMENTS: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/documents`,
     REPLENISHMENT_REQUESTS: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/replenishment-requests`,
@@ -115,8 +116,36 @@ export const ORDER_STATUS = {
   CONFIRMED: "CONFIRMED",
   CANCELLED: "CANCELLED",
   COMPLETED: "COMPLETED",
+  WAITING_FOR_STOCK: "WAITING_FOR_STOCK",
 } as const;
 export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
+
+export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; badgeClass: string }> = {
+  [ORDER_STATUS.DRAFT]: {
+    label: "DRAFT",
+    badgeClass: "bg-gray-50 text-gray-650 border-gray-200",
+  },
+  [ORDER_STATUS.CONFIRMED]: {
+    label: "CONFIRMED",
+    badgeClass: "bg-[#f0f4ff] text-[#0066cc] border-[#d0e0ff]",
+  },
+  [ORDER_STATUS.SENT]: {
+    label: "SENT",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  [ORDER_STATUS.WAITING_FOR_STOCK]: {
+    label: "WAITING STOCK",
+    badgeClass: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+  [ORDER_STATUS.COMPLETED]: {
+    label: "COMPLETED",
+    badgeClass: "bg-emerald-600 text-white border-emerald-650",
+  },
+  [ORDER_STATUS.CANCELLED]: {
+    label: "CANCELLED",
+    badgeClass: "bg-red-50 text-red-600 border-red-200",
+  },
+};
 
 export const TAX_COMPUTATION = {
   PERCENTAGE: "PERCENTAGE",

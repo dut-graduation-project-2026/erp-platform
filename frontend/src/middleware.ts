@@ -35,9 +35,18 @@ export function middleware(request: NextRequest) {
 
   // Nếu không còn ngữ cảnh phiên tối thiểu từ client thì coi như chưa đăng nhập.
   if (!hasClientSessionContext) {
+    // Tránh loop vô tận nếu đã ở /login
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/login', request.nextUrl));
+    }
     const loginUrl = new URL('/login', request.nextUrl);
     loginUrl.searchParams.set('redirect', pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Nếu đã đăng nhập và truy cập root '/', chuyển hướng vào luồng hệ thống
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/select-org', request.nextUrl));
   }
 
   // 🟠 BƯỚC 4.3: Onboarding routes - /select-org
@@ -59,7 +68,7 @@ export function middleware(request: NextRequest) {
       }
 
       // Check nếu orgId nằm trong userOrgIds của user
-      const userOrgIds = userOrgIdsCookie?.split(',') || [];
+      const userOrgIds = userOrgIdsCookie?.split('_') || [];
       if (!userOrgIds.includes(orgId)) {
         return NextResponse.redirect(new URL('/select-org', request.nextUrl));
       }

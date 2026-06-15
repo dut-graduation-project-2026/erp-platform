@@ -60,9 +60,11 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     });
 
     es.onerror = (error) => {
-      console.error('SSE connection error:', error);
       if (es.readyState === EventSource.CLOSED) {
+        console.error('SSE connection closed permanently:', error);
         get().cleanupSSE();
+      } else if (es.readyState === EventSource.CONNECTING) {
+        console.warn('SSE connection lost. Attempting to reconnect...');
       }
     };
 

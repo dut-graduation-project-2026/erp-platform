@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { KeyRound, Eye, EyeOff, CheckCircle2, RefreshCw, AlertTriangle, ArrowLeft } from "lucide-react";
-import { resetPasswordApi } from "@/features/auth/services/authService";
+import { resetPasswordApi, validateResetTokenApi } from "@/features/auth/services/authService";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,17 +24,43 @@ function ResetPasswordPageContent() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Validation states
+  const [isValidating, setIsValidating] = useState(!!token);
+  const [isTokenValid, setIsTokenValid] = useState(true);
+  const [validationError, setValidationError] = useState("");
+
+  useEffect(() => {
+    if (!token) return;
+
+    const validateToken = async () => {
+      try {
+        await validateResetTokenApi(token);
+        setIsTokenValid(true);
+      } catch (err: any) {
+        console.error("Token validation error:", err);
+        setIsTokenValid(false);
+        const errorMessage = err.response?.data?.message || "The reset token is expired or invalid. Please request a new link.";
+        setValidationError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setIsValidating(false);
+      }
+    };
+
+    validateToken();
+  }, [token]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!token) {
-      return toast.error("Mã xác thực (Token) không hợp lệ hoặc đã thiếu.");
+    if (!token || !isTokenValid) {
+      return toast.error("Invalid or expired reset token.");
     }
     if (!newPassword || newPassword.length < 8) {
-      return toast.error("Mật khẩu mới phải chứa ít nhất 8 ký tự.");
+      return toast.error("New password must be at least 8 characters long.");
     }
     if (newPassword !== confirmPassword) {
-      return toast.error("Mật khẩu xác nhận không khớp.");
+      return toast.error("Confirm password does not match.");
     }
 
     setIsLoading(true);
@@ -45,19 +71,30 @@ function ResetPasswordPageContent() {
       });
 
       setIsSuccess(true);
-      toast.success("Đặt lại mật khẩu thành công!");
+      toast.success("Password reset successfully!");
     } catch (err: any) {
       console.error(err);
-      const errorMessage = err.response?.data?.message || "Mã xác thực đã hết hạn hoặc không hợp lệ. Vui lòng yêu cầu lại liên kết.";
+      const errorMessage = err.response?.data?.message || "The reset token is expired or invalid. Please request a new link.";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (isValidating) {
+    return (
+      <div className="w-full max-w-[420px] bg-white border border-[#e0e0e0] rounded-[4px] p-8 shadow-[0px_4px_16px_rgba(0,0,0,0.08)] font-['Segoe_UI',_sans-serif] flex items-center justify-center min-h-[300px]">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="w-8 h-8 text-[#0066cc] animate-spin" />
+          <p className="text-[13px] text-[#898989]">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-[420px] bg-white border border-[#e0e0e0] rounded-[4px] p-8 shadow-[0px_4px_16px_rgba(0,0,0,0.08)] font-['Segoe_UI',_sans-serif]">
-      {!token ? (
+      {!token || !isTokenValid ? (
         <div className="text-center space-y-5">
           <div className="w-16 h-16 rounded-full bg-[#fff5f5] border border-[#fee2e2] flex items-center justify-center mx-auto text-[#dc3545]">
             <AlertTriangle className="w-8 h-8" />
@@ -69,7 +106,7 @@ function ResetPasswordPageContent() {
               The password reset token is missing from the URL. Please verify your email link or send a new request.
             </p>
           </div>
-
+          
           <div className="pt-2 flex flex-col gap-2">
             <Link href="/forgot-password" className="w-full">
               <Button className="w-full bg-[#0066cc] hover:bg-[#004499] text-white h-10 rounded-[4px] font-[600] text-[14px]">

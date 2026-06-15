@@ -68,7 +68,7 @@ export default function SelectOrgPage() {
       setCurrentOrgId(orgId);
       
       // Đồng bộ cookies để Next.js Middleware có thể đọc được (Middleware không đọc được localStorage của Zustand)
-      const orgIds = organizations.map(org => org.id).join(',');
+      const orgIds = organizations.map(org => org.id).join('_');
       document.cookie = `currentOrgId=${orgId}; path=/; max-age=86400; secure; SameSite=Lax`;
       document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; secure; SameSite=Lax`;
       
@@ -237,7 +237,7 @@ export default function SelectOrgPage() {
 
           {/* Organizations Grid */}
           {organizations.length > 0 ? (
-            <div className="grid grid-cols-3 gap-8 mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 items-stretch">
               {organizations.map((org) => (
                 <OrgCard
                   key={org.id}
@@ -301,21 +301,23 @@ export default function SelectOrgPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="hotline">Hotline</Label>
+                    <Label htmlFor="hotline">Hotline <span className="text-red-500">*</span></Label>
                     <Input 
                       id="hotline" 
                       placeholder="e.g. 0912345678" 
                       value={formData.hotline}
-                      onChange={(e) => setFormData({...formData, hotline: e.target.value.replace(/\D/g, '')})}
+                      onChange={(e) => setFormData({...formData, hotline: e.target.value})}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
+                    <Label htmlFor="address">Address <span className="text-red-500">*</span></Label>
                     <Input 
                       id="address" 
                       placeholder="City, Country" 
                       value={formData.address}
                       onChange={(e) => setFormData({...formData, address: e.target.value})}
+                      required
                     />
                   </div>
                 </div>

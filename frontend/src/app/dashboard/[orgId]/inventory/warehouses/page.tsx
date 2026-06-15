@@ -23,6 +23,7 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const { hasPermission } = usePermissions();
 
   // Modal State
@@ -54,6 +55,7 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
   }, [orgId]);
 
   const handleOpenModal = (wh?: Warehouse) => {
+    setStaffSearchQuery('');
     if (wh) {
       setSelectedWarehouse(wh);
     } else {
@@ -73,13 +75,15 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedWarehouse(null);
+    setStaffSearchQuery('');
   };
 
   const handleSaveWarehouse = async () => {
     if (!selectedWarehouse?.name?.trim()) return toast.error('Warehouse name is required.');
     if (!selectedWarehouse?.code?.trim()) return toast.error('Warehouse code is required.');
+    if (!selectedWarehouse?.manager?.id) return toast.error('Warehouse manager is required.');
 
-    const managerId = selectedWarehouse.manager?.id || '';
+    const managerId = selectedWarehouse.manager.id;
     const staffIds = selectedWarehouse.staff?.map(s => s.id) || [];
 
     const payload: CreateWarehouseRequest = {
@@ -297,20 +301,31 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
 
               {/* Manager Dropdown */}
               <div>
-                <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Warehouse Manager</label>
+                <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Warehouse Manager <span className="text-[#dc3545]">*</span></label>
                 <select
                   value={selectedWarehouse.manager?.id || ''}
                   onChange={e => {
                     const matchedUser = orgMembers.find(m => m.id === e.target.value);
-                    setSelectedWarehouse({
-                      ...selectedWarehouse,
-                      manager: matchedUser ? {
+                    if (matchedUser) {
+                      const managerObj = {
                         id: matchedUser.id,
                         firstName: matchedUser.firstName,
                         lastName: matchedUser.lastName,
                         email: matchedUser.email,
-                      } : undefined
-                    });
+                      };
+                      const currentStaff = selectedWarehouse.staff || [];
+                      const hasStaff = currentStaff.some(s => s.id === matchedUser.id);
+                      setSelectedWarehouse({
+                        ...selectedWarehouse,
+                        manager: managerObj,
+                        staff: hasStaff ? currentStaff : [...currentStaff, managerObj]
+                      });
+                    } else {
+                      setSelectedWarehouse({
+                        ...selectedWarehouse,
+                        manager: undefined
+                      });
+                    }
                   }}
                   className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] focus:outline-none focus:border-[#0066cc]"
                 >
@@ -325,44 +340,67 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
 
               {/* Staff Multi-Select (Simple checkboxes) */}
               <div>
-                <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Assigned Operations Staff</label>
+                <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Warehouse Operations Staff</label>
+                <div className="mb-2 relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#898989]" />
+                  <Input
+                    placeholder="Search staff members..."
+                    value={staffSearchQuery}
+                    onChange={e => setStaffSearchQuery(e.target.value)}
+                    className="h-8 pl-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                  />
+                </div>
                 <div className="border border-[#d0d0d0] rounded-[4px] p-3 max-h-[160px] overflow-y-auto space-y-2 bg-[#fafafa]">
                   {orgMembers.length === 0 ? (
                     <span className="text-[12px] text-[#898989]">No organization members found</span>
                   ) : (
-                    orgMembers.map(member => {
-                      const isChecked = selectedWarehouse.staff?.some(s => s.id === member.id) || false;
-                      return (
-                        <label key={member.id} className="flex items-center space-x-2 text-[13px] text-[#4a4a4a] cursor-pointer hover:text-[#242424]">
-                          <input 
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={e => {
-                              const currentStaff = selectedWarehouse.staff || [];
-                              if (e.target.checked) {
-                                const newStaffMember = {
-                                  id: member.id,
-                                  firstName: member.firstName,
-                                  lastName: member.lastName,
-                                  email: member.email,
-                                };
-                                setSelectedWarehouse({
-                                  ...selectedWarehouse,
-                                  staff: [...currentStaff, newStaffMember]
-                                });
-                              } else {
-                                setSelectedWarehouse({
-                                  ...selectedWarehouse,
-                                  staff: currentStaff.filter(s => s.id !== member.id)
-                                });
-                              }
-                            }}
-                            className="w-4 h-4 text-[#0066cc] focus:ring-[#0066cc] border-[#d0d0d0] rounded"
-                          />
-                          <span>{member.firstName} {member.lastName} <span className="text-[#898989] text-[11px]">({member.email})</span></span>
-                        </label>
-                      );
-                    })
+                    (() => {
+                      const filteredMembers = orgMembers.filter(m => {
+                        const q = staffSearchQuery.toLowerCase();
+                        return m.firstName.toLowerCase().includes(q) || 
+                               m.lastName.toLowerCase().includes(q) || 
+                               m.email.toLowerCase().includes(q);
+                      });
+                      if (filteredMembers.length === 0) {
+                        return <span className="text-[12px] text-[#898989]">No members match search</span>;
+                      }
+                      return filteredMembers.map(member => {
+                        const isChecked = selectedWarehouse.staff?.some(s => s.id === member.id) || false;
+                        return (
+                          <label key={member.id} className="flex items-center space-x-2 text-[13px] text-[#4a4a4a] cursor-pointer hover:text-[#242424]">
+                            <input 
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={e => {
+                                const currentStaff = selectedWarehouse.staff || [];
+                                if (e.target.checked) {
+                                  const newStaffMember = {
+                                    id: member.id,
+                                    firstName: member.firstName,
+                                    lastName: member.lastName,
+                                    email: member.email,
+                                  };
+                                  setSelectedWarehouse({
+                                    ...selectedWarehouse,
+                                    staff: [...currentStaff, newStaffMember]
+                                  });
+                                } else {
+                                  const newStaff = currentStaff.filter(s => s.id !== member.id);
+                                  const isManager = selectedWarehouse.manager?.id === member.id;
+                                  setSelectedWarehouse({
+                                    ...selectedWarehouse,
+                                    staff: newStaff,
+                                    manager: isManager ? undefined : selectedWarehouse.manager
+                                  });
+                                }
+                              }}
+                              className="w-4 h-4 text-[#0066cc] focus:ring-[#0066cc] border-[#d0d0d0] rounded"
+                            />
+                            <span>{member.firstName} {member.lastName} <span className="text-[#898989] text-[11px]">({member.email})</span></span>
+                          </label>
+                        );
+                      });
+                    })()
                   )}
                 </div>
               </div>

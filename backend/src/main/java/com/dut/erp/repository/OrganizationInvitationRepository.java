@@ -65,4 +65,17 @@ public interface OrganizationInvitationRepository
 
   boolean existsByEmailAndOrganizationIdAndStatus(
       String email, UUID organizationId, OrganizationInvitationStatus status);
+
+  @Query(
+      """
+      SELECT oi
+      FROM OrganizationInvitation oi
+      JOIN FETCH oi.organization
+      JOIN FETCH oi.invitedBy
+      LEFT JOIN FETCH oi.role
+      LEFT JOIN FETCH oi.respondedBy
+      WHERE oi.organization.id = :organizationId
+      ORDER BY oi.createdAt DESC
+      """)
+  java.util.List<OrganizationInvitation> findAllByOrganizationId(@Param("organizationId") UUID organizationId);
 }

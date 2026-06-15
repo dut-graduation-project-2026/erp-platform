@@ -24,6 +24,8 @@ import com.dut.erp.repository.SaleTeamRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.LeadService;
+import com.dut.erp.service.SecurityAuthService;
+import com.dut.erp.util.SecurityUtils;
 import com.dut.erp.dto.event.LeadAssignedEvent;
 import com.dut.erp.dto.event.LeadStageChangedEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -55,6 +57,7 @@ public class LeadServiceImpl implements LeadService {
   private final UserRepository userRepository;
   private final LeadMapper leadMapper;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final SecurityAuthService securityAuthService;
 
   @Override
   public PagedEntityResponse<LeadBaseResponse> getLeadsWithFilterByOrganizationId(
@@ -94,6 +97,7 @@ public class LeadServiceImpl implements LeadService {
   public LeadResponse getLeadById(UUID organizationId, UUID leadId) {
     log.info("Fetching lead {} for organization {}", leadId, organizationId);
     Lead lead = findLeadByIdAndOrganizationId(leadId, organizationId);
+    securityAuthService.isLeadOwnerOrManagerOrAdmin(lead, SecurityUtils.getCurrentUser());
     return leadMapper.toResponse(lead);
   }
 
@@ -141,6 +145,8 @@ public class LeadServiceImpl implements LeadService {
     log.info("Updating lead {} in organization {}", leadId, organizationId);
     Lead lead = findLeadByIdAndOrganizationId(leadId, organizationId);
 
+    securityAuthService.isLeadOwnerOrManagerOrAdmin(lead, SecurityUtils.getCurrentUser());
+
     SaleTeam saleTeam = validateAndGetSaleTeam(request.saleTeamId(), organizationId);
     User salePerson = validateAndGetSalePerson(request.salePersonId(), saleTeam);
     Partner partner = validateAndGetPartner(request.partnerId(), organizationId);
@@ -175,6 +181,8 @@ public class LeadServiceImpl implements LeadService {
     log.info("Updating stage to {} for lead {} in organization {}", stage, leadId, organizationId);
     Lead lead = findLeadByIdAndOrganizationId(leadId, organizationId);
 
+    securityAuthService.isLeadOwnerOrManagerOrAdmin(lead, SecurityUtils.getCurrentUser());
+
     try {
       LeadStage leadStage = LeadStage.valueOf(stage);
       lead.setStage(leadStage);
@@ -197,6 +205,14 @@ public class LeadServiceImpl implements LeadService {
   public void deleteLead(UUID organizationId, UUID leadId) {
     log.info("Deleting lead {} from organization {}", leadId, organizationId);
     Lead lead = findLeadByIdAndOrganizationId(leadId, organizationId);
+
+    if (!securityAuthService.isAdmin(SecurityUtils.getCurrentUser())) {
+      if (lead.getSaleTeam() == null || lead.getSaleTeam().getLeader() == null
+          || !lead.getSaleTeam().getLeader().getId().equals(SecurityUtils.getCurrentUser().getId())) {
+        throw new org.springframework.security.access.AccessDeniedException("Access denied: Only system administrators or sales team leaders can delete leads.");
+      }
+    }
+
     leadRepository.delete(lead);
     log.info("Deleted lead {} from organization {}", leadId, organizationId);
   }

@@ -21,11 +21,11 @@ export function useOrganizations() {
       setError(null);
       const orgs = await fetchMyOrganizationsApi();
       
-      // Mock roles until backend provides actual user roles per org
+      // Use the actual user roles provided per organization from backend
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const orgsWithRoles = orgs.map((org: any, index: number) => ({
+      const orgsWithRoles = orgs.map((org: any) => ({
         ...org,
-        role: index === 0 ? 'Admin' : 'Member',
+        role: org.role || 'Member',
         permissions: org.permissions || [],
       }));
 

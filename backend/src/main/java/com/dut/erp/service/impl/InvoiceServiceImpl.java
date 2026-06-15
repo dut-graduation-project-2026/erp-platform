@@ -90,7 +90,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             .invoiceNumber(invoiceNumber)
             .dueDate(dueDate)
             .totalAmount(order.getTotalAmount())
-            .paidAmount(order.getTotalAmount())
+            .paidAmount(java.math.BigDecimal.ZERO)
             .status(InvoiceStatus.DRAFT)
             .build();
 
@@ -169,6 +169,52 @@ public class InvoiceServiceImpl implements InvoiceService {
       applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldOrderStatus, OrderStatus.COMPLETED));
     }
 
+    return invoiceMapper.toResponse(invoice);
+  }
+
+  @Override
+  @Transactional
+  public InvoiceResponse registerPayment(UUID organizationId, UUID id, com.dut.erp.dto.request.RegisterPaymentRequest request) {
+    log.info("Registering payment of {} for invoice {} in organization {}", request.amount(), id, organizationId);
+
+    Invoice invoice = invoiceRepository
+        .findByIdAndOrganizationId(id, organizationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Invoice not found with id: " + id));
+
+    if (invoice.getStatus() == InvoiceStatus.PAID || invoice.getStatus() == InvoiceStatus.CANCELLED || invoice.getStatus() == InvoiceStatus.DRAFT) {
+        throw new BadRequestException("Cannot register payment for invoice in status: " + invoice.getStatus());
+    }
+
+    java.math.BigDecimal newPaidAmount = invoice.getPaidAmount().add(request.amount());
+    if (newPaidAmount.compareTo(invoice.getTotalAmount()) > 0) {
+        throw new BadRequestException("Payment amount exceeds remaining balance");
+    }
+
+    InvoiceStatus oldStatus = invoice.getStatus();
+    InvoiceStatus newStatus = (newPaidAmount.compareTo(invoice.getTotalAmount()) >= 0) ? InvoiceStatus.PAID : InvoiceStatus.PARTIAL_PAID;
+
+    invoice.setPaidAmount(newPaidAmount);
+    invoice.setStatus(newStatus);
+    invoice = invoiceRepository.save(invoice);
+
+    if (oldStatus != newStatus) {
+        applicationEventPublisher.publishEvent(new InvoiceStatusChangedEvent(invoice.getId(), oldStatus, newStatus));
+        if (newStatus == InvoiceStatus.PAID) {
+            Order order = invoice.getOrder();
+            if (order != null && order.getStatus() == OrderStatus.SENT) {
+                OrderStatus oldOrderStatus = order.getStatus();
+                order.setStatus(OrderStatus.COMPLETED);
+                
+                if (order.getLead() != null && order.getLead().getStage() != com.dut.erp.enums.LeadStage.WON) {
+                    order.getLead().setStage(com.dut.erp.enums.LeadStage.WON);
+                }
+                
+                orderRepository.save(order);
+                log.info("Automatically completed order {} because invoice {} was marked PAID", order.getId(), invoice.getId());
+                applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldOrderStatus, OrderStatus.COMPLETED));
+            }
+        }
+    }
     return invoiceMapper.toResponse(invoice);
   }
 

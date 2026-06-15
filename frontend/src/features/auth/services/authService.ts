@@ -161,6 +161,17 @@ export const resetPasswordApi = async (payload: ResetPasswordRequest): Promise<s
   return response.data;
 };
 
+/**
+ * Kiểm tra xem token reset password có hợp lệ/còn hạn không.
+ */
+export const validateResetTokenApi = async (token: string): Promise<string> => {
+  const response = await apiClient.get<string>(
+    `${API_ENDPOINTS.AUTH.RESET_PASSWORD}/validate`,
+    { params: { token } }
+  );
+  return response.data;
+};
+
 
 
 

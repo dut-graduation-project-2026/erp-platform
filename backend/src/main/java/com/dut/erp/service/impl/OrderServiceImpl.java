@@ -33,6 +33,8 @@ import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.service.OrderService;
 import com.dut.erp.service.SalesOrderIntegrationService;
+import com.dut.erp.service.SecurityAuthService;
+import com.dut.erp.util.SecurityUtils;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -68,6 +70,7 @@ public class OrderServiceImpl implements OrderService {
   private final InventoryBalanceRepository inventoryBalanceRepository;
   private final SalesOrderIntegrationService salesOrderIntegrationService;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final SecurityAuthService securityAuthService;
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
@@ -150,11 +153,37 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.findAllByIdIn(ids.getContent()).stream()
             .collect(Collectors.toMap(Order::getId, Function.identity()));
 
+    List<com.dut.erp.entity.InventoryDocument> activeDocs = inventoryDocumentRepository.findActiveDocumentsForOrders(
+        ReferenceType.SALES_ORDER, ids.getContent(), DocumentType.ISSUE
+    );
+    Map<UUID, com.dut.erp.entity.InventoryDocument> docMap = activeDocs.stream()
+        .collect(Collectors.toMap(
+            com.dut.erp.entity.InventoryDocument::getReferenceId,
+            Function.identity(),
+            (d1, d2) -> d1
+        ));
+
     List<OrderBaseResponse> responses =
         ids.getContent().stream()
             .map(orderMap::get)
             .filter(Objects::nonNull)
-            .map(orderMapper::toBaseResponse)
+            .map(order -> {
+              OrderBaseResponse base = orderMapper.toBaseResponse(order);
+              com.dut.erp.entity.InventoryDocument doc = docMap.get(order.getId());
+              if (doc != null) {
+                return new OrderBaseResponse(
+                    base.id(),
+                    base.orderNumber(),
+                    base.partner(),
+                    base.status(),
+                    base.totalAmount(),
+                    base.createdAt(),
+                    doc.getWarehouse().getId(),
+                    doc.getWarehouse().getName()
+                );
+              }
+              return base;
+            })
             .collect(Collectors.toList());
 
     return PagedEntityResponse.from(new PageImpl<>(responses, pageable, ids.getTotalElements()));
@@ -164,20 +193,22 @@ public class OrderServiceImpl implements OrderService {
   public OrderResponse getQuotationById(UUID organizationId, UUID id) {
     log.info("Fetching quotation {} for organization {}", id, organizationId);
     Order order = findOrderByIdAndOrganizationId(id, organizationId);
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
     if (order.getStatus() != OrderStatus.DRAFT) {
       throw new BadRequestException("Requested resource is an Order, not a Quotation");
     }
-    return orderMapper.toResponse(order);
+    return enrichWithWarehouse(orderMapper.toResponse(order));
   }
 
   @Override
   public OrderResponse getOrderById(UUID organizationId, UUID id) {
     log.info("Fetching order {} for organization {}", id, organizationId);
     Order order = findOrderByIdAndOrganizationId(id, organizationId);
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
     if (order.getStatus() == OrderStatus.DRAFT) {
       throw new BadRequestException("Requested resource is a Quotation, not an Order");
     }
-    return orderMapper.toResponse(order);
+    return enrichWithWarehouse(orderMapper.toResponse(order));
   }
 
   @Override
@@ -212,13 +243,15 @@ public class OrderServiceImpl implements OrderService {
     leadRepository.save(lead);
     log.info("Updated lead {} stage to PROPOSAL since quotation was created", lead.getId());
 
-    return orderMapper.toResponse(order);
+    return enrichWithWarehouse(orderMapper.toResponse(order));
   }
 
   @Override
   @Transactional
   public OrderResponse updateQuotation(UUID organizationId, UUID id, UpsertOrderRequest request) {
     Order order = findOrderByIdAndOrganizationId(id, organizationId);
+
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
 
     if (order.getStatus() != OrderStatus.DRAFT) {
       throw new BadRequestException("Only quotations in DRAFT status can be updated");
@@ -252,7 +285,7 @@ public class OrderServiceImpl implements OrderService {
 
     order = orderRepository.save(order);
     log.info("Updated quotation {} in organization {}", id, organizationId);
-    return orderMapper.toResponse(order);
+    return enrichWithWarehouse(orderMapper.toResponse(order));
   }
 
   @Override
@@ -260,6 +293,8 @@ public class OrderServiceImpl implements OrderService {
   public OrderResponse updateOrderStatus(
       UUID organizationId, UUID id, UpdateOrderStatusRequest request) {
     Order order = findOrderWithLeadByIdAndOrganizationId(id, organizationId);
+
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
 
     // Rule: Once status is COMPLETED, it cannot be updated
     if (order.getStatus() == OrderStatus.COMPLETED) {
@@ -404,13 +439,16 @@ public class OrderServiceImpl implements OrderService {
       }
     }
 
-    return orderMapper.toResponse(order);
+    return enrichWithWarehouse(orderMapper.toResponse(order));
   }
 
   @Override
   @Transactional
   public void deleteQuotation(UUID organizationId, UUID id) {
     Order order = findOrderShallowByIdAndOrganizationId(id, organizationId);
+
+    securityAuthService.isOrderOwnerOrManagerOrAdmin(order, SecurityUtils.getCurrentUser());
+
     if (order.getStatus() != OrderStatus.DRAFT) {
       throw new BadRequestException("Only quotations in DRAFT status can be deleted");
     }
@@ -476,5 +514,36 @@ public class OrderServiceImpl implements OrderService {
     return leadRepository
         .findByIdAndOrganizationId(leadId, organizationId)
         .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + leadId));
+  }
+
+  private OrderResponse enrichWithWarehouse(OrderResponse response) {
+    if (response == null || response.id() == null) {
+      return response;
+    }
+    List<com.dut.erp.entity.InventoryDocument> activeDocs = inventoryDocumentRepository.findActiveDocuments(
+        ReferenceType.SALES_ORDER, response.id(), DocumentType.ISSUE
+    );
+    if (!activeDocs.isEmpty()) {
+      com.dut.erp.entity.InventoryDocument doc = activeDocs.get(0);
+      return new OrderResponse(
+          response.id(),
+          response.organization(),
+          response.partner(),
+          response.lead(),
+          response.orderNumber(),
+          response.status(),
+          response.deliveryDate(),
+          response.expirationDate(),
+          response.totalAmount(),
+          response.items(),
+          response.createdAt(),
+          response.updatedAt(),
+          response.createdBy(),
+          response.updatedBy(),
+          doc.getWarehouse().getId(),
+          doc.getWarehouse().getName()
+      );
+    }
+    return response;
   }
 }

@@ -75,9 +75,14 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       FROM Order o
       WHERE o.organization.id = :organizationId
       AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
+      AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
+      AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
       """)
   Page<UUID> findOrderIdsByOrganizationId(
-      @Param("organizationId") UUID organizationId, Pageable pageable);
+      @Param("organizationId") UUID organizationId,
+      @Param("startDate") java.time.Instant startDate,
+      @Param("endDate") java.time.Instant endDate,
+      Pageable pageable);
 
   @Query(
       """
@@ -86,11 +91,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       WHERE o.organization.id = :organizationId
       AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
       AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+      AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
+      AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
       """)
   Page<UUID> findOrderIdsByOrganizationIdAndSearch(
       @Param("organizationId") UUID organizationId,
       @Param("search") String search,
+      @Param("startDate") java.time.Instant startDate,
+      @Param("endDate") java.time.Instant endDate,
       Pageable pageable);
+
 
   @Query(
       """
@@ -240,4 +250,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("startDate") Instant startDate,
       @Param("endDate") Instant endDate,
       Pageable pageable);
+
+  @Query(
+      """
+      SELECT COUNT(o.id)
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+      AND o.status = com.dut.erp.enums.OrderStatus.CONFIRMED
+      """)
+  long countPendingFulfillmentOrders(@Param("organizationId") UUID organizationId);
+
+  List<Order> findByOrganizationIdAndStatus(UUID organizationId, OrderStatus status);
 }

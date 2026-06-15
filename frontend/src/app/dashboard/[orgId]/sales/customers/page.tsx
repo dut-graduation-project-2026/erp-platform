@@ -56,7 +56,7 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
     if (partner) {
       setSelectedPartner(partner);
     } else {
-      setSelectedPartner({ name: '', code: '', email: '', phone: '', address: '', type: PARTNER_TYPES.INDIVIDUAL });
+      setSelectedPartner({ name: '', code: '', email: '', phone: '', address: '', type: PARTNER_TYPES.INDIVIDUAL, contacts: [] });
     }
     setIsModalOpen(true);
   };
@@ -69,6 +69,14 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
   const handleSavePartner = async () => {
     if (!selectedPartner?.name) return alert('Partner name is required.');
     if (!selectedPartner?.type) return alert('Partner type is required.');
+
+    if (selectedPartner.contacts) {
+      for (const contact of selectedPartner.contacts) {
+        if (!contact.name?.trim()) {
+          return alert('All contacts must have a name.');
+        }
+      }
+    }
 
     setIsSaving(true);
     try {
@@ -87,7 +95,7 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
         if (selectedPartner.id) {
           return prev.map(p => p.id === selectedPartner.id ? { ...p, ...selectedPartner } as SalePartner : p);
         } else {
-          const newP = { ...selectedPartner, id: `PARTNER-${Date.now()}` } as SalePartner;
+          const newP = { ...selectedPartner, id: `PARTNER-${Date.now()}`, contacts: selectedPartner.contacts || [] } as SalePartner;
           return [newP, ...prev];
         }
       });
@@ -253,6 +261,106 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
                     placeholder="e.g. 123 Business Rd, Suite 100"
                     className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                   />
+                </div>
+
+                {/* Contacts Section */}
+                <div className="col-span-2 border-t border-[#e0e0e0] pt-4 mt-2">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-[15px] font-[600] text-[#242424]">Contacts</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const currentContacts = selectedPartner.contacts || [];
+                        setSelectedPartner({
+                          ...selectedPartner,
+                          contacts: [...currentContacts, { name: '', email: '', phone: '', jobPosition: '', notes: '' }]
+                        });
+                      }}
+                      className="h-8 px-2 text-[12px] border-[#d0d0d0]"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add Contact
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+                    {(selectedPartner.contacts || []).map((contact, index) => (
+                      <div key={index} className="border border-[#e0e0e0] rounded-[4px] p-3 relative bg-[#fcfcfc] space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentContacts = selectedPartner.contacts || [];
+                            setSelectedPartner({
+                              ...selectedPartner,
+                              contacts: currentContacts.filter((_, i) => i !== index)
+                            });
+                          }}
+                          className="absolute right-2 top-2 text-[#898989] hover:text-[#dc3545] p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+
+                        <div className="grid grid-cols-2 gap-3 pr-6">
+                          <div>
+                            <label className="block text-[11px] font-[600] text-[#242424] mb-1">Contact Name <span className="text-red-500">*</span></label>
+                            <Input
+                              value={contact.name || ''}
+                              onChange={e => {
+                                const currentContacts = [...(selectedPartner.contacts || [])];
+                                currentContacts[index] = { ...currentContacts[index], name: e.target.value };
+                                setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
+                              }}
+                              placeholder="e.g. John Doe"
+                              className="h-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-[600] text-[#242424] mb-1">Job Position</label>
+                            <Input
+                              value={contact.jobPosition || ''}
+                              onChange={e => {
+                                const currentContacts = [...(selectedPartner.contacts || [])];
+                                currentContacts[index] = { ...currentContacts[index], jobPosition: e.target.value };
+                                setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
+                              }}
+                              placeholder="e.g. Sales Manager"
+                              className="h-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-[600] text-[#242424] mb-1">Email</label>
+                            <Input
+                              type="email"
+                              value={contact.email || ''}
+                              onChange={e => {
+                                const currentContacts = [...(selectedPartner.contacts || [])];
+                                currentContacts[index] = { ...currentContacts[index], email: e.target.value };
+                                setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
+                              }}
+                              placeholder="e.g. john@acme.com"
+                              className="h-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-[600] text-[#242424] mb-1">Phone</label>
+                            <Input
+                              value={contact.phone || ''}
+                              onChange={e => {
+                                const currentContacts = [...(selectedPartner.contacts || [])];
+                                currentContacts[index] = { ...currentContacts[index], phone: e.target.value };
+                                setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
+                              }}
+                              placeholder="e.g. +1 555-1234"
+                              className="h-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {(selectedPartner.contacts || []).length === 0 && (
+                      <p className="text-[12px] text-[#898989] text-center py-2">No contacts added yet.</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

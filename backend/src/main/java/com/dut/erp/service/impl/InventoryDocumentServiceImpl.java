@@ -84,11 +84,11 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     for (var item : request.items()) {
       if (request.documentType() == DocumentType.ADJUSTMENT) {
         if (item.quantity().compareTo(BigDecimal.ZERO) == 0) {
-          throw new BadRequestException("Quantity cannot be zero for ADJUSTMENT");
+          throw new BadRequestException("Adjustment quantity cannot be zero.");
         }
       } else {
         if (item.quantity().compareTo(BigDecimal.ZERO) <= 0) {
-          throw new BadRequestException("Quantity must be positive for " + request.documentType());
+          throw new BadRequestException("Quantity must be positive for " + request.documentType() + ".");
         }
       }
     }
@@ -104,7 +104,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     if (products.size() < productIds.size()) {
       List<UUID> foundIds = products.stream().map(Product::getId).toList();
       List<UUID> missingIds = productIds.stream().filter(id -> !foundIds.contains(id)).toList();
-      throw new ResourceNotFoundException("Product(s) not found or not in organization: " + missingIds);
+      throw new ResourceNotFoundException("The requested product(s) could not be found or do not belong to this organization: " + missingIds);
     }
     Map<UUID, Product> productMap = products.stream()
         .collect(Collectors.toMap(Product::getId, Function.identity()));
@@ -112,10 +112,10 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     Warehouse sourceWarehouse = null;
     if (request.documentType() == DocumentType.TRANSFER_IN || request.documentType() == DocumentType.TRANSFER_OUT) {
       if (request.transferSourceWarehouseId() == null) {
-        throw new BadRequestException("Source/Destination warehouse is required for TRANSFER document type");
+        throw new BadRequestException("Both source and destination warehouses are required for a transfer.");
       }
       if (request.transferSourceWarehouseId().equals(warehouseId)) {
-        throw new BadRequestException("Source and destination warehouses cannot be the same");
+        throw new BadRequestException("Source and destination warehouses must be different.");
       }
       sourceWarehouse = findWarehouseByIdAndOrganizationId(request.transferSourceWarehouseId(), organizationId);
 
@@ -230,13 +230,13 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
 
     Order order = orderRepository.findById(orderId)
-        .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        .orElseThrow(() -> new ResourceNotFoundException("The requested order could not be found."));
     if (!order.getOrganization().getId().equals(organizationId)) {
-      throw new BadRequestException("Order does not belong to the requested organization");
+      throw new BadRequestException("This order does not belong to your organization.");
     }
 
     if (order.getStatus() != OrderStatus.CONFIRMED) {
-      throw new BadRequestException("Only CONFIRMED orders can be claimed");
+      throw new BadRequestException("Only confirmed orders can be processed for inventory.");
     }
 
     // Check duplicate claim
@@ -244,7 +244,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         .existsByReferenceTypeAndReferenceIdAndDocumentTypeAndDocumentStatusNot(
             ReferenceType.SALES_ORDER, orderId, DocumentType.ISSUE, DocumentStatus.CANCELLED);
     if (alreadyClaimed) {
-      throw new BadRequestException("Order has already been claimed");
+      throw new BadRequestException("This order has already been processed for inventory.");
     }
 
     InventoryDocument doc = InventoryDocument.builder()
@@ -283,7 +283,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     for (InventoryDocumentLine tx : lines) {
       InventoryBalance balance = balanceMap.get(tx.getProduct().getId());
       if (balance == null) {
-        throw new ResourceNotFoundException("Inventory balance not found for product: " + tx.getProduct().getName());
+        throw new ResourceNotFoundException("Inventory balance not found for product: " + tx.getProduct().getName() + ".");
       }
       if (balance.getQuantity().compareTo(tx.getQuantity()) < 0) {
         isSufficient = false;
@@ -331,7 +331,18 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     List<InventoryDocumentBaseResponse> responses = ids.getContent().stream()
         .map(docMap::get)
         .filter(Objects::nonNull)
-        .map(doc -> new InventoryDocumentBaseResponse(
+        .map(doc -> {
+            String partnerName = null;
+            String deliveryAddress = null;
+            if (doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
+               Order order = orderRepository.findById(doc.getReferenceId()).orElse(null);
+               if (order != null && order.getPartner() != null) {
+                   partnerName = order.getPartner().getName();
+                   deliveryAddress = order.getPartner().getAddress();
+               }
+            }
+
+            return new InventoryDocumentBaseResponse(
             doc.getId(),
             doc.getWarehouse().getId(),
             doc.getWarehouse().getName(),
@@ -341,11 +352,13 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
             doc.getDocumentType(),
             doc.getReferenceType(),
             doc.getReferenceId(),
+            partnerName,
+            deliveryAddress,
             doc.getDocumentStatus(),
             doc.getScheduledDate(),
             doc.getDateDone(),
             doc.getCreatedAt()
-        ))
+        );})
         .collect(Collectors.toList());
 
     return PagedEntityResponse.from(new PageImpl<>(responses, pageable, ids.getTotalElements()));
@@ -752,6 +765,24 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         ? new UserBaseResponse(doc.getUpdatedBy().getId(), doc.getUpdatedBy().getEmail(), doc.getUpdatedBy().getFirstName(), doc.getUpdatedBy().getLastName())
         : null;
 
+    boolean hasActiveReplenishment = false;
+    if (doc.getDocumentStatus() == DocumentStatus.WAITING_FOR_STOCK) {
+      hasActiveReplenishment = replenishmentRequestRepository
+          .findByInventoryDocumentId(doc.getId())
+          .filter(req -> req.getStatus() == ReplenishmentStatus.OPEN)
+          .isPresent();
+    }
+
+    String partnerName = null;
+    String deliveryAddress = null;
+    if (doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
+        Order order = orderRepository.findById(doc.getReferenceId()).orElse(null);
+        if (order != null && order.getPartner() != null) {
+            partnerName = order.getPartner().getName();
+            deliveryAddress = order.getPartner().getAddress();
+        }
+    }
+
     return new InventoryDocumentResponse(
         doc.getId(),
         doc.getWarehouse().getId(),
@@ -762,6 +793,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         doc.getDocumentType(),
         doc.getReferenceType(),
         doc.getReferenceId(),
+        partnerName,
+        deliveryAddress,
         doc.getDocumentStatus(),
         doc.getNotes(),
         doc.getScheduledDate(),
@@ -770,7 +803,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         doc.getCreatedAt(),
         doc.getUpdatedAt(),
         createdByResp,
-        updatedByResp
+        updatedByResp,
+        hasActiveReplenishment
     );
   }
 }

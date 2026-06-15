@@ -103,6 +103,8 @@ export interface InventoryDocument {
   documentType: DocumentType;
   referenceType: ReferenceType;
   referenceId?: string;
+  partnerName?: string;
+  deliveryAddress?: string;
   documentStatus: DocumentStatus;
   notes?: string;
   scheduledDate: string;
@@ -112,6 +114,7 @@ export interface InventoryDocument {
   updatedAt: string;
   createdBy?: UserBaseResponse;
   updatedBy?: UserBaseResponse;
+  hasActiveReplenishment?: boolean;
 }
 
 export interface StockValuation {
@@ -134,5 +137,23 @@ export interface ReplenishmentRequest {
   inventoryDocumentName: string;
   requestedBy: UserBaseResponse;
   notes?: string;
+  status: 'OPEN' | 'RESOLVED';
   createdAt: string;
+}
+
+export interface RouteProposalResponse {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  totalAmount: number;
+  proposedWarehouseId?: string;
+  proposedWarehouseName?: string;
+  routable: boolean;
+}
+
+export interface ConfirmRouteRequest {
+  routeConfirmations: {
+    orderId: string;
+    warehouseId: string;
+  }[];
 }

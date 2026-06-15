@@ -10,7 +10,7 @@ import java.util.UUID;
 
 
 public interface UserService {
-  PagedEntityResponse<UserBaseResponse> searchUsersByOrganizationId(
+  PagedEntityResponse<OrganizationMemberResponse> searchUsersByOrganizationId(
       UUID organizationId, String query, PaginationRequest paginationRequest);
 
   UserBaseResponse updateUser(UUID userId, UpdateUserRequest request);

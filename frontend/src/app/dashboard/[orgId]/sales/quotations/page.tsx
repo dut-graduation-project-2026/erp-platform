@@ -99,11 +99,12 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
                       <td className="px-4 py-3 text-[13px] text-[#242424] text-right font-mono border-r border-[#e0e0e0]">₫{Number(order.totalAmount ?? 0).toLocaleString()}</td>
                       <td className="px-4 py-3 text-center">
                         <span className={cn("px-2 py-1 text-[11px] font-[600] rounded uppercase", 
-                          order.status === 'CONFIRMED' ? "bg-[#28a745]/10 text-[#28a745]" : 
+                          order.status === 'CONFIRMED' ? "bg-[#0066cc]/10 text-[#0066cc]" : 
+                          order.status === 'COMPLETED' ? "bg-[#28a745]/10 text-[#28a745]" : 
                           order.status === 'DRAFT' ? "bg-[#898989]/10 text-[#898989]" : 
                           "bg-[#0066cc]/10 text-[#0066cc]"
                         )}>
-                          {order.status}
+                          {order.status === 'CONFIRMED' ? 'PENDING FULFILLMENT' : order.status}
                         </span>
                       </td>
                     </tr>

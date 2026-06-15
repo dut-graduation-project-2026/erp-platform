@@ -8,6 +8,7 @@ import com.dut.erp.dto.request.UpdateSaleTeamRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.SaleTeamBaseResponse;
 import com.dut.erp.dto.response.SaleTeamResponse;
+import com.dut.erp.dto.response.UserBaseResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.SaleTeam;
 import com.dut.erp.entity.User;
@@ -15,6 +16,7 @@ import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.SaleTeamMapper;
+import com.dut.erp.mapper.UserMapper;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.SaleTeamRepository;
 import com.dut.erp.repository.UserRepository;
@@ -46,6 +48,7 @@ public class SaleTeamServiceImpl implements SaleTeamService {
   private final SaleTeamRepository saleTeamRepository;
   private final UserRepository userRepository;
   private final SaleTeamMapper saleTeamMapper;
+  private final UserMapper userMapper;
 
   @Override
   public PagedEntityResponse<SaleTeamBaseResponse> getSaleTeamsWithFilterByOrganizationId(
@@ -96,6 +99,15 @@ public class SaleTeamServiceImpl implements SaleTeamService {
     List<SaleTeam> saleTeams =
         saleTeamRepository.findAllByOrganizationIdAndMemberId(organizationId, userId);
     return saleTeams.stream().map(saleTeamMapper::toResponse).collect(Collectors.toList());
+  }
+
+  @Override
+  public List<UserBaseResponse> getSaleTeamUsers(UUID organizationId, UUID id) {
+    log.info("Fetching users of sale team {} in organization {}", id, organizationId);
+    SaleTeam saleTeam = findSaleTeamByIdAndOrganizationId(id, organizationId);
+    return saleTeam.getMembers().stream()
+        .map(userMapper::toUserBaseResponse)
+        .collect(Collectors.toList());
   }
 
   @Override

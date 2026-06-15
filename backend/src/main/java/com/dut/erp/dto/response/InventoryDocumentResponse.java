@@ -19,6 +19,8 @@ public record InventoryDocumentResponse(
     DocumentType documentType,
     ReferenceType referenceType,
     UUID referenceId,
+    String partnerName,
+    String deliveryAddress,
     DocumentStatus documentStatus,
     String notes,
     Instant scheduledDate,
@@ -27,5 +29,6 @@ public record InventoryDocumentResponse(
     Instant createdAt,
     Instant updatedAt,
     UserBaseResponse createdBy,
-    UserBaseResponse updatedBy
+    UserBaseResponse updatedBy,
+    Boolean hasActiveReplenishment
 ) {}

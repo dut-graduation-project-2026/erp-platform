@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { OrderItem, Product, SaleOrder, SaleTax } from '../types';
 import { Button } from '@/components/ui/button';
-import { ORDER_STATUS, TAX_COMPUTATION } from '@/config/constants';
+import { ORDER_STATUS, TAX_COMPUTATION, ORDER_STATUS_CONFIG, OrderStatus } from '@/config/constants';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, ChevronRight, Save, CheckCircle, XCircle, Receipt, Building, Mail, Phone, User, Calendar, ArrowLeft, Clock, Activity, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,7 +51,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
   // ─── Lookup data ─────────────────────────────────────────────────────────
   const [products, setProducts] = useState<Product[]>([]);
   const [taxes, setTaxes] = useState<SaleTax[]>([]);
-  const [leads, setLeads] = useState<{ id: string; name: string }[]>([]);
+  const [leads, setLeads] = useState<{ id: string; name: string; hasPartner: boolean }[]>([]);
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
 
   // ─── Form state ───────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
       .then(([prodRes, taxRes, leadsRes]) => {
         setProducts(prodRes.data ?? []);
         setTaxes(taxRes.data ?? []);
-        setLeads((leadsRes.data ?? []).map((l: any) => ({ id: l.id, name: l.name })));
+        setLeads((leadsRes.data ?? []).map((l: any) => ({ id: l.id, name: l.name, hasPartner: !!l.partner })));
       })
       .catch(console.error)
       .finally(() => setIsLoadingMeta(false));
@@ -147,6 +147,12 @@ export function SaleOrderForm({ order, orgId }: Props) {
   const handleSave = async (): Promise<boolean> => {
     if (!leadId) {
       toast.error('Please select a CRM Lead.');
+      return false;
+    }
+
+    const selectedLead = leads.find(l => l.id === leadId);
+    if (selectedLead && !selectedLead.hasPartner) {
+      toast.error('Selected CRM Lead does not have an associated Partner. Please create a Partner for this Lead first.');
       return false;
     }
 
@@ -241,7 +247,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
 
   const canWrite = order?.id ? hasPermission(PERMISSIONS.ORDERS.WRITE) : hasPermission(PERMISSIONS.ORDERS.CREATE);
 
-  const isReadOnly = (localStatus === 'CONFIRMED' || localStatus === 'CANCELLED' || localStatus === 'COMPLETED') && order;
+  const isReadOnly = (localStatus !== 'DRAFT') && order;
 
   if (isReadOnly && order) {
     return (
@@ -250,6 +256,8 @@ export function SaleOrderForm({ order, orgId }: Props) {
         orgId={orgId}
         localStatus={localStatus}
         handleCreateInvoice={handleCreateInvoice}
+        handleCancel={handleCancel}
+        canWrite={canWrite}
       />
     );
   }
@@ -265,12 +273,10 @@ export function SaleOrderForm({ order, orgId }: Props) {
           <ChevronRight className="w-4 h-4 text-[#898989] mx-2" />
           <span className="text-[#0066cc] font-[600]">{order?.orderNumber || order?.code || 'New Quotation'}</span>
         </div>
-        <span className={cn('px-3 py-1 rounded-[4px] text-[12px] font-[600] uppercase',
-          localStatus === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
-          localStatus === 'CANCELLED' ? 'bg-red-100 text-red-600' :
-          'bg-gray-100 text-gray-600'
+        <span className={cn('px-3 py-1 rounded-[4px] text-[12px] font-[600] uppercase border',
+          ORDER_STATUS_CONFIG[localStatus as OrderStatus]?.badgeClass || 'bg-gray-50 text-gray-650 border-gray-200'
         )}>
-          {localStatus}
+          {ORDER_STATUS_CONFIG[localStatus as OrderStatus]?.label || localStatus}
         </span>
       </div>
 
@@ -290,12 +296,12 @@ export function SaleOrderForm({ order, orgId }: Props) {
               <CheckCircle className="w-4 h-4 mr-2" />Confirm Order
             </Button>
           )}
-          {canWrite && order?.id && localStatus === 'DRAFT' && (
+          {canWrite && order?.id && localStatus !== 'COMPLETED' && localStatus !== 'CANCELLED' && (
             <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 h-10 px-4 rounded-[4px]" onClick={handleCancel}>
               <XCircle className="w-4 h-4 mr-2" />Cancel
             </Button>
           )}
-          {canWrite && order?.id && localStatus === 'CONFIRMED' && (
+          {canWrite && order?.id && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && (
             <Button className="bg-[#28a745] hover:bg-[#218838] text-white h-10 px-4 rounded-[4px]" onClick={handleCreateInvoice}>
               <Receipt className="w-4 h-4 mr-2" />Create Invoice
             </Button>
@@ -390,9 +396,6 @@ export function SaleOrderForm({ order, orgId }: Props) {
               <button className="border-b-2 border-[#0066cc] pb-2 font-[600] text-[#0066cc]">
                 Order Lines
               </button>
-              <button className="pb-2 text-[#898989] hover:text-[#242424] cursor-not-allowed" disabled>
-                Other Info
-              </button>
             </div>
 
             {/* Order lines table */}
@@ -419,7 +422,11 @@ export function SaleOrderForm({ order, orgId }: Props) {
                           className="w-full h-8 text-[13px] border border-[#d0d0d0] rounded px-1 outline-none bg-white focus:border-[#0066cc]"
                         >
                           <option value="">-- Select --</option>
-                          {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          {products.map((p) => {
+                            const isAlreadySelected = lines.some((l, lIdx) => lIdx !== idx && l.productId === p.id);
+                            if (isAlreadySelected) return null;
+                            return <option key={p.id} value={p.id}>{p.name}</option>;
+                          })}
                         </select>
                       </td>
                       <td className="py-2 px-4">
@@ -588,9 +595,11 @@ interface ReadOnlyProps {
   orgId: string;
   localStatus: string;
   handleCreateInvoice: () => Promise<void>;
+  handleCancel: () => Promise<void>;
+  canWrite: boolean;
 }
 
-function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice }: ReadOnlyProps) {
+function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice, handleCancel, canWrite }: ReadOnlyProps) {
   const router = useRouter();
 
   const formatCurrency = (val: number | undefined) => {
@@ -628,9 +637,19 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice 
           >
             Back to List
           </Button>
-          {localStatus === 'CONFIRMED' && (
+          {/* Action buttons */}
+          {canWrite && localStatus !== 'COMPLETED' && localStatus !== 'CANCELLED' && (
             <Button 
-              className="bg-[#0066cc] hover:bg-[#004499] text-white h-8 px-3 text-[13px] rounded-[4px] flex items-center" 
+              variant="outline" 
+              className="border-[#dc3545] text-[#dc3545] hover:bg-[#fdf2f2] h-8 px-3 text-[13px] rounded-[4px] flex items-center" 
+              onClick={handleCancel}
+            >
+              <XCircle className="w-4 h-4 mr-1.5" /> Cancel
+            </Button>
+          )}
+          {canWrite && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && (
+            <Button 
+              className="bg-[#28a745] hover:bg-[#218838] text-white h-8 px-3 text-[13px] rounded-[4px] flex items-center" 
               onClick={handleCreateInvoice}
             >
               <Receipt className="w-4 h-4 mr-1.5" /> Create Invoice
@@ -646,16 +665,30 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice 
           )}>
             Draft
           </div>
-          <span className="mx-1 text-[#e0e0e0]"></span>
+          <span className="mx-1 text-[#e0e0e0]">—</span>
           <div className={cn(
             "px-3 py-1 flex items-center", 
-            localStatus === 'CONFIRMED' ? "text-[#28a745] bg-[#eafaf1] rounded-[2px]" : ""
+            localStatus === 'CONFIRMED' ? "text-[#0066cc] bg-[#f0f4ff] rounded-[2px]" : ""
           )}>
-            Sales Order
+            Pending Fulfillment
+          </div>
+          <span className="mx-1 text-[#e0e0e0]">—</span>
+          <div className={cn(
+            "px-3 py-1 flex items-center", 
+            (localStatus === 'WAITING_FOR_STOCK' || localStatus === 'SENT') ? "text-[#0066cc] bg-[#f0f4ff] rounded-[2px]" : ""
+          )}>
+            Processing
+          </div>
+          <span className="mx-1 text-[#e0e0e0]">—</span>
+          <div className={cn(
+            "px-3 py-1 flex items-center", 
+            localStatus === 'COMPLETED' ? "text-[#28a745] bg-[#eafaf1] rounded-[2px]" : ""
+          )}>
+            Completed
           </div>
           {localStatus === 'CANCELLED' && (
             <>
-              <span className="mx-1 text-[#e0e0e0]"></span>
+              <span className="mx-1 text-[#e0e0e0]">—</span>
               <div className="px-3 py-1 flex items-center text-[#dc3545] bg-[#fdf2f2] rounded-[2px]">
                 Cancelled
               </div>
@@ -741,6 +774,17 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice 
                   <span className="text-[#242424]">{formatDate(order.expirationDate)}</span>
                 </div>
 
+                {order.warehouseName && (
+                  <div className="flex text-[14px] items-center bg-[#f0f9ff] px-3 py-1.5 rounded-[4px] border border-[#bae6fd] mt-2">
+                    <span className="w-32 shrink-0 text-[#0369a1] font-[600] flex items-center">
+                      <Building className="w-4 h-4 mr-1.5 text-[#0284c7]" /> Warehouse
+                    </span>
+                    <span className="text-[#0369a1] font-[600]">
+                      {order.warehouseName}
+                    </span>
+                  </div>
+                )}
+
                 {order.lead && (
                   <div className="border-t border-dashed border-[#e0e0e0] pt-3 mt-3 space-y-2">
                     <div className="flex text-[14px]">
@@ -792,9 +836,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice 
               <button className="border-b-2 border-[#0066cc] pb-2 font-[600] text-[#0066cc]">
                 Order Lines
               </button>
-              <button className="pb-2 text-[#898989] hover:text-[#242424] cursor-not-allowed" disabled>
-                Other Info
-              </button>
+
             </div>
 
             {/* Line Items Table */}

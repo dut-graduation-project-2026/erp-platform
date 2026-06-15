@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { 
   inviteUserApi, 
+  bulkInviteUsersApi,
   resendInvitationApi, 
   OrganizationInvitationUserRequest,
+  BulkOrganizationInvitationRequest,
   OrganizationInvitationResponse
 } from '../services/invitationService';
 import { toast } from 'sonner';
@@ -22,7 +24,6 @@ export const useInvitations = (orgId: string) => {
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || 'Failed to invite user';
       setError(msg);
-      toast.error(msg);
       return null;
     } finally {
       setIsInviting(false);
@@ -40,8 +41,24 @@ export const useInvitations = (orgId: string) => {
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || 'Failed to resend invitation';
       setError(msg);
-      toast.error(msg);
       return false;
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const bulkInviteUsers = async (data: BulkOrganizationInvitationRequest): Promise<OrganizationInvitationResponse[] | null> => {
+    try {
+      setIsInviting(true);
+      setError(null);
+      const res = await bulkInviteUsersApi(orgId, data);
+      toast.success(`Successfully invited ${res.length} users!`);
+      return res;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Failed to bulk invite users';
+      setError(msg);
+      return null;
     } finally {
       setIsInviting(false);
     }
@@ -49,8 +66,10 @@ export const useInvitations = (orgId: string) => {
 
   return { 
     inviteUser, 
+    bulkInviteUsers,
     resendInvitation, 
     isInviting, 
     error 
+
   };
 };

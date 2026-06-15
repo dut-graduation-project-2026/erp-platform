@@ -37,6 +37,7 @@ public class MailSenderConfig {
     properties.put("mail.smtp.auth", "true");
     properties.put("mail.smtp.starttls.enable", "true");
     properties.put("mail.smtp.starttls.required", "true");
+    properties.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
     properties.put("mail.smtp.connectiontimeout", DEFAULT_TIMEOUT_MS);
     properties.put("mail.smtp.timeout", DEFAULT_TIMEOUT_MS);
     properties.put("mail.smtp.writetimeout", DEFAULT_TIMEOUT_MS);

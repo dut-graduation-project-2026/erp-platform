@@ -10,6 +10,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { PERMISSIONS } from '@/config/permissions';
+import { INVOICE_STATUS } from '@/config/constants';
 
 export default function InvoicesListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
   const [invoices, setInvoices] = useState<SaleInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const { hasPermission } = usePermissions();
 
   useEffect(() => {
@@ -29,16 +31,22 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
   }, [orgId]);
 
   const filteredInvoices = useMemo(() => {
-    if (searchQuery.trim() === '') {
-      return invoices;
-    } else {
+    let result = invoices;
+    
+    if (statusFilter !== 'ALL') {
+      result = result.filter(i => i.status === statusFilter);
+    }
+
+    if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
-      return invoices.filter(i => 
+      result = result.filter(i => 
         (i.invoiceNumber && i.invoiceNumber.toLowerCase().includes(q)) || 
         (i.partner?.name && i.partner.name.toLowerCase().includes(q))
       );
     }
-  }, [searchQuery, invoices]);
+
+    return result;
+  }, [searchQuery, statusFilter, invoices]);
 
   return (
     <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white">
@@ -57,14 +65,26 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
                 className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
               />
             </div>
-            {hasPermission(PERMISSIONS.INVOICES.CREATE) && (
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="h-10 px-3 border border-[#d0d0d0] rounded-[4px] text-[13px] text-[#242424] focus-visible:ring-0 focus-visible:border-[#0066cc] bg-white outline-none"
+            >
+              <option value="ALL">All Statuses</option>
+              {Object.entries(INVOICE_STATUS).map(([key, value]) => (
+                <option key={key} value={value}>
+                  {key.replace('_', ' ')}
+                </option>
+              ))}
+            </select>
+            {/* {hasPermission(PERMISSIONS.INVOICES.CREATE) && (
               <Button 
                 onClick={() => alert("Invoice creation modal/page would open here.")}
                 className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
               >
                 <Plus className="w-4 h-4 mr-2" /> New Invoice
               </Button>
-            )}
+            )} */}
          </div>
       </div>
 

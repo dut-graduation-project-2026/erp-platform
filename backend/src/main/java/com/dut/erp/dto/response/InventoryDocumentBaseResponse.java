@@ -18,6 +18,8 @@ public record InventoryDocumentBaseResponse(
     DocumentType documentType,
     ReferenceType referenceType,
     UUID referenceId,
+    String partnerName,
+    String deliveryAddress,
     DocumentStatus documentStatus,
     Instant scheduledDate,
     Instant dateDone,

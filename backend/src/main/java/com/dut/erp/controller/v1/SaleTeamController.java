@@ -7,6 +7,7 @@ import com.dut.erp.dto.request.UpdateSaleTeamRequest;
 import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.SaleTeamBaseResponse;
 import com.dut.erp.dto.response.SaleTeamResponse;
+import com.dut.erp.dto.response.UserBaseResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.SaleTeamService;
 import jakarta.validation.Valid;
@@ -113,6 +114,20 @@ public class SaleTeamController {
       @PathVariable UUID id,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(saleTeamService.getSaleTeamById(organizationId, id));
+  }
+
+  @GetMapping("/{id}/users")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('sale_teams:select', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<List<UserBaseResponse>> getSaleTeamUsers(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID id,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(saleTeamService.getSaleTeamUsers(organizationId, id));
   }
 
   @GetMapping("/me")

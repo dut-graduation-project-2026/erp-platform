@@ -18,10 +18,13 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
   const [requests, setRequests] = useState<ReplenishmentRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Tabs filter state
+  const [activeTab, setActiveTab] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
+
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const limit = 15;
+  const limit = 100;
 
   // Fetch warehouses
   useEffect(() => {
@@ -58,13 +61,18 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
     fetchReplenishments();
   }, [orgId, selectedWarehouseId, page]);
 
+  const filteredRequests = requests.filter(req => {
+    if (activeTab === 'ALL') return true;
+    return req.status === activeTab;
+  });
+
   return (
     <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white">
       {/* Header controls */}
-      <div className="flex justify-between items-center mb-6 shrink-0">
+      <div className="flex justify-between items-center mb-5 shrink-0">
         <div>
           <h1 className="text-[24px] font-[600] text-[#242424] mb-1">Stock Replenishment Requests</h1>
-          <span className="text-[14px] text-[#898989]">View active requests submitted when stock levels were insufficient</span>
+          <span className="text-[14px] text-[#898989]">View requests submitted when stock levels were insufficient</span>
         </div>
         <div className="flex space-x-3 items-center">
           <div className="flex items-center space-x-2">
@@ -95,6 +103,24 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex space-x-1 border-b border-[#e0e0e0] mb-4 shrink-0">
+        {(['ALL', 'OPEN', 'RESOLVED'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "px-4 py-2 text-[13px] font-[600] border-b-2 transition-all",
+              activeTab === tab 
+                ? "border-[#0066cc] text-[#0066cc]" 
+                : "border-transparent text-[#64748b] hover:text-[#242424]"
+            )}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
       {/* Main Table */}
       <div className="flex-1 overflow-auto bg-[#f8f8f8] p-4 -mx-6 -mb-6 border-t border-[#e0e0e0] flex flex-col justify-between">
         <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-hidden">
@@ -106,28 +132,29 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Linked Stock Move</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Requested By</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Reason / Notes</th>
+                <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">Status</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Request Date</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={7} className="py-12 text-center text-[#898989] text-[13px]">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#0066cc]" />
                     Loading requests...
                   </td>
                 </tr>
-              ) : requests.length === 0 ? (
+              ) : filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={7} className="py-12 text-center text-[#898989] text-[13px]">
                     <div className="bg-[#f8f8f8] w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Boxes className="w-6 h-6 text-[#d0d0d0]" />
                     </div>
-                    No active replenishment requests.
+                    No {activeTab !== 'ALL' ? activeTab.toLowerCase() : ''} replenishment requests found.
                   </td>
                 </tr>
               ) : (
-                requests.map((req) => {
+                filteredRequests.map((req) => {
                   const dateStr = new Date(req.createdAt).toLocaleString();
 
                   return (
@@ -156,6 +183,16 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
                       </td>
                       <td className="py-3.5 px-4 text-[13px] text-[#898989] max-w-[250px] truncate">
                         {req.notes || 'No description provided.'}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className={cn(
+                          "inline-block px-2.5 py-0.5 rounded-[12px] text-[11px] font-[600] uppercase",
+                          req.status === 'OPEN' 
+                            ? "bg-[#fff2cc] text-[#d68100]" 
+                            : "bg-[#e2f0d9] text-[#385723]"
+                        )}>
+                          {req.status}
+                        </span>
                       </td>
                       <td className="py-3.5 px-4 text-[12px] text-[#64748b]">
                         <div className="flex items-center">

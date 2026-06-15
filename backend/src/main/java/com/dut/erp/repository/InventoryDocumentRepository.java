@@ -60,5 +60,58 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
   Optional<InventoryDocument> findByReferenceTypeAndReferenceIdAndDocumentType(
       ReferenceType referenceType, UUID referenceId, DocumentType documentType);
 
+  @Query("""
+      SELECT d FROM InventoryDocument d
+      LEFT JOIN FETCH d.warehouse
+      WHERE d.referenceType = :referenceType
+        AND d.referenceId = :referenceId
+        AND d.documentType = :documentType
+        AND d.documentStatus <> com.dut.erp.enums.DocumentStatus.CANCELLED
+      ORDER BY d.createdAt DESC
+      """)
+  List<InventoryDocument> findActiveDocuments(
+      @Param("referenceType") ReferenceType referenceType,
+      @Param("referenceId") UUID referenceId,
+      @Param("documentType") DocumentType documentType);
+
+  @Query("""
+      SELECT d FROM InventoryDocument d
+      LEFT JOIN FETCH d.warehouse
+      WHERE d.referenceType = :referenceType
+        AND d.referenceId IN :referenceIds
+        AND d.documentType = :documentType
+        AND d.documentStatus <> com.dut.erp.enums.DocumentStatus.CANCELLED
+      ORDER BY d.createdAt DESC
+      """)
+  List<InventoryDocument> findActiveDocumentsForOrders(
+      @Param("referenceType") ReferenceType referenceType,
+      @Param("referenceIds") List<UUID> referenceIds,
+      @Param("documentType") DocumentType documentType);
+
   boolean existsByName(String name);
+
+  @Query("""
+      SELECT COUNT(d) FROM InventoryDocument d
+      WHERE d.warehouse.id = :warehouseId
+        AND d.documentType IN :types
+        AND d.documentStatus IN :statuses
+      """)
+  long countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+      @Param("warehouseId") UUID warehouseId,
+      @Param("types") List<DocumentType> types,
+      @Param("statuses") List<DocumentStatus> statuses
+  );
+
+  @Query("""
+      SELECT COUNT(d) FROM InventoryDocument d
+      WHERE d.warehouse.id = :warehouseId
+        AND d.documentType IN :types
+        AND d.documentStatus NOT IN :excludedStatuses
+        AND d.scheduledDate < CURRENT_TIMESTAMP
+      """)
+  long countLateDocuments(
+      @Param("warehouseId") UUID warehouseId,
+      @Param("types") List<DocumentType> types,
+      @Param("excludedStatuses") List<DocumentStatus> excludedStatuses
+  );
 }

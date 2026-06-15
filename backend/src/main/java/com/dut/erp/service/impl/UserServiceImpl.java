@@ -40,7 +40,7 @@ public class UserServiceImpl implements UserService {
   private final PasswordEncoder passwordEncoder;
 
   @Override
-  public PagedEntityResponse<UserBaseResponse> searchUsersByOrganizationId(
+  public PagedEntityResponse<OrganizationMemberResponse> searchUsersByOrganizationId(
       UUID organizationId, String query, PaginationRequest paginationRequest) {
     String normalizedQuery = SearchUtils.normalizeOptionalFilter(query);
 
@@ -58,7 +58,22 @@ public class UserServiceImpl implements UserService {
           userRepository.searchByOrganizationsIdAndQuery(organizationId, escapedQuery, pageable);
     }
 
-    Page<UserBaseResponse> userResponses = userPage.map(userMapper::toUserBaseResponse);
+    Page<OrganizationMemberResponse> userResponses = userPage.map(user -> {
+      List<RoleBaseResponse> roles = user.getRoles().stream()
+          .filter(role -> role.getOrganization() != null && role.getOrganization().getId().equals(organizationId))
+          .map(role -> new RoleBaseResponse(role.getId(), role.getName()))
+          .toList();
+
+      return new OrganizationMemberResponse(
+          user.getId(),
+          user.getEmail(),
+          user.getFirstName(),
+          user.getLastName(),
+          roles,
+          "Active",
+          "-"
+      );
+    });
     log.info(
         "Fetched {} users for organization {} (hasQuery={}, total elements: {}, total pages: {})",
         userResponses.getNumberOfElements(),

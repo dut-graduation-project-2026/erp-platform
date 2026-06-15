@@ -20,4 +20,6 @@ public interface AuthenticationService {
   void sendForgotPasswordEmail(ForgotPasswordRequest request);
 
   void resetPassword(ResetPasswordRequest request);
+
+  void validateResetToken(String token);
 }

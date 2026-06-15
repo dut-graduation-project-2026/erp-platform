@@ -10,6 +10,8 @@ import {
   ReplenishmentRequest,
   CreateReplenishmentRequest,
   StockValuation,
+  RouteProposalResponse,
+  ConfirmRouteRequest,
 } from '../types';
 
 // ─── WAREHOUSE CRUD ──────────────────────────────────────────────────────────
@@ -57,6 +59,31 @@ export const updateWarehouse = async (
 
 export const deleteWarehouse = async (orgId: string, id: string): Promise<void> => {
   await apiClient.delete(`${API_ENDPOINTS.INVENTORY.WAREHOUSES(orgId)}/${id}`);
+};
+
+// ─── INVENTORY METRICS ───────────────────────────────────────────────────────
+
+export interface MetricDetail {
+  toProcess: number;
+  backorders: number;
+  late: number;
+}
+
+export interface WarehouseMetricsResponse {
+  receipts: MetricDetail;
+  deliveries: MetricDetail;
+  internalTransfers: MetricDetail;
+  pendingFulfillmentCount: number;
+}
+
+export const getWarehouseMetrics = async (
+  orgId: string,
+  warehouseId: string
+): Promise<WarehouseMetricsResponse> => {
+  const response = await apiClient.get<WarehouseMetricsResponse>(
+    API_ENDPOINTS.INVENTORY.METRICS(orgId, warehouseId)
+  );
+  return response.data;
 };
 
 // ─── INVENTORY BALANCES ──────────────────────────────────────────────────────
@@ -154,6 +181,25 @@ export const claimOrderStockMove = async (
   return response.data;
 };
 
+export const previewSmartRoute = async (
+  orgId: string
+): Promise<RouteProposalResponse[]> => {
+  const response = await apiClient.get<RouteProposalResponse[]>(
+    `/organizations/${orgId}/orders/smart-route/preview`
+  );
+  return response.data;
+};
+
+export const confirmSmartRoute = async (
+  orgId: string,
+  data: ConfirmRouteRequest
+): Promise<void> => {
+  await apiClient.post<void>(
+    `/organizations/${orgId}/orders/smart-route/confirm`,
+    data
+  );
+};
+
 // ─── REPLENISHMENTS ──────────────────────────────────────────────────────────
 
 export const getReplenishmentRequests = async (
@@ -234,3 +280,84 @@ export const getAssetCategoryDistribution = async (
   );
   return response.data;
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTIONABLE AI: INVENTORY INTELLIGENCE & REORDERING
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ProductAbcXyz {
+  productId: string;
+  productName: string;
+  abcClass: string;
+  xyzClass: string;
+  currentStock: number;
+  rop: number;
+  eoq: number;
+  status: 'OK' | 'WARNING' | 'CRITICAL';
+}
+
+export interface AiInventoryAnalysisResponse {
+  summary: string;
+  abc_xyz_matrix: ProductAbcXyz[];
+  critical_stock_count: number;
+  recommendations: string[];
+}
+
+export interface AiReorderItem {
+  productId: string;
+  productName: string;
+  warehouseId: string;
+  warehouseName: string;
+  currentStock: number;
+  rop: number;
+  eoq: number;
+  recommendedQuantity: number;
+  urgency: 'HIGH' | 'MEDIUM' | 'LOW';
+  notes: string;
+}
+
+export interface AiReorderRecommendationResponse {
+  recommendations: AiReorderItem[];
+}
+
+export const getAiInventoryAnalysis = async (
+  orgId: string,
+  forceRefresh: boolean = false
+): Promise<AiInventoryAnalysisResponse> => {
+  const response = await apiClient.get<AiInventoryAnalysisResponse>(
+    `/organizations/${orgId}/ai/inventory/analysis`,
+    { params: { forceRefresh } }
+  );
+  return response.data;
+};
+
+export const getAiInventoryAlerts = async (
+  orgId: string
+): Promise<string[]> => {
+  const response = await apiClient.get<string[]>(
+    `/organizations/${orgId}/ai/inventory/alerts`
+  );
+  return response.data;
+};
+
+export const getAiReorderRecommendations = async (
+  orgId: string
+): Promise<AiReorderRecommendationResponse> => {
+  const response = await apiClient.get<AiReorderRecommendationResponse>(
+    `/organizations/${orgId}/ai/reorder/recommendations`
+  );
+  return response.data;
+};
+
+export const confirmAiReorders = async (
+  orgId: string,
+  warehouseId: string,
+  recommendations: Partial<AiReorderItem>[]
+): Promise<void> => {
+  await apiClient.post(
+    `/organizations/${orgId}/ai/reorder/confirm`,
+    recommendations,
+    { params: { warehouseId } }
+  );
+};
+
