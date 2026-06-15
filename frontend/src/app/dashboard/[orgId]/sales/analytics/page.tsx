@@ -30,11 +30,13 @@ import {
   getSalesConversionFunnel,
   getSalesTopProducts,
   getSalesCategoryDistribution,
+  getAiSalesForecast,
   SalesSummaryResponse,
   RevenueTrendPoint,
   OrderStatusCount,
   TopProductResponse,
-  CategorySalesDistribution
+  CategorySalesDistribution,
+  AiSalesForecastResponse
 } from '@/features/sales/services/salesService';
 
 export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId: string }> }) {
@@ -48,6 +50,10 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
   const [conversionFunnel, setConversionFunnel] = useState<OrderStatusCount[]>([]);
   const [topProducts, setTopProducts] = useState<TopProductResponse[]>([]);
   const [categoryDistribution, setCategoryDistribution] = useState<CategorySalesDistribution[]>([]);
+
+  // Actionable AI states
+  const [aiForecast, setAiForecast] = useState<AiSalesForecastResponse | null>(null);
+  const [showForecast, setShowForecast] = useState(false);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -69,6 +75,14 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
         setConversionFunnel(funnelRes);
         setTopProducts(productsRes);
         setCategoryDistribution(categoryRes);
+
+        // Gọi API dự báo doanh số của AI (bọc trong try-catch riêng để tránh block cả dashboard)
+        try {
+          const forecastRes = await getAiSalesForecast(orgId);
+          setAiForecast(forecastRes);
+        } catch (aiErr) {
+          console.error('Failed to load AI Sales Forecast:', aiErr);
+        }
       } catch (error) {
         console.error('Error fetching sales analytics:', error);
         toast.error('Failed to load sales intelligence data.');
@@ -99,6 +113,17 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
       margin: point.netMargin
     };
   });
+
+  // Actionable AI: Map Forecast Points
+  const forecastChartData = aiForecast?.forecast_points?.map(p => {
+    const d = new Date(p.date);
+    const label = isNaN(d.getTime()) ? p.date : `${d.getDate()}/${d.getMonth() + 1}`;
+    return {
+      name: label,
+      historical: p.historical_revenue,
+      predicted: p.predicted_revenue
+    };
+  }) || [];
 
   // 3. Process conversion funnel data
   const getFunnelData = () => {
@@ -207,6 +232,58 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
         </div>
       </div>
 
+      {/* Actionable AI: AI Assistant Panel */}
+      {aiForecast && (
+        <div className="border border-[#0066cc]/20 rounded-[4px] p-5 bg-[#0066cc]/[0.02] mb-6 shadow-sm hover:border-[#0066cc]/40 transition-all duration-300 font-['Segoe_UI']">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-9 h-9 rounded-[4px] bg-[#f0f4ff] flex items-center justify-center text-[#0066cc] font-semibold text-[16px] shrink-0 shadow-sm border border-blue-100">
+                🤖
+              </div>
+              <div>
+                <h2 className="text-[15px] font-[700] text-[#242424] flex items-center gap-2">
+                  Trợ Lý Dự Báo Doanh Số AI (Actionable AI)
+                  <span className="text-[10px] bg-[#0066cc]/10 text-[#0066cc] px-2 py-0.5 rounded-[2px] font-bold uppercase tracking-wider">
+                    Gemma-31B-Reasoning
+                  </span>
+                </h2>
+                <p className="text-[12px] text-[#898989]">Nhận định xu hướng doanh số và dự báo nhu cầu thị trường tự động</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 self-end md:self-auto">
+              <Button 
+                onClick={() => setShowForecast(!showForecast)} 
+                variant={showForecast ? "default" : "outline"}
+                className={`h-9 px-4 rounded-[4px] font-[600] text-[12px] transition-all ${
+                  showForecast 
+                    ? "bg-[#0066cc] text-white hover:bg-[#0052a3]" 
+                    : "border-[#d0d0d0] text-[#242424] bg-white hover:bg-gray-50"
+                }`}
+              >
+                {showForecast ? "📊 Xem Xu Hướng Thực Tế" : "🔮 Kích Hoạt Dự Báo AI 30 Ngày"}
+              </Button>
+            </div>
+          </div>
+          
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-dashed border-[#e0e0e0] pt-4">
+            <div className="md:col-span-2">
+              <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">AI Phân Tích & Nhận Định</span>
+              <p className="text-[13px] leading-relaxed text-[#4a4a4a] italic bg-white/50 p-3 rounded border border-gray-100">
+                &quot;{aiForecast.summary || ''}&quot;
+              </p>
+            </div>
+            <div>
+              <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Đề xuất Hành động</span>
+              <ul className="text-[12px] text-[#4a4a4a] space-y-1.5 list-disc pl-4">
+                {aiForecast.insights?.map((insight, idx) => (
+                  <li key={idx} className="font-[500]">{insight}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Charts area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         
@@ -228,7 +305,28 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
           </div>
           
           <div className="h-[260px]">
-            {chartData.length === 0 ? (
+            {showForecast && forecastChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={forecastChartData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorHist" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0066cc" stopOpacity={0.15}/>
+                      <stop offset="95%" stopColor="#0066cc" stopOpacity={0.0}/>
+                    </linearGradient>
+                    <linearGradient id="colorPred" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#e67e22" stopOpacity={0.15}/>
+                      <stop offset="95%" stopColor="#e67e22" stopOpacity={0.0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
+                  <XAxis dataKey="name" stroke="#898989" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#898989" fontSize={11} tickLine={false} />
+                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
+                  <Area type="monotone" dataKey="historical" name="Doanh thu thực tế" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorHist)" />
+                  <Area type="monotone" dataKey="predicted" name="Dự báo doanh số (Dự kiến)" stroke="#e67e22" strokeWidth={2} strokeDasharray="4 4" fillOpacity={1} fill="url(#colorPred)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : chartData.length === 0 ? (
               <div className="flex h-full items-center justify-center text-[#898989]">No revenue data available</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">

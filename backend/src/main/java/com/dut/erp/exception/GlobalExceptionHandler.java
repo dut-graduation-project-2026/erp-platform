@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleMissingRequestParameter(
       MissingServletRequestParameterException ex) {
     log.warn("Missing request parameter: {}", ex.getMessage());
-    String message = String.format("Missing required parameter: '%s'", ex.getParameterName());
+    String message = String.format("Required parameter '%s' is missing.", ex.getParameterName());
     return buildResponse(ErrorCode.BAD_REQUEST, message, null);
   }
 
@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
         ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
     String message =
         String.format(
-            "Invalid value '%s' for parameter '%s': expected type '%s'",
+            "Invalid value '%s' for parameter '%s'. Expected format is '%s'.",
             ex.getValue(), ex.getName(), expectedType);
     return buildResponse(ErrorCode.BAD_REQUEST, message, null);
   }

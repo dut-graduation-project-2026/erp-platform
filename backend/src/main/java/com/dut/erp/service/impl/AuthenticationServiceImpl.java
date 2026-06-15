@@ -68,7 +68,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
       } else {
         log.warn("Login failed: incorrect password for email: {}", request.email());
       }
-      throw new UnauthorizedAccessException("Invalid email or password.");
+      throw new UnauthorizedAccessException("Invalid email or password. Please try again.");
     }
 
     TokenPair tokens = generateTokens(user);
@@ -87,8 +87,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     if (emailExists) {
       log.warn("Registration failed: email already in use: {}", request.email());
       throw new ResourceAlreadyExistsException(
-          "An account with this email may already exist. Please try logging in or use a different"
-              + " email.");
+          "An account with this email address already exists. Please log in or use a different email.");
     }
 
     User user =
@@ -202,7 +201,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     if (deleted == 0) {
       log.warn("Refresh token already used or revoked - jti: {}", jwtUtils.getTruncatedJti(jti));
-      throw new UnauthorizedAccessException("Invalid refresh token.");
+      throw new UnauthorizedAccessException("Your session has expired. Please log in again.");
     } else {
       log.debug("Refresh token revoked - jti: {}", jwtUtils.getTruncatedJti(jti));
     }
@@ -221,10 +220,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
       return parser.apply(token);
     } catch (ExpiredJwtException e) {
       log.debug("{} token expired", tokenType);
-      throw new UnauthorizedAccessException(String.format("%s token has expired.", tokenType));
+      throw new UnauthorizedAccessException("Your authentication session has expired. Please log in again.");
     } catch (JwtException e) {
       log.warn("Invalid JWT {} token received", tokenType);
-      throw new UnauthorizedAccessException(String.format("Invalid %s token.", tokenType));
+      throw new UnauthorizedAccessException("Your session is invalid or has expired. Please log in again.");
     }
   }
 
@@ -297,13 +296,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             .orElseThrow(
                 () -> {
                   log.warn("Password reset failed: token not found");
-                  return new BadRequestException("Invalid or expired password reset token.");
+                  return new BadRequestException("The password reset link is invalid or has expired. Please request a new one.");
                 });
 
     if (resetToken.getExpiresAt().isBefore(Instant.now())) {
       log.warn("Password reset failed: token expired");
       passwordResetTokenRepository.delete(resetToken);
-      throw new BadRequestException("Invalid or expired password reset token.");
+      throw new BadRequestException("The password reset link is invalid or has expired. Please request a new one.");
     }
 
     User user = resetToken.getUser();

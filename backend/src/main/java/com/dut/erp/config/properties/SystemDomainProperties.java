@@ -8,4 +8,5 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "app.domains")
 public record SystemDomainProperties(
     @NotBlank(message = "Frontend domain is required") String frontend,
-    @NotBlank(message = "Backend domain is required") String backend) {}
+    @NotBlank(message = "Backend domain is required") String backend,
+    @NotBlank(message = "AI domain is required") String ai) {}
