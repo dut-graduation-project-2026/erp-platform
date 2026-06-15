@@ -22,4 +22,6 @@ public record OrderResponse(
     Instant createdAt,
     Instant updatedAt,
     UserBaseResponse createdBy,
-    UserBaseResponse updatedBy) {}
+    UserBaseResponse updatedBy,
+    UUID warehouseId,
+    String warehouseName) {}

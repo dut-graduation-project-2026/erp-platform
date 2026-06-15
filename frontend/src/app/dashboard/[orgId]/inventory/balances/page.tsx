@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
-import { 
-  getWarehouses, 
+import {
+  getWarehouses,
   getInventoryBalances,
   getAiInventoryAnalysis,
   getAiReorderRecommendations,
@@ -25,7 +25,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
   const [balances, setBalances] = useState<InventoryBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Pagination State
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -84,7 +84,6 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
       setAiAnalysis(data);
     } catch (err) {
       console.error(err);
-      toast.error('Không thể tải phân tích tồn kho AI');
     } finally {
       setIsLoadingAnalysis(false);
     }
@@ -96,8 +95,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
       const data = await getAiReorderRecommendations(orgId);
       setReorderRecs(data.recommendations || []);
     } catch (err) {
-      console.error(err);
-      toast.error('Không thể tải khuyến nghị nhập kho AI');
+      console.error(err)
     } finally {
       setIsLoadingRecs(false);
     }
@@ -105,22 +103,22 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
 
   const handleConfirmReorders = async () => {
     if (!selectedWarehouseId) {
-      toast.error('Vui lòng chọn kho để nhập hàng');
+      toast.error('Please select a warehouse to reorder');
       return;
     }
     if (reorderRecs.length === 0) {
-      toast.info('Không có khuyến nghị nào cần duyệt');
+      toast.info('No recommendations to approve');
       return;
     }
 
     setIsConfirmingReorder(true);
     try {
       await confirmAiReorders(orgId, selectedWarehouseId, reorderRecs);
-      toast.success('Đã duyệt và tạo phiếu nhập kho tự động thành công!');
+      toast.success('Successfully approved and created automatic goods receipt!');
       fetchReorderRecommendations();
     } catch (err) {
       console.error(err);
-      toast.error('Lỗi khi phê duyệt lệnh nhập kho tự động');
+      toast.error('Error while approving automatic goods receipt');
     } finally {
       setIsConfirmingReorder(false);
     }
@@ -150,7 +148,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
 
   const [aiSearchQuery, setAiSearchQuery] = useState('');
 
-  const filteredAbcXyz = aiAnalysis?.abc_xyz_matrix?.filter(item => 
+  const filteredAbcXyz = aiAnalysis?.abc_xyz_matrix?.filter(item =>
     item.productName.toLowerCase().includes(aiSearchQuery.toLowerCase()) ||
     item.productId.toLowerCase().includes(aiSearchQuery.toLowerCase())
   ) || [];
@@ -162,13 +160,13 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
         <div>
           <h1 className="text-[24px] font-[600] text-[#242424] mb-1">
             {activeTab === 'balances' && 'Real-time Stock Levels'}
-            {activeTab === 'ai-analysis' && 'Phân Tích Tồn Kho & ABC-XYZ AI'}
-            {activeTab === 'ai-reorder' && 'Khuyến Nghị Nhập Kho Tự Động AI'}
+            {activeTab === 'ai-analysis' && 'AI Inventory & ABC-XYZ Analysis'}
+            {activeTab === 'ai-reorder' && 'AI Automated Reorder Recommendations'}
           </h1>
           <span className="text-[14px] text-[#898989]">
             {activeTab === 'balances' && 'View current physical balances and check item availability'}
-            {activeTab === 'ai-analysis' && 'Phân loại tồn kho theo giá trị (ABC) và tần suất bán hàng (XYZ) từ Gemma-31B-Reasoning'}
-            {activeTab === 'ai-reorder' && 'Phê duyệt phiếu nhập kho dựa trên Điểm đặt hàng lại (ROP) và Lượng đặt tối ưu (EOQ)'}
+            {activeTab === 'ai-analysis' && 'Inventory classification by value (ABC) and sales frequency (XYZ) powered by Gemma-31B-Reasoning'}
+            {activeTab === 'ai-reorder' && 'Approve goods receipt based on Reorder Point (ROP) and Economic Order Quantity (EOQ)'}
           </span>
         </div>
         <div className="flex space-x-3 items-center">
@@ -196,17 +194,17 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
             <>
               <form onSubmit={handleSearchSubmit} className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
-                <Input 
-                  placeholder="Search by product name/SKU..." 
+                <Input
+                  placeholder="Search by product name/SKU..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9 h-10 w-[260px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
+                  className="pl-9 h-10 w-[260px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                 />
               </form>
 
-              <Button 
+              <Button
                 onClick={fetchBalances}
-                variant="outline" 
+                variant="outline"
                 className="border-[#d0d0d0] text-[#242424] h-10 px-3 bg-white rounded-[4px]"
               >
                 <RefreshCcw className="w-4 h-4" />
@@ -225,7 +223,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
               ) : (
                 <RefreshCcw className="w-4 h-4" />
               )}
-              Phân Tích Lại Bằng AI
+              Re-analyze with AI
             </Button>
           )}
 
@@ -253,7 +251,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
               : "border-transparent text-[#898989] hover:text-[#242424]"
           )}
         >
-          📋 Số Dư Tồn Kho Thực Tế
+          Actual Inventory Balance
         </button>
         <button
           onClick={() => setActiveTab('ai-analysis')}
@@ -264,7 +262,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
               : "border-transparent text-[#898989] hover:text-[#242424]"
           )}
         >
-          <Brain className="w-4.5 h-4.5" /> Phân Tích ABC-XYZ (Tối Ưu Tồn Kho)
+          <Brain className="w-4.5 h-4.5" /> ABC-XYZ Analysis (Inventory Optimization)
         </button>
         <button
           onClick={() => setActiveTab('ai-reorder')}
@@ -275,7 +273,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
               : "border-transparent text-[#898989] hover:text-[#242424]"
           )}
         >
-          <ShoppingCart className="w-4.5 h-4.5" /> Khuyến Nghị Nhập Kho AI
+          <ShoppingCart className="w-4.5 h-4.5" /> AI Reorder Recommendations
           {reorderRecs.length > 0 && (
             <span className="bg-[#dc3545] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 animate-pulse">
               {reorderRecs.length}
@@ -320,8 +318,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                     const formattedDate = new Date(bal.updatedAt).toLocaleString();
 
                     return (
-                      <tr 
-                        key={bal.id} 
+                      <tr
+                        key={bal.id}
                         className="border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f9fafb] transition-colors"
                       >
                         <td className="py-3.5 px-4 font-mono text-[12px] font-[600] text-[#0066cc]">
@@ -344,10 +342,10 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                         <td className="py-3.5 px-4 text-center">
                           <span className={cn(
                             "inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-[12px] text-[11px] font-[600]",
-                            qty === 0 
-                              ? "bg-[#fbe5d6] text-[#c65911]" 
-                              : isLowStock 
-                                ? "bg-[#fff2cc] text-[#d68100]" 
+                            qty === 0
+                              ? "bg-[#fbe5d6] text-[#c65911]"
+                              : isLowStock
+                                ? "bg-[#fff2cc] text-[#d68100]"
                                 : "bg-[#e2f0d9] text-[#385723]"
                           )}>
                             {qty === 0 ? (
@@ -382,7 +380,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                 Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, totalItems)} of {totalItems} items
               </span>
               <div className="flex items-center gap-1">
-                <button 
+                <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
                   className="p-1 hover:bg-[#f8f8f8] hover:text-[#242424] rounded disabled:opacity-50 disabled:hover:bg-transparent"
@@ -391,8 +389,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                 </button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: totalPages }).map((_, i) => (
-                    <button 
-                      key={i} 
+                    <button
+                      key={i}
                       className={cn(
                         "w-7 h-7 rounded flex items-center justify-center font-medium",
                         page === i + 1 ? "bg-[#0066cc] text-white" : "hover:bg-[#f8f8f8] text-[#242424]"
@@ -403,7 +401,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                     </button>
                   ))}
                 </div>
-                <button 
+                <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
                   className="p-1 hover:bg-[#f8f8f8] hover:text-[#242424] rounded disabled:opacity-50 disabled:hover:bg-transparent"
@@ -422,14 +420,14 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
           {isLoadingAnalysis ? (
             <div className="flex flex-col items-center justify-center py-24 bg-white border border-[#e0e0e0] rounded-[4px]">
               <Loader2 className="w-8 h-8 animate-spin text-[#0066cc] mb-3" />
-              <span className="text-[14px] text-[#898989] font-medium">AI đang tính toán ma trận tồn kho ABC-XYZ...</span>
+              <span className="text-[14px] text-[#898989] font-medium">AI is calculating ABC-XYZ inventory matrix...</span>
             </div>
           ) : !aiAnalysis ? (
             <div className="text-center py-20 bg-white border border-[#e0e0e0] rounded-[4px]">
               <Brain className="w-10 h-10 text-[#898989] mx-auto mb-2" />
-              <p className="text-[14px] text-[#4a4a4a] mb-4">Chưa có dữ liệu phân tích tồn kho AI.</p>
+              <p className="text-[14px] text-[#4a4a4a] mb-4">No AI inventory analysis data available.</p>
               <Button onClick={() => fetchAiAnalysis(true)} className="bg-[#0066cc] text-white">
-                Bắt đầu phân tích
+                Start Analysis
               </Button>
             </div>
           ) : (
@@ -441,8 +439,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                     🤖
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-[700] text-[#242424]">Tóm Tắt Khuyến Nghị Tồn Kho AI</h3>
-                    <p className="text-[12px] text-[#898989]">Nhận định chuyên sâu về dòng sản phẩm và an toàn lưu kho</p>
+                    <h3 className="text-[15px] font-[700] text-[#242424]">AI Inventory Recommendation Summary</h3>
+                    <p className="text-[12px] text-[#898989]">In-depth insights into product lines and safety stock</p>
                   </div>
                 </div>
 
@@ -452,7 +450,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-dashed border-[#e0e0e0] pt-4">
                   <div>
-                    <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-2">Đề xuất tối ưu hóa hành động</span>
+                    <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-2">Recommended Action Optimizations</span>
                     <ul className="space-y-1.5">
                       {aiAnalysis.recommendations?.map((rec, idx) => (
                         <li key={idx} className="text-[12.5px] text-[#4a4a4a] flex items-start">
@@ -464,8 +462,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                   </div>
                   <div className="bg-white p-4 rounded border border-[#e0e0e0] flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Mặt hàng cần chú ý khẩn cấp</span>
-                      <p className="text-[12px] text-[#898989] mb-3">Tồn kho dưới điểm an toàn (Reorder Point)</p>
+                      <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Items Needing Urgent Attention</span>
+                      <p className="text-[12px] text-[#898989] mb-3">Stock below Reorder Point (ROP)</p>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[28px] font-[800] text-[#dc3545]">
@@ -476,7 +474,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                           onClick={() => setActiveTab('ai-reorder')}
                           className="bg-[#dc3545] hover:bg-[#c82333] text-white text-[12px] h-8 rounded-[4px] px-3 font-[600]"
                         >
-                          Xử lý nhập hàng ngay
+                          Process Reorder Immediately
                         </Button>
                       )}
                     </div>
@@ -489,23 +487,23 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                 <div className="bg-white border border-[#e0e0e0] p-4 rounded-[4px]">
                   <h4 className="text-[13px] font-[700] text-[#242424] mb-2 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
-                    Quy Tắc Phân Nhóm ABC (Theo Giá Trị Hàng Bán)
+                    ABC Classification Rules (By Sales Value)
                   </h4>
                   <ul className="text-[12px] text-[#4a4a4a] space-y-1 pl-3.5 list-disc">
-                    <li><strong>Nhóm A (Giá Trị Cao):</strong> Chiếm ~70-80% giá trị bán hàng nhưng chỉ chiếm 10-20% số lượng SKU. Cần kiểm soát chặt chẽ.</li>
-                    <li><strong>Nhóm B (Giá Trị Trung Bình):</strong> Chiếm ~15-20% giá trị bán hàng và ~30% SKU.</li>
-                    <li><strong>Nhóm C (Giá Trị Thấp):</strong> Chiếm ~5-10% giá trị nhưng chiếm phần lớn SKU (~50%). Đặt hàng định kỳ đơn giản.</li>
+                    <li><strong>Category A (High Value):</strong> Accounts for ~70-80% of sales value but only 10-20% of SKUs. Needs tight control.</li>
+                    <li><strong>Category B (Medium Value):</strong> Accounts for ~15-20% of sales value and ~30% of SKUs.</li>
+                    <li><strong>Category C (Low Value):</strong> Accounts for ~5-10% of value but most SKUs (~50%). Simple periodic ordering.</li>
                   </ul>
                 </div>
                 <div className="bg-white border border-[#e0e0e0] p-4 rounded-[4px]">
                   <h4 className="text-[13px] font-[700] text-[#242424] mb-2 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#ffb703]"></span>
-                    Quy Tắc Phân Nhóm XYZ (Theo Tính Dự Báo Nhu Cầu)
+                    XYZ Classification Rules (By Demand Predictability)
                   </h4>
                   <ul className="text-[12px] text-[#4a4a4a] space-y-1 pl-3.5 list-disc">
-                    <li><strong>Nhóm X (Nhu Cầu Ổn Định):</strong> Nhu cầu đều đặn, rất dễ dự báo. Mức tồn kho an toàn có thể để thấp.</li>
-                    <li><strong>Nhóm Y (Nhu Cầu Biến Động):</strong> Nhu cầu dao động theo mùa vụ hoặc chu kỳ. Cần dự trữ an toàn vừa phải.</li>
-                    <li><strong>Nhóm Z (Nhu Cầu Thất Thường):</strong> Khó dự báo hoặc phát sinh ngẫu nhiên. Cần tồn kho dự phòng cao để tránh đứt hàng.</li>
+                    <li><strong>Category X (Stable Demand):</strong> Regular demand, very easy to predict. Safety stock level can be low.</li>
+                    <li><strong>Category Y (Fluctuating Demand):</strong> Demand fluctuates by season or cycle. Moderate safety stock needed.</li>
+                    <li><strong>Category Z (Erratic Demand):</strong> Hard to predict or occurs randomly. High safety stock needed to avoid stockouts.</li>
                   </ul>
                 </div>
               </div>
@@ -513,34 +511,34 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
               {/* Matrix Table */}
               <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-[#e0e0e0] flex justify-between items-center bg-gray-50">
-                  <span className="text-[13px] font-[700] text-[#242424]">Bảng Đánh Giá Phân Lớp Sản Phẩm AI (ABC-XYZ)</span>
+                  <span className="text-[13px] font-[700] text-[#242424]">AI Product Classification Matrix (ABC-XYZ)</span>
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#898989]" />
-                    <Input 
-                      placeholder="Tìm kiếm sản phẩm phân tích..." 
+                    <Input
+                      placeholder="Search analyzed products..."
                       value={aiSearchQuery}
                       onChange={e => setAiSearchQuery(e.target.value)}
-                      className="pl-8 h-8 w-[220px] text-[12px] border-[#d0d0d0] rounded-[4px]" 
+                      className="pl-8 h-8 w-[220px] text-[12px] border-[#d0d0d0] rounded-[4px]"
                     />
                   </div>
                 </div>
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-white border-b border-[#e0e0e0]">
-                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Tên Sản Phẩm</th>
-                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">Nhóm ABC</th>
-                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">Nhóm XYZ</th>
-                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Tồn Kho Hiện Tại</th>
-                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Điểm Đặt Hàng Lại (ROP)</th>
-                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Lượng Đặt Tối Ưu (EOQ)</th>
-                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">Trạng Thái AI</th>
+                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Product Name</th>
+                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">ABC Category</th>
+                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">XYZ Category</th>
+                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Current Stock</th>
+                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Reorder Point (ROP)</th>
+                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Economic Order Qty (EOQ)</th>
+                      <th className="py-2.5 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">AI Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredAbcXyz.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-10 text-center text-[#898989] text-[13px]">
-                          Không tìm thấy sản phẩm nào khớp với tìm kiếm.
+                          No products found matching the search.
                         </td>
                       </tr>
                     ) : (
@@ -551,20 +549,20 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                             <span className={cn(
                               "px-2 py-0.5 rounded text-[11px] font-bold",
                               item.abcClass === 'A' ? "bg-red-50 text-red-600 border border-red-200" :
-                              item.abcClass === 'B' ? "bg-blue-50 text-blue-600 border border-blue-200" :
-                              "bg-gray-50 text-gray-500 border border-gray-200"
+                                item.abcClass === 'B' ? "bg-blue-50 text-blue-600 border border-blue-200" :
+                                  "bg-gray-50 text-gray-500 border border-gray-200"
                             )}>
-                              Nhóm {item.abcClass}
+                              Cat {item.abcClass}
                             </span>
                           </td>
                           <td className="py-2.5 px-4 text-center">
                             <span className={cn(
                               "px-2 py-0.5 rounded text-[11px] font-bold",
                               item.xyzClass === 'X' ? "bg-emerald-50 text-emerald-600 border border-emerald-200" :
-                              item.xyzClass === 'Y' ? "bg-amber-50 text-amber-600 border border-amber-200" :
-                              "bg-purple-50 text-purple-600 border border-purple-200"
+                                item.xyzClass === 'Y' ? "bg-amber-50 text-amber-600 border border-amber-200" :
+                                  "bg-purple-50 text-purple-600 border border-purple-200"
                             )}>
-                              Nhóm {item.xyzClass}
+                              Cat {item.xyzClass}
                             </span>
                           </td>
                           <td className="py-2.5 px-4 text-right font-semibold text-[#242424]">{item.currentStock}</td>
@@ -574,8 +572,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                             <span className={cn(
                               "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-[600]",
                               item.status === 'CRITICAL' ? "bg-red-100 text-red-800" :
-                              item.status === 'WARNING' ? "bg-amber-100 text-amber-800" :
-                              "bg-green-100 text-green-800"
+                                item.status === 'WARNING' ? "bg-amber-100 text-amber-800" :
+                                  "bg-green-100 text-green-800"
                             )}>
                               {item.status}
                             </span>
@@ -597,13 +595,13 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
           {isLoadingRecs ? (
             <div className="flex flex-col items-center justify-center py-24 bg-white border border-[#e0e0e0] rounded-[4px]">
               <Loader2 className="w-8 h-8 animate-spin text-[#0066cc] mb-3" />
-              <span className="text-[14px] text-[#898989] font-medium">AI đang phân tích các sản phẩm có tồn kho thấp và tính toán EOQ...</span>
+              <span className="text-[14px] text-[#898989] font-medium">AI is analyzing low stock products and calculating EOQ...</span>
             </div>
           ) : reorderRecs.length === 0 ? (
             <div className="text-center py-24 bg-white border border-[#e0e0e0] rounded-[4px]">
               <Check className="w-10 h-10 text-green-500 mx-auto mb-2" />
-              <h4 className="text-[14px] font-bold text-[#242424]">Tồn Kho Đạt Mức An Toàn!</h4>
-              <p className="text-[12px] text-[#898989] mt-1">Hiện không có sản phẩm nào có số lượng thấp dưới điểm đặt hàng lại (ROP).</p>
+              <h4 className="text-[14px] font-bold text-[#242424]">Stock at Safe Levels!</h4>
+              <p className="text-[12px] text-[#898989] mt-1">Currently, no products are below their Reorder Point (ROP).</p>
             </div>
           ) : (
             <>
@@ -614,8 +612,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                     💡
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-[700] text-[#242424]">Hành Động Tức Thời: Tạo Phiếu Nhập Kho Từ Đề Xuất AI</h3>
-                    <p className="text-[12px] text-[#898989]">Duyệt và tự động tạo phiếu nhập kho Nháp (RECEIPT Draft) cho các sản phẩm bên dưới.</p>
+                    <h3 className="text-[15px] font-[700] text-[#242424]">Immediate Action: Create Goods Receipt from AI Proposal</h3>
+                    <p className="text-[12px] text-[#898989]">Approve and automatically create Draft Goods Receipt for the products below.</p>
                   </div>
                 </div>
                 <Button
@@ -628,25 +626,25 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  Phê Duyệt Nhập {reorderRecs.length} Mặt Hàng
+                  Approve Reorder for {reorderRecs.length} Items
                 </Button>
               </div>
 
               {/* Recommendations Table */}
               <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-[#e0e0e0] bg-gray-50">
-                  <span className="text-[13px] font-[700] text-[#242424]">Danh Sách Mặt Hàng Đề Xuất Nhập Hàng</span>
+                  <span className="text-[13px] font-[700] text-[#242424]">List of Recommended Reorder Items</span>
                 </div>
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-white border-b border-[#e0e0e0]">
-                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Sản phẩm</th>
-                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Kho hàng</th>
-                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Tồn hiện tại</th>
-                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Điểm ROP</th>
-                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Khuyên Nhập (EOQ)</th>
-                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">Độ Khẩn Cấp</th>
-                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Ghi chú từ AI</th>
+                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Product</th>
+                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Warehouse</th>
+                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Current Stock</th>
+                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">ROP Point</th>
+                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Recommended (EOQ)</th>
+                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">Urgency</th>
+                      <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">AI Notes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -661,8 +659,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                           <span className={cn(
                             "px-2 py-0.5 rounded text-[11px] font-bold",
                             item.urgency === 'HIGH' ? "bg-red-100 text-red-800" :
-                            item.urgency === 'MEDIUM' ? "bg-amber-100 text-amber-800" :
-                            "bg-blue-100 text-blue-800"
+                              item.urgency === 'MEDIUM' ? "bg-amber-100 text-amber-800" :
+                                "bg-blue-100 text-blue-800"
                           )}>
                             {item.urgency}
                           </span>

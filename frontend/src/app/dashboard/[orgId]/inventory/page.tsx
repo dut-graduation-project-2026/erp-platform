@@ -112,7 +112,7 @@ export default function InventoryDashboard() {
                     </h2>
                     <span className="text-[12px] text-[#898989]">{warehouses.find(w => w.id === selectedWarehouseId)?.name}</span>
                   </div>
-                  <button className="text-[#898989] hover:text-[#242424] p-1"><Settings className="w-4 h-4" /></button>
+                
                 </div>
                 <div className="p-5 flex-1 grid grid-cols-2 gap-4">
                   <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`/dashboard/${orgId}/inventory/receipts?warehouseId=${selectedWarehouseId}`)}>
@@ -154,7 +154,7 @@ export default function InventoryDashboard() {
                     </h2>
                     <span className="text-[12px] text-[#898989]">{warehouses.find(w => w.id === selectedWarehouseId)?.name}</span>
                   </div>
-                  <button className="text-[#898989] hover:text-[#242424] p-1"><Settings className="w-4 h-4" /></button>
+                
                 </div>
                 <div className="p-5 flex-1 grid grid-cols-2 gap-4">
                   <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`/dashboard/${orgId}/inventory/deliveries?warehouseId=${selectedWarehouseId}`)}>
@@ -196,7 +196,7 @@ export default function InventoryDashboard() {
                     </h2>
                     <span className="text-[12px] text-[#898989]">{warehouses.find(w => w.id === selectedWarehouseId)?.name}</span>
                   </div>
-                  <button className="text-[#898989] hover:text-[#242424] p-1"><Settings className="w-4 h-4" /></button>
+                 
                 </div>
                 <div className="p-5 flex-1 grid grid-cols-2 gap-4">
                   <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`/dashboard/${orgId}/inventory/documents?type=TRANSFER&warehouseId=${selectedWarehouseId}`)}>
@@ -267,4 +267,3 @@ export default function InventoryDashboard() {
     </div>
   );
 }
-

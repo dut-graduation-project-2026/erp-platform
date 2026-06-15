@@ -133,7 +133,9 @@ export default function NewReceiptPage({
         items
       });
       toast.success('Receipt document created successfully');
-      router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}?whId=${warehouseId}`);
+      const redirectUrl = `/dashboard/${orgId}/inventory/documents/${doc.id}?whId=${warehouseId}` +
+        (fulfillShortageFor ? `&fulfillShortageFor=${fulfillShortageFor}` : '');
+      router.push(redirectUrl);
     } catch (err) {
       console.error(err);
       toast.error('Failed to create receipt document');

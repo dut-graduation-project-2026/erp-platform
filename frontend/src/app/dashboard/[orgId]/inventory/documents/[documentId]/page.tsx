@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, use, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   getInventoryDocumentById,
   confirmInventoryDocument,
@@ -62,6 +62,8 @@ export default function DocumentDetailsPage({
 }) {
   const { orgId, documentId } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fulfillShortageFor = searchParams.get('fulfillShortageFor');
   const { hasPermission } = usePermissions();
 
   const [doc, setDoc] = useState<InventoryDocument | null>(null);
@@ -124,6 +126,16 @@ export default function DocumentDetailsPage({
     loadDocument();
   }, [loadDocument]);
 
+  useEffect(() => {
+    const handleFocus = () => {
+      if (doc?.documentStatus === 'WAITING_FOR_STOCK') {
+        loadDocument();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [doc?.documentStatus, loadDocument]);
+
   const handleConfirm = async () => {
     if (!doc) return;
     setIsActionLoading(true);
@@ -145,7 +157,12 @@ export default function DocumentDetailsPage({
     try {
       const updated = await completeInventoryDocument(orgId, doc.warehouseId, doc.id);
       toast.success('Document marked as COMPLETED. Inventory levels and COGS updated.');
-      setDoc(updated);
+      if (doc.documentType === 'RECEIPT' && fulfillShortageFor) {
+        toast.success('Stock shortage resolved. Returning to originating document.');
+        router.push(`/dashboard/${orgId}/inventory/documents/${fulfillShortageFor}`);
+      } else {
+        setDoc(updated);
+      }
     } catch (e) {
       console.error(e);
       toast.error('Failed to complete document. Check stock availability.');
@@ -263,24 +280,25 @@ export default function DocumentDetailsPage({
             </>
           )}
 
+          {isConfirmed && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
+            <Button 
+              onClick={handleComplete} 
+              disabled={isActionLoading}
+              className="bg-[#28a745] hover:bg-[#218838] text-white h-9 px-4 rounded-[4px] font-[600] text-[13px]"
+            >
+              <Send className="w-4 h-4 mr-2" /> Complete Transfer
+            </Button>
+          )}
+
           {(isConfirmed || isWaitingStock) && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
-            <>
-              <Button 
-                onClick={handleComplete} 
-                disabled={isActionLoading}
-                className="bg-[#28a745] hover:bg-[#218838] text-white h-9 px-4 rounded-[4px] font-[600] text-[13px]"
-              >
-                <Send className="w-4 h-4 mr-2" /> Complete Transfer
-              </Button>
-              <Button 
-                onClick={handleCancel} 
-                disabled={isActionLoading}
-                variant="ghost"
-                className="text-[#dc3545] hover:bg-[#fff0f0] h-9 px-4 rounded-[4px] font-[600] text-[13px]"
-              >
-                <XCircle className="w-4 h-4 mr-2" /> Cancel Move
-              </Button>
-            </>
+            <Button 
+              onClick={handleCancel} 
+              disabled={isActionLoading}
+              variant="ghost"
+              className="text-[#dc3545] hover:bg-[#fff0f0] h-9 px-4 rounded-[4px] font-[600] text-[13px]"
+            >
+              <XCircle className="w-4 h-4 mr-2" /> Cancel Move
+            </Button>
           )}
         </div>
       </div>

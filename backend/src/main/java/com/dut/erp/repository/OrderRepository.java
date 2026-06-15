@@ -259,4 +259,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       AND o.status = com.dut.erp.enums.OrderStatus.CONFIRMED
       """)
   long countPendingFulfillmentOrders(@Param("organizationId") UUID organizationId);
+
+  List<Order> findByOrganizationIdAndStatus(UUID organizationId, OrderStatus status);
 }

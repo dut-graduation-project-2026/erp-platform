@@ -10,6 +10,8 @@ import {
   ReplenishmentRequest,
   CreateReplenishmentRequest,
   StockValuation,
+  RouteProposalResponse,
+  ConfirmRouteRequest,
 } from '../types';
 
 // ─── WAREHOUSE CRUD ──────────────────────────────────────────────────────────
@@ -177,6 +179,25 @@ export const claimOrderStockMove = async (
     `/organizations/${orgId}/warehouses/${warehouseId}/orders/${orderId}/claim`
   );
   return response.data;
+};
+
+export const previewSmartRoute = async (
+  orgId: string
+): Promise<RouteProposalResponse[]> => {
+  const response = await apiClient.get<RouteProposalResponse[]>(
+    `/organizations/${orgId}/orders/smart-route/preview`
+  );
+  return response.data;
+};
+
+export const confirmSmartRoute = async (
+  orgId: string,
+  data: ConfirmRouteRequest
+): Promise<void> => {
+  await apiClient.post<void>(
+    `/organizations/${orgId}/orders/smart-route/confirm`,
+    data
+  );
 };
 
 // ─── REPLENISHMENTS ──────────────────────────────────────────────────────────

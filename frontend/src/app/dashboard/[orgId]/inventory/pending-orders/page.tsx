@@ -3,13 +3,19 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { getOrders } from '@/features/sales/services/salesService';
-import { claimOrderStockMove } from '@/features/inventory/services/inventoryService';
+import { 
+  claimOrderStockMove, 
+  previewSmartRoute, 
+  confirmSmartRoute 
+} from '@/features/inventory/services/inventoryService';
 import { SaleOrder } from '@/features/sales/types';
 import { ORDER_STATUS } from '@/config/constants';
-import { Clock, ArrowRightLeft, Search, Building } from 'lucide-react';
+import { Clock, ArrowRightLeft, Search, Building, Brain, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import RoutingPreviewModal from '@/features/inventory/components/RoutingPreviewModal';
+import { RouteProposalResponse } from '@/features/inventory/types';
 
 export default function PendingOrdersPage() {
   const router = useRouter();
@@ -22,6 +28,45 @@ export default function PendingOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isClaiming, setIsClaiming] = useState<string | null>(null);
+
+  // Smart routing states
+  const [proposals, setProposals] = useState<RouteProposalResponse[]>([]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isConfirmingRoute, setIsConfirmingRoute] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  const handlePreviewSmartRoute = async () => {
+    setIsPreviewLoading(true);
+    try {
+      const result = await previewSmartRoute(orgId);
+      if (result.length === 0) {
+        toast.info('No pending confirmed orders to evaluate for routing.');
+        return;
+      }
+      setProposals(result);
+      setIsPreviewOpen(true);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to retrieve routing preview.');
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const handleConfirmRoute = async (confirmations: { orderId: string; warehouseId: string }[]) => {
+    setIsConfirmingRoute(true);
+    try {
+      await confirmSmartRoute(orgId, { routeConfirmations: confirmations });
+      toast.success(`Successfully allocated ${confirmations.length} orders to warehouses.`);
+      setIsPreviewOpen(false);
+      await fetchPendingOrders();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to confirm order routing.');
+    } finally {
+      setIsConfirmingRoute(false);
+    }
+  };
 
   const fetchPendingOrders = async () => {
     setIsLoading(true);
@@ -86,14 +131,33 @@ export default function PendingOrdersPage() {
           
           {/* Toolbar */}
           <div className="p-4 border-b border-[#e0e0e0] flex justify-between items-center">
-            <div className="relative w-[300px]">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#898989]" />
-              <Input
-                placeholder="Search by Order Number or Customer..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-9 text-[13px] rounded-[4px] border-[#d0d0d0]"
-              />
+            <div className="flex items-center gap-4">
+              <div className="relative w-[300px]">
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#898989]" />
+                <Input
+                  placeholder="Search by Order Number or Customer..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-9 text-[13px] rounded-[4px] border-[#d0d0d0]"
+                />
+              </div>
+              <Button
+                onClick={handlePreviewSmartRoute}
+                disabled={isLoading || isPreviewLoading || orders.length === 0}
+                className="bg-gradient-to-r from-[#10b981] to-[#059669] hover:from-[#059669] hover:to-[#047857] text-white h-9 px-4 text-[13px] rounded-[4px] font-[600] flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                {isPreviewLoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Calculating...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-3.5 h-3.5" />
+                    Smart Auto-Route All
+                  </>
+                )}
+              </Button>
             </div>
             {!warehouseId && (
               <div className="text-[13px] text-[#dc3545] font-[500] flex items-center bg-[#fdf2f2] px-3 py-1 rounded-[4px]">
@@ -164,6 +228,13 @@ export default function PendingOrdersPage() {
 
         </div>
       </div>
+      <RoutingPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        proposals={proposals}
+        onConfirm={handleConfirmRoute}
+        isConfirming={isConfirmingRoute}
+      />
     </div>
   );
 }

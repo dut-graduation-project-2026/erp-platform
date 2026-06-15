@@ -137,6 +137,8 @@ export interface SaleOrder {
   termsAndConditions?: string;
   taxAmount?: number;
   netAmount?: number;
+  warehouseId?: string;
+  warehouseName?: string;
 }
 
 // ─── Invoice (Tích hợp thực tế backend) ───────────────────────────

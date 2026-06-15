@@ -60,6 +60,34 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
   Optional<InventoryDocument> findByReferenceTypeAndReferenceIdAndDocumentType(
       ReferenceType referenceType, UUID referenceId, DocumentType documentType);
 
+  @Query("""
+      SELECT d FROM InventoryDocument d
+      LEFT JOIN FETCH d.warehouse
+      WHERE d.referenceType = :referenceType
+        AND d.referenceId = :referenceId
+        AND d.documentType = :documentType
+        AND d.documentStatus <> com.dut.erp.enums.DocumentStatus.CANCELLED
+      ORDER BY d.createdAt DESC
+      """)
+  List<InventoryDocument> findActiveDocuments(
+      @Param("referenceType") ReferenceType referenceType,
+      @Param("referenceId") UUID referenceId,
+      @Param("documentType") DocumentType documentType);
+
+  @Query("""
+      SELECT d FROM InventoryDocument d
+      LEFT JOIN FETCH d.warehouse
+      WHERE d.referenceType = :referenceType
+        AND d.referenceId IN :referenceIds
+        AND d.documentType = :documentType
+        AND d.documentStatus <> com.dut.erp.enums.DocumentStatus.CANCELLED
+      ORDER BY d.createdAt DESC
+      """)
+  List<InventoryDocument> findActiveDocumentsForOrders(
+      @Param("referenceType") ReferenceType referenceType,
+      @Param("referenceIds") List<UUID> referenceIds,
+      @Param("documentType") DocumentType documentType);
+
   boolean existsByName(String name);
 
   @Query("""

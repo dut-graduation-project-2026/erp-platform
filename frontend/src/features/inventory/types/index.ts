@@ -137,5 +137,23 @@ export interface ReplenishmentRequest {
   inventoryDocumentName: string;
   requestedBy: UserBaseResponse;
   notes?: string;
+  status: 'OPEN' | 'RESOLVED';
   createdAt: string;
+}
+
+export interface RouteProposalResponse {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  totalAmount: number;
+  proposedWarehouseId?: string;
+  proposedWarehouseName?: string;
+  routable: boolean;
+}
+
+export interface ConfirmRouteRequest {
+  routeConfirmations: {
+    orderId: string;
+    warehouseId: string;
+  }[];
 }

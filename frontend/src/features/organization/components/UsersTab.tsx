@@ -120,13 +120,6 @@ export function UsersTab({ orgId }: { orgId: string }) {
           <div className="flex items-center gap-3">
             <PermissionGuard permission={PERMISSIONS.USERS.CREATE}>
               <button 
-                onClick={() => setIsInviteModalOpen(true)}
-                className="bg-[#0066cc] text-white px-4 py-2 rounded-[4px] text-[14px] font-[600] hover:bg-[#004499] transition-all flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Invite User
-              </button>
-              <button 
                 onClick={() => setIsBulkInviteModalOpen(true)}
                 className="bg-white border border-[#0066cc] text-[#0066cc] px-4 py-2 rounded-[4px] text-[14px] font-[600] hover:bg-[#f0f4ff] transition-all"
               >
@@ -185,7 +178,7 @@ export function UsersTab({ orgId }: { orgId: string }) {
             onClick={() => setActiveSubTab('pending')}
             className={`pb-3 text-[14px] font-[600] transition-colors relative ${activeSubTab === 'pending' ? 'text-[#0066cc]' : 'text-[#898989] hover:text-[#242424]'}`}
           >
-            Pending Invitations
+            Invitations
             {activeSubTab === 'pending' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-[#0066cc]"></div>}
           </button>
         </div>

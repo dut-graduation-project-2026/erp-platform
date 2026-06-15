@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { OrderItem, Product, SaleOrder, SaleTax } from '../types';
 import { Button } from '@/components/ui/button';
-import { ORDER_STATUS, TAX_COMPUTATION } from '@/config/constants';
+import { ORDER_STATUS, TAX_COMPUTATION, ORDER_STATUS_CONFIG, OrderStatus } from '@/config/constants';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, ChevronRight, Save, CheckCircle, XCircle, Receipt, Building, Mail, Phone, User, Calendar, ArrowLeft, Clock, Activity, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -273,12 +273,10 @@ export function SaleOrderForm({ order, orgId }: Props) {
           <ChevronRight className="w-4 h-4 text-[#898989] mx-2" />
           <span className="text-[#0066cc] font-[600]">{order?.orderNumber || order?.code || 'New Quotation'}</span>
         </div>
-        <span className={cn('px-3 py-1 rounded-[4px] text-[12px] font-[600] uppercase',
-          localStatus === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
-          localStatus === 'CANCELLED' ? 'bg-red-100 text-red-600' :
-          'bg-gray-100 text-gray-600'
+        <span className={cn('px-3 py-1 rounded-[4px] text-[12px] font-[600] uppercase border',
+          ORDER_STATUS_CONFIG[localStatus as OrderStatus]?.badgeClass || 'bg-gray-50 text-gray-650 border-gray-200'
         )}>
-          {localStatus}
+          {ORDER_STATUS_CONFIG[localStatus as OrderStatus]?.label || localStatus}
         </span>
       </div>
 
@@ -775,6 +773,17 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
                   <span className="w-36 shrink-0 text-[#898989] font-[600]">Expiration Date</span>
                   <span className="text-[#242424]">{formatDate(order.expirationDate)}</span>
                 </div>
+
+                {order.warehouseName && (
+                  <div className="flex text-[14px] items-center bg-[#f0f9ff] px-3 py-1.5 rounded-[4px] border border-[#bae6fd] mt-2">
+                    <span className="w-32 shrink-0 text-[#0369a1] font-[600] flex items-center">
+                      <Building className="w-4 h-4 mr-1.5 text-[#0284c7]" /> Warehouse
+                    </span>
+                    <span className="text-[#0369a1] font-[600]">
+                      {order.warehouseName}
+                    </span>
+                  </div>
+                )}
 
                 {order.lead && (
                   <div className="border-t border-dashed border-[#e0e0e0] pt-3 mt-3 space-y-2">

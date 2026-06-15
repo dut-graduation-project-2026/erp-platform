@@ -6,8 +6,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-import java.time.Instant;
-
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record OrderBaseResponse(
     UUID id, 
@@ -15,4 +13,6 @@ public record OrderBaseResponse(
     PartnerBaseResponse partner, 
     OrderStatus status, 
     BigDecimal totalAmount,
-    Instant createdAt) {}
+    Instant createdAt,
+    UUID warehouseId,
+    String warehouseName) {}
