@@ -68,7 +68,7 @@ export function middleware(request: NextRequest) {
       }
 
       // Check nếu orgId nằm trong userOrgIds của user
-      const userOrgIds = userOrgIdsCookie?.split(',') || [];
+      const userOrgIds = userOrgIdsCookie?.split('_') || [];
       if (!userOrgIds.includes(orgId)) {
         return NextResponse.redirect(new URL('/select-org', request.nextUrl));
       }

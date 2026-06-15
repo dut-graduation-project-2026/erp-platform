@@ -104,4 +104,18 @@ public class WarehouseController {
     warehouseService.deleteWarehouse(organizationId, id);
     return ResponseEntity.noContent().build();
   }
+
+  @GetMapping("/{id}/metrics")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('warehouses:read', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<com.dut.erp.dto.response.WarehouseMetricsResponse> getWarehouseMetrics(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID id,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(warehouseService.getWarehouseMetrics(organizationId, id));
+  }
 }

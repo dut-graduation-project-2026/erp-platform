@@ -5,6 +5,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import java.time.Instant;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record OrderBaseResponse(
-    UUID id, String orderNumber,PartnerBaseResponse partner, OrderStatus status, BigDecimal totalAmount) {}
+    UUID id, 
+    String orderNumber,
+    PartnerBaseResponse partner, 
+    OrderStatus status, 
+    BigDecimal totalAmount,
+    Instant createdAt) {}

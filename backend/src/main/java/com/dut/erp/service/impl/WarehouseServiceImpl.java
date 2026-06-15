@@ -38,6 +38,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.dut.erp.repository.InventoryDocumentRepository;
+import com.dut.erp.repository.OrderRepository;
 
 @Slf4j
 @Service
@@ -50,6 +52,8 @@ public class WarehouseServiceImpl implements WarehouseService {
   private final UserRepository userRepository;
   private final ProductRepository productRepository;
   private final InventoryBalanceRepository inventoryBalanceRepository;
+  private final InventoryDocumentRepository inventoryDocumentRepository;
+  private final OrderRepository orderRepository;
   private final WarehouseMapper warehouseMapper;
 
   @Override
@@ -235,5 +239,72 @@ public class WarehouseServiceImpl implements WarehouseService {
       throw new BadRequestException(
           "Manager (id: " + managerId + ") must be included in the staff list.");
     }
+  }
+
+  @Override
+  public com.dut.erp.dto.response.WarehouseMetricsResponse getWarehouseMetrics(UUID organizationId, UUID warehouseId) {
+    log.info("Fetching metrics for warehouse {} in organization {}", warehouseId, organizationId);
+    Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
+
+    // 1. Receipts Metrics
+    long receiptsToProcess = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.RECEIPT),
+        List.of(com.dut.erp.enums.DocumentStatus.DRAFT)
+    );
+    long receiptsBackorders = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.RECEIPT),
+        List.of(com.dut.erp.enums.DocumentStatus.WAITING_FOR_STOCK)
+    );
+    long receiptsLate = inventoryDocumentRepository.countLateDocuments(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.RECEIPT),
+        List.of(com.dut.erp.enums.DocumentStatus.COMPLETED, com.dut.erp.enums.DocumentStatus.CANCELLED)
+    );
+
+    // 2. Deliveries Metrics
+    long deliveriesToProcess = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.ISSUE),
+        List.of(com.dut.erp.enums.DocumentStatus.DRAFT)
+    );
+    long deliveriesBackorders = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.ISSUE),
+        List.of(com.dut.erp.enums.DocumentStatus.WAITING_FOR_STOCK)
+    );
+    long deliveriesLate = inventoryDocumentRepository.countLateDocuments(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.ISSUE),
+        List.of(com.dut.erp.enums.DocumentStatus.COMPLETED, com.dut.erp.enums.DocumentStatus.CANCELLED)
+    );
+
+    // 3. Transfers Metrics
+    long transfersToProcess = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.TRANSFER_IN, com.dut.erp.enums.DocumentType.TRANSFER_OUT),
+        List.of(com.dut.erp.enums.DocumentStatus.DRAFT)
+    );
+    long transfersBackorders = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.TRANSFER_IN, com.dut.erp.enums.DocumentType.TRANSFER_OUT),
+        List.of(com.dut.erp.enums.DocumentStatus.WAITING_FOR_STOCK)
+    );
+    long transfersLate = inventoryDocumentRepository.countLateDocuments(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.TRANSFER_IN, com.dut.erp.enums.DocumentType.TRANSFER_OUT),
+        List.of(com.dut.erp.enums.DocumentStatus.COMPLETED, com.dut.erp.enums.DocumentStatus.CANCELLED)
+    );
+
+    // 4. Pending Fulfillment Count (Global for organization)
+    long pendingFulfillmentCount = orderRepository.countPendingFulfillmentOrders(organizationId);
+
+    return new com.dut.erp.dto.response.WarehouseMetricsResponse(
+        new com.dut.erp.dto.response.WarehouseMetricsResponse.MetricDetail(receiptsToProcess, receiptsBackorders, receiptsLate),
+        new com.dut.erp.dto.response.WarehouseMetricsResponse.MetricDetail(deliveriesToProcess, deliveriesBackorders, deliveriesLate),
+        new com.dut.erp.dto.response.WarehouseMetricsResponse.MetricDetail(transfersToProcess, transfersBackorders, transfersLate),
+        pendingFulfillmentCount
+    );
   }
 }

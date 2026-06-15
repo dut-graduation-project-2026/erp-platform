@@ -68,7 +68,7 @@ export default function SelectOrgPage() {
       setCurrentOrgId(orgId);
       
       // Đồng bộ cookies để Next.js Middleware có thể đọc được (Middleware không đọc được localStorage của Zustand)
-      const orgIds = organizations.map(org => org.id).join(',');
+      const orgIds = organizations.map(org => org.id).join('_');
       document.cookie = `currentOrgId=${orgId}; path=/; max-age=86400; secure; SameSite=Lax`;
       document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; secure; SameSite=Lax`;
       

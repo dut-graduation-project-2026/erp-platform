@@ -40,6 +40,7 @@ export const API_ENDPOINTS = {
   },
   INVENTORY: {
     WAREHOUSES: (orgId: string) => `/organizations/${orgId}/warehouses`,
+    METRICS: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/metrics`,
     BALANCES: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/balances`,
     DOCUMENTS: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/documents`,
     REPLENISHMENT_REQUESTS: (orgId: string, warehouseId: string) => `/organizations/${orgId}/warehouses/${warehouseId}/replenishment-requests`,
@@ -115,6 +116,7 @@ export const ORDER_STATUS = {
   CONFIRMED: "CONFIRMED",
   CANCELLED: "CANCELLED",
   COMPLETED: "COMPLETED",
+  WAITING_FOR_STOCK: "WAITING_FOR_STOCK",
 } as const;
 export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
 

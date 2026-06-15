@@ -331,7 +331,18 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     List<InventoryDocumentBaseResponse> responses = ids.getContent().stream()
         .map(docMap::get)
         .filter(Objects::nonNull)
-        .map(doc -> new InventoryDocumentBaseResponse(
+        .map(doc -> {
+            String partnerName = null;
+            String deliveryAddress = null;
+            if (doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
+               Order order = orderRepository.findById(doc.getReferenceId()).orElse(null);
+               if (order != null && order.getPartner() != null) {
+                   partnerName = order.getPartner().getName();
+                   deliveryAddress = order.getPartner().getAddress();
+               }
+            }
+
+            return new InventoryDocumentBaseResponse(
             doc.getId(),
             doc.getWarehouse().getId(),
             doc.getWarehouse().getName(),
@@ -341,11 +352,13 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
             doc.getDocumentType(),
             doc.getReferenceType(),
             doc.getReferenceId(),
+            partnerName,
+            deliveryAddress,
             doc.getDocumentStatus(),
             doc.getScheduledDate(),
             doc.getDateDone(),
             doc.getCreatedAt()
-        ))
+        );})
         .collect(Collectors.toList());
 
     return PagedEntityResponse.from(new PageImpl<>(responses, pageable, ids.getTotalElements()));
@@ -752,6 +765,24 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         ? new UserBaseResponse(doc.getUpdatedBy().getId(), doc.getUpdatedBy().getEmail(), doc.getUpdatedBy().getFirstName(), doc.getUpdatedBy().getLastName())
         : null;
 
+    boolean hasActiveReplenishment = false;
+    if (doc.getDocumentStatus() == DocumentStatus.WAITING_FOR_STOCK) {
+      hasActiveReplenishment = replenishmentRequestRepository
+          .findByInventoryDocumentId(doc.getId())
+          .filter(req -> req.getStatus() == ReplenishmentStatus.OPEN)
+          .isPresent();
+    }
+
+    String partnerName = null;
+    String deliveryAddress = null;
+    if (doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
+        Order order = orderRepository.findById(doc.getReferenceId()).orElse(null);
+        if (order != null && order.getPartner() != null) {
+            partnerName = order.getPartner().getName();
+            deliveryAddress = order.getPartner().getAddress();
+        }
+    }
+
     return new InventoryDocumentResponse(
         doc.getId(),
         doc.getWarehouse().getId(),
@@ -762,6 +793,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         doc.getDocumentType(),
         doc.getReferenceType(),
         doc.getReferenceId(),
+        partnerName,
+        deliveryAddress,
         doc.getDocumentStatus(),
         doc.getNotes(),
         doc.getScheduledDate(),
@@ -770,7 +803,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         doc.getCreatedAt(),
         doc.getUpdatedAt(),
         createdByResp,
-        updatedByResp
+        updatedByResp,
+        hasActiveReplenishment
     );
   }
 }

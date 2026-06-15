@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
-import { getSaleTeams, createSaleTeam, updateSaleTeam, deleteSaleTeam, SaleTeamResponse } from '@/features/crm/services/crmService';
+import { getSaleTeams, getSaleTeamById, createSaleTeam, updateSaleTeam, deleteSaleTeam, SaleTeamResponse } from '@/features/crm/services/crmService';
 import { fetchUsersApi } from '@/features/organization/services/userService';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
@@ -45,14 +45,20 @@ export default function SaleTeamsPage({ params }: { params: Promise<{ orgId: str
       .catch(console.error);
   }, [orgId]);
 
-  const handleOpenModal = (team?: SaleTeamResponse) => {
+  const handleOpenModal = async (team?: SaleTeamResponse) => {
     if (team) {
-      setEditingTeam(team);
-      setFormData({ 
-        name: team.name, 
-        leaderId: team.leader?.id || '', 
-        memberIds: team.members?.map(m => m.id) || [] 
-      });
+      try {
+        const fullTeam = await getSaleTeamById(orgId, team.id);
+        setEditingTeam(fullTeam);
+        setFormData({ 
+          name: fullTeam.name, 
+          leaderId: fullTeam.leader?.id || '', 
+          memberIds: fullTeam.members?.map(m => m.id) || [] 
+        });
+      } catch (err) {
+        toast.error('Failed to load team details');
+        return;
+      }
     } else {
       setEditingTeam(null);
       setFormData({ name: '', leaderId: '', memberIds: [] });
@@ -128,9 +134,7 @@ export default function SaleTeamsPage({ params }: { params: Promise<{ orgId: str
             <table className="w-full text-left border-collapse">
               <thead className="bg-[#f8f8f8] sticky top-0 z-10 shadow-[0px_1px_0px_#e0e0e0]">
                 <tr>
-                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0] w-[250px]">Team Name</th>
-                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0] w-[200px]">Team Leader</th>
-                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0]">Members</th>
+                  <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0]">Team Name</th>
                   <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] w-[100px] text-right">Actions</th>
                 </tr>
               </thead>
@@ -141,19 +145,27 @@ export default function SaleTeamsPage({ params }: { params: Promise<{ orgId: str
                   <tr><td colSpan={4} className="p-4 text-center text-[#898989]">No teams found</td></tr>
                 ) : (
                   filteredTeams.map((team) => (
-                    <tr key={team.id} className="border-b border-[#e0e0e0] hover:bg-[#f8f8f8] bg-white">
+                    <tr 
+                      key={team.id} 
+                      className="border-b border-[#e0e0e0] hover:bg-[#f8f8f8] bg-white cursor-pointer"
+                      onClick={() => handleOpenModal(team)}
+                    >
                       <td className="px-4 py-3 text-[13px] text-[#242424] font-[600] border-r border-[#e0e0e0]">{team.name}</td>
-                      <td className="px-4 py-3 text-[13px] text-[#242424] border-r border-[#e0e0e0]">
-                        {team.leader ? `${team.leader.firstName} ${team.leader.lastName}` : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-[13px] text-[#242424] border-r border-[#e0e0e0]">
-                        {team.members?.length ? team.members.map(m => `${m.firstName} ${m.lastName}`).join(', ') : '—'}
-                      </td>
                       <td className="px-4 py-3 text-right space-x-2">
                         {canWrite && (
                            <>
-                             <button onClick={() => handleOpenModal(team)} className="text-[#0066cc] hover:text-[#004499]"><Edit2 className="w-4 h-4" /></button>
-                             <button onClick={() => handleDelete(team.id)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); handleOpenModal(team); }} 
+                               className="text-[#0066cc] hover:text-[#004499]"
+                             >
+                               <Edit2 className="w-4 h-4" />
+                             </button>
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); handleDelete(team.id); }} 
+                               className="text-red-500 hover:text-red-700"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </button>
                            </>
                         )}
                       </td>

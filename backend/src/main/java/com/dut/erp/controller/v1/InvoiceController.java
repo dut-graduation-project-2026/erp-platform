@@ -62,6 +62,21 @@ public class InvoiceController {
     return ResponseEntity.ok(invoiceService.updateInvoiceStatus(organizationId, id, request));
   }
 
+  @PostMapping("/{id}/payments")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('invoices:write', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<InvoiceResponse> registerPayment(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID id,
+      @Valid @RequestBody com.dut.erp.dto.request.RegisterPaymentRequest request,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(invoiceService.registerPayment(organizationId, id, request));
+  }
+
   @GetMapping("/order/{orderId}")
   @PreAuthorize(
       """

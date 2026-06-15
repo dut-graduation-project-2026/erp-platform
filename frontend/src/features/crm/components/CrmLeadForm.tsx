@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { updateLead, createLead } from '../services/crmService';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/use-permissions';
-import { getSaleTeams } from '../services/crmService';
+import { getSaleTeams, getSaleTeamById } from '../services/crmService';
 import { getPartners, createPartner } from '@/features/sales/services/salesService';
 import { fetchUsersApi } from '@/features/organization/services/userService';
 import { toast } from 'sonner';
@@ -44,6 +44,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState<any>({ name: '', type: 'INDIVIDUAL', code: '', email: '', phone: '', address: '', taxCode: '', contacts: [] });
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState<any[]>([]);
   
   useEffect(() => {
     // Load Sale Teams
@@ -60,6 +61,13 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
     fetchUsersApi({ organizationId: orgId, limit: 100 })
       .then(res => setUsers(res.data || []))
       .catch(err => console.error("Failed to load users", err));
+
+    // Load initial team members if a team is already selected
+    if (formData.saleTeamId) {
+      getSaleTeamById(orgId, formData.saleTeamId)
+        .then(res => setSelectedTeamMembers(res.members || []))
+        .catch(err => console.error("Failed to load initial team members", err));
+    }
   }, [orgId]);
   
   // Chatter state
@@ -190,15 +198,26 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sale Team *</label>
                    <select
                      value={formData.saleTeamId || ''}
-                     onChange={e => {
+                     onChange={async (e) => {
                        const newTeamId = e.target.value;
-                       const newTeam = saleTeams.find(t => t.id === newTeamId);
-                       const isMember = newTeam?.members?.some((m: any) => m.id === formData.salePersonId);
-                       setFormData({
-                         ...formData,
-                         saleTeamId: newTeamId,
-                         salePersonId: isMember ? formData.salePersonId : ''
-                       });
+                       if (!newTeamId) {
+                         setSelectedTeamMembers([]);
+                         setFormData({ ...formData, saleTeamId: '', salePersonId: '' });
+                         return;
+                       }
+                       try {
+                         const teamInfo = await getSaleTeamById(orgId, newTeamId);
+                         const members = teamInfo.members || [];
+                         setSelectedTeamMembers(members);
+                         const isMember = members.some((m: any) => m.id === formData.salePersonId);
+                         setFormData({
+                           ...formData,
+                           saleTeamId: newTeamId,
+                           salePersonId: isMember ? formData.salePersonId : ''
+                         });
+                       } catch (err) {
+                         console.error("Failed to fetch team members", err);
+                       }
                      }}
                      className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
                    >
@@ -216,13 +235,9 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
                      className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
                    >
                      <option value="">Select Salesperson...</option>
-                     {(() => {
-                       const selectedTeam = saleTeams.find(t => t.id === formData.saleTeamId);
-                       const filteredUsers = selectedTeam ? Array.from(selectedTeam.members || []) : [];
-                       return filteredUsers.map((u: any) => (
-                         <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.email})</option>
-                       ));
-                     })()}
+                     {selectedTeamMembers.map((u: any) => (
+                       <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.email})</option>
+                     ))}
                    </select>
                  </div>
                </div>

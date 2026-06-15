@@ -61,4 +61,29 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
       ReferenceType referenceType, UUID referenceId, DocumentType documentType);
 
   boolean existsByName(String name);
+
+  @Query("""
+      SELECT COUNT(d) FROM InventoryDocument d
+      WHERE d.warehouse.id = :warehouseId
+        AND d.documentType IN :types
+        AND d.documentStatus IN :statuses
+      """)
+  long countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+      @Param("warehouseId") UUID warehouseId,
+      @Param("types") List<DocumentType> types,
+      @Param("statuses") List<DocumentStatus> statuses
+  );
+
+  @Query("""
+      SELECT COUNT(d) FROM InventoryDocument d
+      WHERE d.warehouse.id = :warehouseId
+        AND d.documentType IN :types
+        AND d.documentStatus NOT IN :excludedStatuses
+        AND d.scheduledDate < CURRENT_TIMESTAMP
+      """)
+  long countLateDocuments(
+      @Param("warehouseId") UUID warehouseId,
+      @Param("types") List<DocumentType> types,
+      @Param("excludedStatuses") List<DocumentStatus> excludedStatuses
+  );
 }

@@ -59,6 +59,31 @@ export const deleteWarehouse = async (orgId: string, id: string): Promise<void> 
   await apiClient.delete(`${API_ENDPOINTS.INVENTORY.WAREHOUSES(orgId)}/${id}`);
 };
 
+// ─── INVENTORY METRICS ───────────────────────────────────────────────────────
+
+export interface MetricDetail {
+  toProcess: number;
+  backorders: number;
+  late: number;
+}
+
+export interface WarehouseMetricsResponse {
+  receipts: MetricDetail;
+  deliveries: MetricDetail;
+  internalTransfers: MetricDetail;
+  pendingFulfillmentCount: number;
+}
+
+export const getWarehouseMetrics = async (
+  orgId: string,
+  warehouseId: string
+): Promise<WarehouseMetricsResponse> => {
+  const response = await apiClient.get<WarehouseMetricsResponse>(
+    API_ENDPOINTS.INVENTORY.METRICS(orgId, warehouseId)
+  );
+  return response.data;
+};
+
 // ─── INVENTORY BALANCES ──────────────────────────────────────────────────────
 
 export const getInventoryBalances = async (

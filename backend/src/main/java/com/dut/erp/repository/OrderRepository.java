@@ -240,4 +240,13 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("startDate") Instant startDate,
       @Param("endDate") Instant endDate,
       Pageable pageable);
+
+  @Query(
+      """
+      SELECT COUNT(o.id)
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+      AND o.status = com.dut.erp.enums.OrderStatus.CONFIRMED
+      """)
+  long countPendingFulfillmentOrders(@Param("organizationId") UUID organizationId);
 }

@@ -103,6 +103,8 @@ export interface InventoryDocument {
   documentType: DocumentType;
   referenceType: ReferenceType;
   referenceId?: string;
+  partnerName?: string;
+  deliveryAddress?: string;
   documentStatus: DocumentStatus;
   notes?: string;
   scheduledDate: string;
@@ -112,6 +114,7 @@ export interface InventoryDocument {
   updatedAt: string;
   createdBy?: UserBaseResponse;
   updatedBy?: UserBaseResponse;
+  hasActiveReplenishment?: boolean;
 }
 
 export interface StockValuation {

@@ -343,6 +343,18 @@ export const updateInvoiceStatus = async (
   return response.data;
 };
 
+export const registerPayment = async (
+  orgId: string,
+  id: string,
+  amount: number
+): Promise<SaleInvoice> => {
+  const response = await apiClient.post<SaleInvoice>(
+    `${API_ENDPOINTS.SALES.INVOICES(orgId)}/${id}/payments`,
+    { amount }
+  );
+  return response.data;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ANALYTICS
 // ─────────────────────────────────────────────────────────────────────────────

@@ -8,7 +8,8 @@ import {
   completeInventoryDocument,
   cancelInventoryDocument,
   createReplenishmentRequest,
-  getWarehouses
+  getWarehouses,
+  getInventoryBalances
 } from '@/features/inventory/services/inventoryService';
 import { InventoryDocument } from '@/features/inventory/types';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,8 @@ import {
   AlertTriangle,
   ChevronRight,
   Plus,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -69,6 +71,23 @@ export default function DocumentDetailsPage({
   // Replenishment Dialog state
   const [isReplenishOpen, setIsReplenishOpen] = useState(false);
   const [replenishNotes, setReplenishNotes] = useState('');
+  
+  // Stock Balances mapping
+  const [stockBalances, setStockBalances] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (doc?.warehouseId) {
+      getInventoryBalances(orgId, doc.warehouseId, { limit: 500 })
+        .then(res => {
+          const map: Record<string, number> = {};
+          res.data?.forEach(b => {
+            map[b.product.id] = b.quantity;
+          });
+          setStockBalances(map);
+        })
+        .catch(err => console.error("Failed to fetch balances", err));
+    }
+  }, [orgId, doc?.warehouseId]);
 
   const fallbackSearch = useCallback(async () => {
     try {
@@ -269,7 +288,7 @@ export default function DocumentDetailsPage({
       {/* Main Page Layout (Split) */}
       <div className="flex-1 overflow-auto bg-[#f8f8f8] p-6">
         {/* Shortage Alert */}
-        {isWaitingStock && (
+        {isWaitingStock && !doc.hasActiveReplenishment && (
           <div className="bg-[#fff2cc] border border-[#ffe599] rounded-[4px] p-4 mb-6 flex justify-between items-center text-[#d68100]">
             <div className="flex items-center space-x-3">
               <AlertTriangle className="w-5 h-5 shrink-0" />
@@ -278,12 +297,32 @@ export default function DocumentDetailsPage({
                 <p className="text-[12px]">This document is currently on hold. Stock replenishment must be requested to satisfy this outbound movement.</p>
               </div>
             </div>
-            <Button 
-              onClick={() => setIsReplenishOpen(true)}
-              className="bg-[#ff9900] hover:bg-[#e68a00] text-white text-[12px] h-8 px-3 rounded-[4px] font-[600]"
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> Request Replenishment
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={() => router.push(`/dashboard/${orgId}/inventory/receipts/new?warehouseId=${doc.warehouseId}&fulfillShortageFor=${doc.id}`)}
+                variant="outline"
+                className="bg-transparent border-[#ff9900] text-[#d68100] hover:bg-[#fff7e6] text-[12px] h-8 px-3 rounded-[4px] font-[600]"
+              >
+                Quick Receive
+              </Button>
+              <Button 
+                onClick={() => setIsReplenishOpen(true)}
+                className="bg-[#ff9900] hover:bg-[#e68a00] text-white text-[12px] h-8 px-3 rounded-[4px] font-[600]"
+              >
+                <Plus className="w-4 h-4 mr-1.5" /> Request Replenishment
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Replenishment In Progress Alert */}
+        {isWaitingStock && doc.hasActiveReplenishment && (
+          <div className="bg-[#e8f4fd] border border-[#b8daff] rounded-[4px] p-4 mb-6 flex items-center text-[#0066cc]">
+            <Clock className="w-5 h-5 shrink-0 mr-3" />
+            <div>
+              <p className="text-[13px] font-[700]">Replenishment In Progress</p>
+              <p className="text-[12px]">Replenishment has been requested. Awaiting stock arrival.</p>
+            </div>
           </div>
         )}
 
@@ -358,6 +397,7 @@ export default function DocumentDetailsPage({
                   <thead>
                     <tr className="border-b border-[#e0e0e0]">
                       <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider">Product Name</th>
+                      <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Available Stock</th>
                       <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Quantity</th>
                       <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Unit Cost</th>
                       <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Total Valuation</th>
@@ -366,13 +406,23 @@ export default function DocumentDetailsPage({
                   <tbody>
                     {doc.lines?.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-[#898989] text-[13px]">No product lines registered</td>
+                        <td colSpan={5} className="py-8 text-center text-[#898989] text-[13px]">No product lines registered</td>
                       </tr>
                     ) : (
-                      doc.lines?.map((line) => (
-                        <tr key={line.id} className="border-b border-[#f5f5f5] last:border-b-0">
+                      doc.lines?.map((line) => {
+                        const available = stockBalances[line.productId] || 0;
+                        const isShortage = isWaitingStock && available < line.quantity;
+                        
+                        return (
+                        <tr key={line.id} className={cn("border-b border-[#f5f5f5] last:border-b-0", isShortage && "bg-[#fff0f0]")}>
                           <td className="py-3 text-[13px] font-[500] text-[#242424]">
-                            {line.productName}
+                            <div className="flex items-center">
+                              {isShortage && <AlertTriangle className="w-4 h-4 text-[#dc3545] mr-2 shrink-0" />}
+                              {line.productName}
+                            </div>
+                          </td>
+                          <td className={cn("py-3 text-[13px] text-right font-[600]", isShortage ? "text-[#dc3545]" : "text-[#4a4a4a]")}>
+                            {available.toLocaleString()}
                           </td>
                           <td className="py-3 text-[13px] text-right font-[600] text-[#242424]">
                             {line.quantity.toLocaleString()}
@@ -384,7 +434,7 @@ export default function DocumentDetailsPage({
                             ${(line.valuation || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </td>
                         </tr>
-                      ))
+                      )})
                     )}
                   </tbody>
                 </table>

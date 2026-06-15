@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
-import { getSaleInvoiceById, getOrderItems, updateInvoiceStatus } from '@/features/sales/services/salesService';
+import { getSaleInvoiceById, getOrderItems, updateInvoiceStatus, registerPayment } from '@/features/sales/services/salesService';
 import { SaleInvoice, OrderItem } from '@/features/sales/types';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, CheckCircle, FileText, XCircle, Calendar, Clock, Activity } from 'lucide-react';
+import { ChevronRight, CheckCircle, FileText, XCircle, Calendar, Clock, Activity, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/use-permissions';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { RegisterPaymentModal } from '@/features/sales/components/RegisterPaymentModal';
 
 import { PERMISSIONS } from '@/config/permissions';
 
@@ -19,6 +20,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
   const [invoice, setInvoice] = useState<SaleInvoice | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const { hasPermission } = usePermissions();
 
   const fetchInvoiceAndItems = async () => {
@@ -48,6 +50,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
       await fetchInvoiceAndItems();
     } catch (err: any) {
       // error toast already shown by api-client
+    }
+  };
+
+  const handleRegisterPayment = async (amount: number) => {
+    try {
+      await registerPayment(orgId, id, amount);
+      toast.success(`Payment of $${amount.toLocaleString()} registered successfully`);
+      await fetchInvoiceAndItems();
+    } catch (err: any) {
+      throw err; // Let the modal handle the error
     }
   };
 
@@ -102,8 +114,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
               <FileText className="w-4 h-4 mr-2" /> Issue Invoice
             </Button>
           )}
+          {invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED' && (
+            <Button variant="outline" className="border-[#0066cc] text-[#0066cc] hover:bg-[#f0f4ff] h-10 px-4 rounded-[4px]" onClick={() => window.open(`/dashboard/${orgId}/sales/invoices/${id}/print`, '_blank')}>
+              <Printer className="w-4 h-4 mr-2" /> Print Invoice
+            </Button>
+          )}
           {canWrite && (invoice.status === 'POSTED' || invoice.status === 'DRAFT' || invoice.status === 'PARTIAL_PAID') && (
-            <Button className="bg-[#28a745] hover:bg-[#218838] text-white h-10 px-4 rounded-[4px]" onClick={() => handleUpdateStatus('PAID')}>
+            <Button className="bg-[#28a745] hover:bg-[#218838] text-white h-10 px-4 rounded-[4px]" onClick={() => setIsPaymentModalOpen(true)}>
               <CheckCircle className="w-4 h-4 mr-2" /> Register Payment
             </Button>
           )}
@@ -203,12 +220,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
                 </div>
                 <div className="flex text-[14px]">
                   <span className="w-32 shrink-0 text-[#898989] font-[600]">Paid Amount</span>
-                  <span className="text-[#242424] font-mono">₫{invoice.paidAmount.toLocaleString()}</span>
+                  <span className="text-[#242424] font-mono">${invoice.paidAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex text-[14px]">
                   <span className="w-32 shrink-0 text-[#898989] font-[600]">Amount Due</span>
                   <span className="text-[#dc3545] font-mono font-semibold">
-                    ₫{(invoice.totalAmount - invoice.paidAmount).toLocaleString()}
+                    ${(invoice.totalAmount - invoice.paidAmount).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -220,9 +237,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
               <button className="border-b-2 border-[#0066cc] pb-2 font-[600] text-[#0066cc]">
                 Invoice Lines
               </button>
-              <button className="pb-2 text-[#898989] hover:text-[#242424] cursor-not-allowed" disabled>
-                Other Info
-              </button>
+        
             </div>
 
             {/* Line items table */}
@@ -266,10 +281,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
                         </td>
                         <td className="py-3 px-4 text-right font-medium">{item.quantity}</td>
                         <td className="py-3 px-4 text-right font-mono">
-                          ₫{Number(item.unitPrice).toLocaleString()}
+                          ${Number(item.unitPrice).toLocaleString()}
                         </td>
                         <td className="py-3 pl-4 text-right font-mono font-[600] text-[#0066cc]">
-                          ₫{(Number(item.quantity) * Number(item.unitPrice)).toLocaleString()}
+                          ${(Number(item.quantity) * Number(item.unitPrice)).toLocaleString()}
                         </td>
                       </tr>
                     ))
@@ -282,16 +297,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
                 <div className="w-full max-w-[320px] space-y-2 text-[14px]">
                   <div className="flex justify-between">
                     <span className="text-[#898989]">Untaxed Amount</span>
-                    <span className="font-mono text-[#242424]">₫{netTotal.toLocaleString()}</span>
+                    <span className="font-mono text-[#242424]">${netTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between border-b border-dashed border-[#e0e0e0] pb-2">
                     <span className="text-[#898989]">Taxes</span>
-                    <span className="font-mono text-[#242424]">₫{taxTotal.toLocaleString()}</span>
+                    <span className="font-mono text-[#242424]">${taxTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="font-[700] text-[#111111] text-[16px]">Total</span>
                     <span className="font-[700] text-[#0066cc] text-[20px] font-mono">
-                      ₫{grandTotal.toLocaleString()}
+                      ${grandTotal.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -375,7 +390,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
 
         </div>
       </div>
+
+      <RegisterPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onConfirm={handleRegisterPayment}
+        remainingBalance={invoice.totalAmount - invoice.paidAmount}
+      />
     </div>
   );
 }
-

@@ -45,7 +45,7 @@ export const useRegister = (): UseRegisterReturn => {
         const permissions = await getUserPermissions(user.id);
         setPermissions(permissions);
 
-        const orgIds = userOrgs.map((org) => org.id).join(',');
+        const orgIds = userOrgs.map((org) => org.id).join('_');
         document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; secure; samesite=strict`;
         document.cookie = `clientSession=true; path=/; max-age=86400; secure; samesite=strict`;
         const searchParams = new URLSearchParams(window.location.search);

@@ -1,8 +1,8 @@
 'use client';
 
-import { ReactNode, use } from 'react';
+import { ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { 
   FileText, 
   Warehouse, 
@@ -18,18 +18,19 @@ import { PERMISSIONS } from '@/config/permissions';
 
 export default function InventoryLayout({
   children,
-  params,
 }: {
   children: ReactNode;
-  params: Promise<{ orgId: string }>;
 }) {
   const pathname = usePathname();
-  const { orgId } = use(params);
+  const params = useParams();
+  const orgId = params.orgId as string;
   const basePath = `/dashboard/${orgId}/inventory`;
 
   const operationsItems = [
+    { name: 'Overview', href: `${basePath}`, icon: Activity },
     { name: 'Stock Moves', href: `${basePath}/documents`, icon: FileText },
     { name: 'Replenishments', href: `${basePath}/replenishments`, icon: Boxes },
+    { name: 'Adjustments', href: `${basePath}/adjustments`, icon: FileText },
   ];
 
   const masterDataItems = [
@@ -43,7 +44,10 @@ export default function InventoryLayout({
   ];
 
   const renderNavItem = (item: { name: string; href: string; icon: React.ElementType }) => {
-    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+    // Exact match for Overview to prevent it highlighting on all sub-routes
+    const isActive = item.name === 'Overview' 
+      ? pathname === item.href 
+      : (pathname === item.href || pathname.startsWith(item.href + '/'));
     const Icon = item.icon;
     return (
       <Link

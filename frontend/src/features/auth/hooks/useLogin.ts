@@ -52,7 +52,7 @@ export const useLogin = (): UseLoginReturn => {
         setOrganizations(userOrgs);
         const permissions = await getUserPermissions(user.id);
         setPermissions(permissions);
-        const orgIds = userOrgs.map((org) => org.id).join(',');
+        const orgIds = userOrgs.map((org) => org.id).join('_');
         const maxAge = values.rememberMe ? 2592000 : 86400; // 30 days vs 1 day
         document.cookie = `userOrgIds=${orgIds}; path=/; max-age=${maxAge}; secure; samesite=strict`;
         document.cookie = `clientSession=true; path=/; max-age=${maxAge}; secure; samesite=strict`;
