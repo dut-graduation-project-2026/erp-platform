@@ -310,12 +310,8 @@ public class OrderServiceImpl implements OrderService {
           "Sales module is not allowed to manually update status to " + request.status());
     }
 
-    // Rule: Transition to COMPLETED is only allowed if current status is SENT and invoice is PAID
+    // Rule: Transition to COMPLETED is only allowed if both delivery and payment are completed
     if (request.status() == OrderStatus.COMPLETED) {
-      if (order.getStatus() != OrderStatus.SENT) {
-        throw new BadRequestException("Only delivered orders (SENT status) can be completed");
-      }
-
       Invoice invoice =
           invoiceRepository
               .findByOrderIdAndOrganizationId(id, organizationId)
@@ -327,6 +323,17 @@ public class OrderServiceImpl implements OrderService {
       if (invoice.getStatus() != InvoiceStatus.PAID) {
         throw new BadRequestException(
             "Cannot complete order because the linked invoice is not PAID");
+      }
+
+      boolean isDeliveryCompleted = inventoryDocumentRepository
+          .findByReferenceTypeAndReferenceIdAndDocumentType(
+              ReferenceType.SALES_ORDER, order.getId(), DocumentType.ISSUE)
+          .map(doc -> doc.getDocumentStatus() == DocumentStatus.COMPLETED)
+          .orElse(false);
+
+      if (!isDeliveryCompleted) {
+        throw new BadRequestException(
+            "Cannot complete order because the linked warehouse delivery is not completed");
       }
     }
 
@@ -523,27 +530,41 @@ public class OrderServiceImpl implements OrderService {
     List<com.dut.erp.entity.InventoryDocument> activeDocs = inventoryDocumentRepository.findActiveDocuments(
         ReferenceType.SALES_ORDER, response.id(), DocumentType.ISSUE
     );
+    UUID warehouseId = null;
+    String warehouseName = null;
     if (!activeDocs.isEmpty()) {
       com.dut.erp.entity.InventoryDocument doc = activeDocs.get(0);
-      return new OrderResponse(
-          response.id(),
-          response.organization(),
-          response.partner(),
-          response.lead(),
-          response.orderNumber(),
-          response.status(),
-          response.deliveryDate(),
-          response.expirationDate(),
-          response.totalAmount(),
-          response.items(),
-          response.createdAt(),
-          response.updatedAt(),
-          response.createdBy(),
-          response.updatedBy(),
-          doc.getWarehouse().getId(),
-          doc.getWarehouse().getName()
-      );
+      warehouseId = doc.getWarehouse().getId();
+      warehouseName = doc.getWarehouse().getName();
     }
-    return response;
+
+    java.util.Optional<com.dut.erp.entity.Invoice> optInvoice = invoiceRepository.findByOrderIdAndOrganizationId(
+        response.id(), response.organization().id()
+    );
+    UUID invoiceId = optInvoice.map(com.dut.erp.entity.Invoice::getId).orElse(null);
+    String invoiceNumber = optInvoice.map(com.dut.erp.entity.Invoice::getInvoiceNumber).orElse(null);
+    com.dut.erp.enums.InvoiceStatus invoiceStatus = optInvoice.map(com.dut.erp.entity.Invoice::getStatus).orElse(null);
+
+    return new OrderResponse(
+        response.id(),
+        response.organization(),
+        response.partner(),
+        response.lead(),
+        response.orderNumber(),
+        response.status(),
+        response.deliveryDate(),
+        response.expirationDate(),
+        response.totalAmount(),
+        response.items(),
+        response.createdAt(),
+        response.updatedAt(),
+        response.createdBy(),
+        response.updatedBy(),
+        warehouseId,
+        warehouseName,
+        invoiceId,
+        invoiceNumber,
+        invoiceStatus
+    );
   }
 }

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { 
   getWarehouses, 
   getInventoryDocuments, 
@@ -193,7 +194,8 @@ export default function DocumentsListPage() {
 
     return doc.name.toLowerCase().includes(q) || 
            doc.notes?.toLowerCase().includes(q) || 
-           doc.documentType.toLowerCase().includes(q);
+           doc.documentType.toLowerCase().includes(q) ||
+           doc.orderNumber?.toLowerCase().includes(q);
   });
 
   return (
@@ -293,6 +295,7 @@ export default function DocumentsListPage() {
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Reference</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Operation Type</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Source Document</th>
+                <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Order No.</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Scheduled Date</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Notes</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-center">Status</th>
@@ -302,14 +305,14 @@ export default function DocumentsListPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={8} className="py-12 text-center text-[#898989] text-[13px]">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#0066cc]" />
                     Fetching documents...
                   </td>
                 </tr>
               ) : filteredDocs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={8} className="py-12 text-center text-[#898989] text-[13px]">
                     No stock movements found.
                   </td>
                 </tr>
@@ -345,6 +348,18 @@ export default function DocumentsListPage() {
                           </span>
                         ) : (
                           <span className="text-[#898989] italic">Manual adjustment</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-[13px] text-[#4a4a4a] font-medium" onClick={(e) => e.stopPropagation()}>
+                        {doc.orderNumber ? (
+                          <Link 
+                            href={`/dashboard/${orgId}/sales/orders/${doc.referenceId}`}
+                            className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[11px] font-[600] uppercase bg-[#e8f4fd] text-[#1b75bb] border border-[#d0e8fc] hover:bg-[#d0e8fc] hover:text-[#004499] transition-colors"
+                          >
+                            {doc.orderNumber}
+                          </Link>
+                        ) : (
+                          <span className="text-[#898989] italic">-</span>
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-[13px] text-[#64748b]">

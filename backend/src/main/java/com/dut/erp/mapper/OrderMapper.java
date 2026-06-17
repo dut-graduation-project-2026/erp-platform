@@ -20,5 +20,8 @@ public interface OrderMapper {
 
   @Mapping(target = "warehouseId", ignore = true)
   @Mapping(target = "warehouseName", ignore = true)
+  @Mapping(target = "invoiceId", ignore = true)
+  @Mapping(target = "invoiceNumber", ignore = true)
+  @Mapping(target = "invoiceStatus", ignore = true)
   OrderResponse toResponse(Order entity);
 }

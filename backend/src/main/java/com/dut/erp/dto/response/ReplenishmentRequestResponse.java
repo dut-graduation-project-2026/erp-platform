@@ -14,5 +14,7 @@ public record ReplenishmentRequestResponse(
     String notes,
     String status,
     Instant createdAt,
-    UserBaseResponse createdBy
+    UserBaseResponse createdBy,
+    String orderNumber,
+    UUID referenceId
 ) {}

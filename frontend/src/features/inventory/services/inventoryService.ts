@@ -205,7 +205,7 @@ export const confirmSmartRoute = async (
 export const getReplenishmentRequests = async (
   orgId: string,
   warehouseId: string,
-  params?: { page?: number; limit?: number }
+  params?: { search?: string; page?: number; limit?: number }
 ): Promise<PaginatedResponse<ReplenishmentRequest>> => {
   const response = await apiClient.get<PaginatedResponse<ReplenishmentRequest>>(
     API_ENDPOINTS.INVENTORY.REPLENISHMENT_REQUESTS(orgId, warehouseId),

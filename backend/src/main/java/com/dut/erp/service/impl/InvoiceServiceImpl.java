@@ -12,15 +12,19 @@ import com.dut.erp.entity.Invoice;
 import com.dut.erp.entity.Order;
 import com.dut.erp.enums.InvoiceStatus;
 import com.dut.erp.enums.OrderStatus;
+import com.dut.erp.enums.DocumentStatus;
+import com.dut.erp.enums.DocumentType;
+import com.dut.erp.enums.ReferenceType;
+import com.dut.erp.enums.LeadStage;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.InvoiceMapper;
 import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.OrderRepository;
+import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.service.InvoiceService;
 import com.dut.erp.dto.event.InvoiceStatusChangedEvent;
 import com.dut.erp.dto.event.OrderStatusChangedEvent;
-import com.dut.erp.enums.OrderStatus;
 import org.springframework.context.ApplicationEventPublisher;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -49,6 +53,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
   private final InvoiceRepository invoiceRepository;
   private final OrderRepository orderRepository;
+  private final InventoryDocumentRepository inventoryDocumentRepository;
   private final InvoiceMapper invoiceMapper;
   private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -158,15 +163,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     applicationEventPublisher.publishEvent(new InvoiceStatusChangedEvent(invoice.getId(), currentStatus, newStatus));
 
     if (newStatus == InvoiceStatus.PAID) {
-      Order order = invoice.getOrder();
-      OrderStatus oldOrderStatus = order.getStatus();
-      order.setStatus(OrderStatus.COMPLETED);
-      orderRepository.save(order);
-      log.info(
-          "Automatically completed order {} because invoice {} was marked PAID",
-          order.getId(),
-          invoice.getId());
-      applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldOrderStatus, OrderStatus.COMPLETED));
+      checkAndCompleteOrder(invoice.getOrder());
     }
 
     return invoiceMapper.toResponse(invoice);
@@ -200,19 +197,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     if (oldStatus != newStatus) {
         applicationEventPublisher.publishEvent(new InvoiceStatusChangedEvent(invoice.getId(), oldStatus, newStatus));
         if (newStatus == InvoiceStatus.PAID) {
-            Order order = invoice.getOrder();
-            if (order != null && order.getStatus() == OrderStatus.SENT) {
-                OrderStatus oldOrderStatus = order.getStatus();
-                order.setStatus(OrderStatus.COMPLETED);
-                
-                if (order.getLead() != null && order.getLead().getStage() != com.dut.erp.enums.LeadStage.WON) {
-                    order.getLead().setStage(com.dut.erp.enums.LeadStage.WON);
-                }
-                
-                orderRepository.save(order);
-                log.info("Automatically completed order {} because invoice {} was marked PAID", order.getId(), invoice.getId());
-                applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldOrderStatus, OrderStatus.COMPLETED));
-            }
+            checkAndCompleteOrder(invoice.getOrder());
         }
     }
     return invoiceMapper.toResponse(invoice);
@@ -284,5 +269,35 @@ public class InvoiceServiceImpl implements InvoiceService {
     } while (invoiceRepository.existsByOrganizationIdAndInvoiceNumber(organizationId, generated));
 
     return generated;
+  }
+
+  private void checkAndCompleteOrder(Order order) {
+    if (order == null) return;
+
+    // 1. Check if the linked invoice is paid
+    boolean isInvoicePaid = invoiceRepository.findByOrderIdAndOrganizationId(order.getId(), order.getOrganization().getId())
+        .map(inv -> inv.getStatus() == InvoiceStatus.PAID)
+        .orElse(false);
+
+    // 2. Check if the active warehouse issue document is completed
+    boolean isDeliveryCompleted = inventoryDocumentRepository
+        .findByReferenceTypeAndReferenceIdAndDocumentType(
+            ReferenceType.SALES_ORDER, order.getId(), DocumentType.ISSUE)
+        .map(doc -> doc.getDocumentStatus() == DocumentStatus.COMPLETED)
+        .orElse(false);
+
+    // 3. If both are completed/paid -> Close the order
+    if (isInvoicePaid && isDeliveryCompleted) {
+      OrderStatus oldStatus = order.getStatus();
+      if (oldStatus != OrderStatus.COMPLETED) {
+        order.setStatus(OrderStatus.COMPLETED);
+        if (order.getLead() != null && order.getLead().getStage() != LeadStage.WON) {
+          order.getLead().setStage(LeadStage.WON);
+        }
+        orderRepository.save(order);
+        log.info("Automatically completed order {} because both delivery and payment are completed.", order.getOrderNumber());
+        applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.COMPLETED));
+      }
+    }
   }
 }

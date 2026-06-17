@@ -140,6 +140,9 @@ export interface SaleOrder {
   netAmount?: number;
   warehouseId?: string;
   warehouseName?: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoiceStatus?: InvoiceStatus;
 }
 
 // ─── Invoice (Tích hợp thực tế backend) ───────────────────────────
