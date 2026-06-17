@@ -209,7 +209,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
                         {req.orderNumber && req.referenceId ? (
                           <Link 
                             href={`/dashboard/${orgId}/sales/orders/${req.referenceId}`}
-                            className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[11px] font-[600] uppercase bg-[#e8f4fd] text-[#1b75bb] border border-[#d0e8fc] hover:bg-[#d0e8fc] hover:text-[#004499] transition-colors"
+                            className="inline-flex items-center justify-center min-w-[110px] text-center px-2 py-0.5 rounded-[4px] text-[11px] font-[600] uppercase bg-[#e8f4fd] text-[#1b75bb] border border-[#d0e8fc] hover:bg-[#d0e8fc] hover:text-[#004499] transition-colors"
                           >
                             {req.orderNumber}
                           </Link>
@@ -228,7 +228,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <span className={cn(
-                          "inline-block px-2.5 py-0.5 rounded-[12px] text-[11px] font-[600] uppercase",
+                          "inline-block px-2.5 py-0.5 rounded-[4px] min-w-[80px] text-center text-[11px] font-[600] uppercase",
                           req.status === 'OPEN' 
                             ? "bg-[#fff2cc] text-[#d68100]" 
                             : "bg-[#e2f0d9] text-[#385723]"

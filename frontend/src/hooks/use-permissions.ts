@@ -1,4 +1,5 @@
 import { useAuthStore } from "@/store/use-auth-store";
+import { MODULE_PERMISSIONS_MAP } from "@/config/permissions";
 
 /**
  * usePermissions
@@ -24,10 +25,29 @@ export const usePermissions = () => {
     return permissionCodes.every((code) => permissions.includes(code));
   };
 
+  /**
+   * Check if a user has access to a specific module on the launcher
+   */
+  const hasModuleAccess = (moduleId: string, defaultPermission?: string): boolean => {
+    const resources = MODULE_PERMISSIONS_MAP[moduleId];
+    if (resources) {
+      return permissions.some((perm) => {
+        const [permResource] = perm.split(':');
+        return resources.includes(permResource);
+      });
+    }
+    // Fallback to checking the default permission string if specified
+    if (defaultPermission) {
+      return permissions.includes(defaultPermission);
+    }
+    return false;
+  };
+
   return {
     permissions,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
+    hasModuleAccess,
   };
 };

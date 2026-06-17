@@ -354,7 +354,7 @@ export default function DocumentsListPage() {
                         {doc.orderNumber ? (
                           <Link 
                             href={`/dashboard/${orgId}/sales/orders/${doc.referenceId}`}
-                            className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[11px] font-[600] uppercase bg-[#e8f4fd] text-[#1b75bb] border border-[#d0e8fc] hover:bg-[#d0e8fc] hover:text-[#004499] transition-colors"
+                            className="inline-flex items-center justify-center min-w-[110px] text-center px-2 py-0.5 rounded-[4px] text-[11px] font-[600] uppercase bg-[#e8f4fd] text-[#1b75bb] border border-[#d0e8fc] hover:bg-[#d0e8fc] hover:text-[#004499] transition-colors"
                           >
                             {doc.orderNumber}
                           </Link>
@@ -373,7 +373,7 @@ export default function DocumentsListPage() {
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <span className={cn(
-                          "inline-block px-2.5 py-0.5 rounded-[12px] text-[11px] font-[600] uppercase",
+                          "inline-block px-2.5 py-0.5 rounded-[4px] min-w-[110px] text-center text-[11px] font-[600] uppercase",
                           doc.documentStatus === DOCUMENT_STATUS.DRAFT && "bg-[#e2e8f0] text-[#475569]",
                           doc.documentStatus === DOCUMENT_STATUS.CONFIRMED && "bg-[#e8f4fd] text-[#0066cc]",
                           doc.documentStatus === DOCUMENT_STATUS.COMPLETED && "bg-[#e2f0d9] text-[#385723]",

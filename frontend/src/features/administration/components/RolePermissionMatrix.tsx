@@ -4,33 +4,22 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { PERMISSION_GROUPS, RESOURCE_LABELS, MATRIX_ACTIONS } from '@/config/permissions';
 import type { Role } from '../types';
 
 interface RolePermissionMatrixProps {
   role: Role;
 }
 
-const RESOURCES = [
-  { name: 'Sales', color: 'bg-blue-50', label: 'Bán hàng' },
-  { name: 'Inventory', color: 'bg-green-50', label: 'Kho & Chuỗi cung ứng' },
-  { name: 'Finance', color: 'bg-purple-50', label: 'Tài chính' },
-  { name: 'HR', color: 'bg-orange-50', label: 'Nhân sự' },
-  { name: 'Blockchain Audit', color: 'bg-indigo-50', label: 'Kiểm toán Blockchain' },
-];
-
-const ACTIONS = [
-  { key: 'VIEW', label: 'Xem', icon: '👁️' },
-  { key: 'CREATE', label: 'Tạo', icon: '➕' },
-  { key: 'EDIT', label: 'Sửa', icon: '✏️' },
-  { key: 'DELETE', label: 'Xóa', icon: '🗑️' },
-  { key: 'EXPORT', label: 'Xuất', icon: '📥' },
-];
-
 export const RolePermissionMatrix: React.FC<RolePermissionMatrixProps> = ({ role }) => {
+  const [activeTab, setActiveTab] = useState<string>("crm");
+
+  const activeGroup = PERMISSION_GROUPS.find(g => g.id === activeTab) || PERMISSION_GROUPS[0];
+
   const hasPermission = (resource: string, action: string) => {
     const permissionString = `${resource.toLowerCase()}:${action.toLowerCase()}`;
     return role.permissions.includes(permissionString);
@@ -52,6 +41,24 @@ export const RolePermissionMatrix: React.FC<RolePermissionMatrixProps> = ({ role
       </CardHeader>
 
       <CardContent className="pt-6">
+        {/* Tabs Header */}
+        <div className="flex border-b border-[#e0e0e0] mb-6 overflow-x-auto no-scrollbar gap-2">
+          {PERMISSION_GROUPS.map((group) => (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => setActiveTab(group.id)}
+              className={`px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 -mb-[1px] ${
+                activeTab === group.id
+                  ? "text-[#0066cc] border-[#0066cc]"
+                  : "text-[#898989] border-transparent hover:text-[#242424]"
+              }`}
+            >
+              {group.name}
+            </button>
+          ))}
+        </div>
+
         <div className="overflow-x-auto">
           {/* Permission Matrix Table */}
           <div className="min-w-[900px]">
@@ -64,7 +71,7 @@ export const RolePermissionMatrix: React.FC<RolePermissionMatrixProps> = ({ role
                 </div>
 
                 {/* Action Headers */}
-                {ACTIONS.map((action) => (
+                {MATRIX_ACTIONS.map((action) => (
                   <div
                     key={action.key}
                     className="bg-[#f8f8f8] p-4 border-r border-[#e0e0e0] border-b border-[#e0e0e0] font-semibold text-[13px] text-[#242424] text-center"
@@ -76,23 +83,23 @@ export const RolePermissionMatrix: React.FC<RolePermissionMatrixProps> = ({ role
               </div>
 
               {/* Resource Rows */}
-              {RESOURCES.map((resource) => (
-                <div key={resource.name} className="col-span-full grid grid-cols-6 gap-0">
+              {activeGroup.resources.map((resource) => (
+                <div key={resource} className="col-span-full grid grid-cols-6 gap-0">
                   {/* Resource Label */}
                   <div
-                    className={`${resource.color} p-4 border-r border-[#e0e0e0] border-b border-[#e0e0e0] font-500 text-[13px] text-[#242424]`}
+                    className="bg-slate-50 p-4 border-r border-[#e0e0e0] border-b border-[#e0e0e0] font-500 text-[13px] text-[#242424]"
                   >
-                    {resource.label}
+                    {RESOURCE_LABELS[resource] || resource}
                   </div>
 
                   {/* Permission Checkboxes */}
-                  {ACTIONS.map((action) => (
+                  {MATRIX_ACTIONS.map((action) => (
                     <div
-                      key={`${resource.name}-${action.key}`}
+                      key={`${resource}-${action.key}`}
                       className="p-4 border-r border-[#e0e0e0] border-b border-[#e0e0e0] flex items-center justify-center bg-white hover:bg-[#f8f8f8] transition-colors"
                     >
                       <Checkbox
-                        checked={hasPermission(resource.name, action.key)}
+                        checked={hasPermission(resource, action.key)}
                         disabled
                         className="w-5 h-5 rounded-[2px] border-[#0066cc]"
                       />

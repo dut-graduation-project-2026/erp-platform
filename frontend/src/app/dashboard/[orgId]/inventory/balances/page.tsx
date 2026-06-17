@@ -341,7 +341,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                         </td>
                         <td className="py-3.5 px-4 text-center">
                           <span className={cn(
-                            "inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-[12px] text-[11px] font-[600]",
+                            "inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-[4px] min-w-[110px] justify-center text-[11px] font-[600]",
                             qty === 0
                               ? "bg-[#fbe5d6] text-[#c65911]"
                               : isLowStock

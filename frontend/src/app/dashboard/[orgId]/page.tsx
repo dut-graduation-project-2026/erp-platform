@@ -8,11 +8,14 @@ import { PermissionGuard } from '@/components/rbac/PermissionGuard';
 import { useErpModules } from '@/features/organization/hooks/useErpModules';
 import { Loader2 } from 'lucide-react';
 
+import { usePermissions } from '@/hooks/use-permissions';
+
 export default function AppLauncherPage() {
   const params = useParams();
   const orgId = params.orgId as string;
   const { organizations, currentOrgId } = useAuthStore();
   const { modules: backendModules, loading, error } = useErpModules(orgId);
+  const { hasModuleAccess } = usePermissions();
 
   const currentOrg = organizations.find(org => org.id === orgId);
 
@@ -40,14 +43,19 @@ export default function AppLauncherPage() {
     );
   }
 
-  // Filter APP_MODULES config based on what backend returned
-  const accessibleModules = APP_MODULES.filter(configModule => 
-    backendModules.some(backendModule => {
+  // Filter APP_MODULES config based on what backend returned and user's permissions
+  const accessibleModules = APP_MODULES.filter(configModule => {
+    // 1. Check if the module is seeded/enabled in the backend
+    const isEnabled = backendModules.some(backendModule => {
       const backendCode = backendModule.code.toLowerCase().replace(/_/g, '-');
       const configCode = configModule.id.toLowerCase().replace(/_/g, '-');
       return backendCode === configCode;
-    })
-  );
+    });
+    if (!isEnabled) return false;
+
+    // 2. Check if the user has permission to access this module
+    return hasModuleAccess(configModule.id, configModule.permission);
+  });
 
   console.log("Backend Modules:", backendModules);
   console.log("Accessible Config Modules:", accessibleModules);

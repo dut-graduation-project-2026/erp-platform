@@ -30,6 +30,7 @@ import { useAuthStore } from '@/store/use-auth-store';
 import { APP_MODULES } from '@/config/modules';
 import { useErpModules } from '@/features/organization/hooks/useErpModules';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
+import { usePermissions } from '@/hooks/use-permissions';
 import { NotificationPopover } from '@/features/notification/components/NotificationPopover';
 import { useNotificationStore } from '@/features/notification/store/use-notification-store';
 
@@ -110,20 +111,28 @@ export function Header({ className }: HeaderProps) {
     }
   };
 
-  // Filter APP_MODULES config based on what backend returned
+  const { hasModuleAccess } = usePermissions();
+
+  // Filter APP_MODULES config based on what backend returned and user's permissions
   const accessibleModules = React.useMemo(() => {
     if (!backendModules) return [];
-    return APP_MODULES.filter(configModule => 
-      backendModules.some(backendModule => {
+    return APP_MODULES.filter(configModule => {
+      // 1. Check if the module is seeded/enabled in the backend
+      const isEnabled = backendModules.some(backendModule => {
         const backendCode = backendModule.code.toLowerCase().replace(/_/g, '-');
         const configCode = configModule.id.toLowerCase().replace(/_/g, '-');
         return backendCode === configCode;
-      })
-    );
-  }, [backendModules]);
+      });
+      if (!isEnabled) return false;
+
+      // 2. Check if the user has permission to access this module
+      return hasModuleAccess(configModule.id, configModule.permission);
+    });
+  }, [backendModules, hasModuleAccess]);
 
   const handleModuleClick = (route: string) => {
     router.push(`/dashboard/${currentOrgId}${route}`);
+    setIsAppLauncherOpen(false);
   };
 
   return (

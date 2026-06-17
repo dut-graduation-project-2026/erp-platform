@@ -191,7 +191,7 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
                       <h3 className="text-[16px] font-[600] text-[#242424] mt-1.5">{wh.name}</h3>
                     </div>
                     <span className={cn(
-                      "text-[12px] font-[600] px-2 py-0.5 rounded-[12px]",
+                      "text-[12px] font-[600] px-2 py-0.5 rounded-[4px] min-w-[70px] text-center",
                       wh.isActive ? "bg-[#e2f0d9] text-[#385723]" : "bg-[#fbe5d6] text-[#c65911]"
                     )}>
                       {wh.isActive ? 'Active' : 'Inactive'}

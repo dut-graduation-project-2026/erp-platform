@@ -303,11 +303,17 @@ export const getSaleInvoices = async (
   orgId: string,
   params?: { search?: string; page?: number; limit?: number }
 ): Promise<PagedEntityResponse<SaleInvoice>> => {
-  const response = await apiClient.get<PagedEntityResponse<SaleInvoice>>(
+  const response = await apiClient.get<PagedEntityResponse<any>>(
     API_ENDPOINTS.SALES.INVOICES(orgId),
     { params }
   );
-  return response.data;
+  return {
+    ...response.data,
+    data: (response.data.data || []).map((inv: any) => ({
+      ...inv,
+      saleOrder: inv.order
+    }))
+  };
 };
 
 export const getSaleInvoiceById = async (orgId: string, id: string): Promise<SaleInvoice> => {
