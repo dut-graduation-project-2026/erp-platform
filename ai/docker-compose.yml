@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  erp-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: erp-ai-service
+    ports:
+      - "${PORT:-8000}:8000"
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    # Ensure backend port is accessible if running both via docker-compose on the same network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
