@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -52,9 +53,10 @@ public class ReplenishmentRequestController {
   public ResponseEntity<PagedEntityResponse<ReplenishmentRequestResponse>> getReplenishmentRequests(
       @PathVariable UUID organizationId,
       @PathVariable UUID warehouseId,
+      @RequestParam(required = false) String search,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
-        replenishmentRequestService.getReplenishmentRequests(organizationId, warehouseId, paginationRequest));
+        replenishmentRequestService.getReplenishmentRequests(organizationId, warehouseId, search, paginationRequest));
   }
 }

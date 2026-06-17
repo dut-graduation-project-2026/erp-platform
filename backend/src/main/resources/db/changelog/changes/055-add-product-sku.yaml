@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 055-add-product-sku
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: sku
+                  type: VARCHAR(100)
+        - sql:
+            dbms: postgresql
+            sql: UPDATE products SET sku = 'SKU-' || upper(substring(id::text, 1, 8)) WHERE sku IS NULL;
+        - addNotNullConstraint:
+            tableName: products
+            columnName: sku
+            columnDataType: VARCHAR(100)
+        - addUniqueConstraint:
+            tableName: products
+            columnNames: organization_id, sku
+            constraintName: uk_products_org_sku

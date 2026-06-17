@@ -24,4 +24,8 @@ public record OrderResponse(
     UserBaseResponse createdBy,
     UserBaseResponse updatedBy,
     UUID warehouseId,
-    String warehouseName) {}
+    String warehouseName,
+    UUID invoiceId,
+    String invoiceNumber,
+    com.dut.erp.enums.InvoiceStatus invoiceStatus) {}
+

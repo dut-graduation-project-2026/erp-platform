@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, Save, FileText, Calendar, Settings as SettingsIcon } from "lucide-react";
 import { PermissionGuard } from "@/components/rbac/PermissionGuard";
-import { PERMISSIONS } from "@/config/permissions";
+import { PERMISSIONS, PERMISSION_GROUPS, BACKEND_ACTIONS, RESOURCE_LABELS } from "@/config/permissions";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAllErpModules } from "@/features/organization/hooks/useAllErpModules";
@@ -30,7 +30,7 @@ export default function RoleFormPage() {
   const [permissions, setPermissions] = useState<Set<string>>(new Set());
 
   // Active Tab State
-  const [activeTab, setActiveTab] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("crm");
 
   useEffect(() => {
     if (role && !isNew) {
@@ -44,13 +44,6 @@ export default function RoleFormPage() {
       setPermissions(permSet);
     }
   }, [role, isNew]);
-
-  // Set initial active tab when modules load
-  useEffect(() => {
-    if (modules.length > 0 && !activeTab) {
-      setActiveTab(modules[0].code);
-    }
-  }, [modules, activeTab]);
 
   const togglePermission = (permCode: string) => {
     setPermissions(prev => {
@@ -204,23 +197,19 @@ export default function RoleFormPage() {
                   
                   {/* Tabs Header */}
                   <div className="flex border-b border-[#e0e0e0] overflow-x-auto no-scrollbar">
-                    {modulesLoading ? (
-                      <div className="text-[14px] text-[#898989] py-2">Loading modules...</div>
-                    ) : (
-                      modules.map((module) => (
-                        <button
-                          key={module.code}
-                          onClick={() => setActiveTab(module.code)}
-                          className={`px-4 py-2 text-[14px] font-semibold whitespace-nowrap transition-colors border-b-2 -mb-[1px] ${
-                            activeTab === module.code
-                              ? "text-[#0066cc] border-[#0066cc]"
-                              : "text-[#898989] border-transparent hover:text-[#242424]"
-                          }`}
-                        >
-                          {module.name}
-                        </button>
-                      ))
-                    )}
+                    {PERMISSION_GROUPS.map((group) => (
+                      <button
+                        key={group.id}
+                        onClick={() => setActiveTab(group.id)}
+                        className={`px-4 py-2 text-[14px] font-semibold whitespace-nowrap transition-colors border-b-2 -mb-[1px] ${
+                          activeTab === group.id
+                            ? "text-[#0066cc] border-[#0066cc]"
+                            : "text-[#898989] border-transparent hover:text-[#242424]"
+                        }`}
+                      >
+                        {group.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -229,70 +218,54 @@ export default function RoleFormPage() {
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead>
                       <tr className="bg-[#f8f8f8] border-b border-[#e0e0e0]">
-                        <th className="py-3 px-6 text-[13px] font-semibold text-[#242424] w-[250px] capitalize">Resource / Feature</th>
-                        {/* Dynamically render action columns based on the current active module's permissions */}
-                        {(() => {
-                          const activeModuleData = modules.find(m => m.code === activeTab);
-                          if (!activeModuleData || !activeModuleData.permissions) return null;
-                          
-                          // Extract unique actions across all permissions in this module
-                          const actions = Array.from(new Set(activeModuleData.permissions.map(p => {
-                            const parts = p.code.split(':');
-                            return parts.length > 1 ? parts[1] : 'access';
-                          }))).sort();
-
-                          return actions.map(action => (
-                            <th key={action} className="py-3 px-4 text-[13px] font-semibold text-[#242424] text-center w-[120px] capitalize">
-                              {action}
-                            </th>
-                          ));
-                        })()}
+                        <th className="py-3 px-6 text-[13px] font-semibold text-[#242424] w-[250px]">Phân hệ / Quyền hạn</th>
+                        {BACKEND_ACTIONS.map((action) => (
+                          <th key={action.key} className="py-3 px-4 text-[13px] font-semibold text-[#242424] text-center w-[120px]">
+                            {action.label}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {(() => {
-                        const activeModuleData = modules.find(m => m.code === activeTab);
-                        if (!activeModuleData || !activeModuleData.permissions || activeModuleData.permissions.length === 0) {
+                        if (modulesLoading) {
                           return (
                             <tr>
-                              <td colSpan={10} className="py-8 text-center text-[#898989] text-[13px]">
-                                No granular permissions found for this module.
+                              <td colSpan={6} className="py-8 text-center text-[#898989] text-[13px]">
+                                Loading permissions...
                               </td>
                             </tr>
                           );
                         }
-
-                        // Group permissions by resource (the part before ':')
-                        const resourceMap = new Map<string, typeof activeModuleData.permissions>();
-                        activeModuleData.permissions.forEach(p => {
-                          const parts = p.code.split(':');
-                          const resource = parts[0];
-                          if (!resourceMap.has(resource)) {
-                            resourceMap.set(resource, []);
-                          }
-                          resourceMap.get(resource)!.push(p);
-                        });
-
-                        // Get all unique actions for columns
-                        const allActions = Array.from(new Set(activeModuleData.permissions.map(p => {
-                          const parts = p.code.split(':');
-                          return parts.length > 1 ? parts[1] : 'access';
-                        }))).sort();
-
-                        return Array.from(resourceMap.entries()).map(([resource, perms], idx) => (
+ 
+                        const activeGroup = PERMISSION_GROUPS.find(g => g.id === activeTab) || PERMISSION_GROUPS[0];
+                        const groupModules = activeGroup.resources
+                          .map(code => modules.find(m => m.code === code))
+                          .filter((m): m is Exclude<typeof m, undefined> => m !== undefined);
+ 
+                        if (groupModules.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-[#898989] text-[13px]">
+                                Không có dữ liệu quyền hạn cho phân hệ này.
+                              </td>
+                            </tr>
+                          );
+                        }
+ 
+                        return groupModules.map((module, idx) => (
                           <tr 
-                            key={resource} 
+                            key={module.code} 
                             className={`border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f0f4ff] transition-colors ${idx % 2 === 1 ? 'bg-[#fafafa]' : 'bg-white'}`}
                           >
-                            <td className="py-3 px-6 text-[13px] text-[#242424] font-medium border-r border-[#e0e0e0]/50 capitalize">
-                              {resource.replace(/_/g, ' ')}
+                            <td className="py-3 px-6 text-[13px] text-[#242424] font-medium border-r border-[#e0e0e0]/50">
+                              {RESOURCE_LABELS[module.code] || module.name}
                             </td>
-                            {allActions.map(action => {
-                              // Find if this specific permission (resource:action) exists
-                              const specificPerm = perms.find(p => p.code === `${resource}:${action}`);
+                            {BACKEND_ACTIONS.map(action => {
+                              const specificPerm = module.permissions?.find(p => p.code === `${module.code}:${action.key}`);
                               
                               return (
-                                <td key={action} className="py-3 px-4 text-center border-r border-[#e0e0e0]/50 last:border-r-0">
+                                <td key={action.key} className="py-3 px-4 text-center border-r border-[#e0e0e0]/50 last:border-r-0">
                                   {specificPerm ? (
                                     <input 
                                       type="checkbox" 

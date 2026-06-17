@@ -23,6 +23,8 @@ import com.dut.erp.enums.DocumentType;
 import com.dut.erp.enums.OrderStatus;
 import com.dut.erp.enums.ReferenceType;
 import com.dut.erp.enums.ReplenishmentStatus;
+import com.dut.erp.enums.LeadStage;
+import com.dut.erp.dto.event.OrderStatusChangedEvent;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.repository.InventoryBalanceRepository;
@@ -334,11 +336,15 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         .map(doc -> {
             String partnerName = null;
             String deliveryAddress = null;
+            String orderNumber = null;
             if (doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
                Order order = orderRepository.findById(doc.getReferenceId()).orElse(null);
-               if (order != null && order.getPartner() != null) {
-                   partnerName = order.getPartner().getName();
-                   deliveryAddress = order.getPartner().getAddress();
+               if (order != null) {
+                   orderNumber = order.getOrderNumber();
+                   if (order.getPartner() != null) {
+                       partnerName = order.getPartner().getName();
+                       deliveryAddress = order.getPartner().getAddress();
+                   }
                }
             }
 
@@ -352,6 +358,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
             doc.getDocumentType(),
             doc.getReferenceType(),
             doc.getReferenceId(),
+            orderNumber,
             partnerName,
             deliveryAddress,
             doc.getDocumentStatus(),
@@ -468,6 +475,12 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         savedDoc.getDocumentType() == DocumentType.TRANSFER_IN || 
         (savedDoc.getDocumentType() == DocumentType.ADJUSTMENT && hasPositiveAdjustment)) {
       reevaluateWaitingDocuments(savedDoc.getWarehouse().getId());
+    }
+
+    if (savedDoc.getDocumentType() == DocumentType.ISSUE 
+        && savedDoc.getReferenceType() == ReferenceType.SALES_ORDER 
+        && savedDoc.getReferenceId() != null) {
+      checkAndCompleteOrder(savedDoc.getReferenceId());
     }
 
     return mapToResponse(savedDoc);
@@ -775,11 +788,15 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
     String partnerName = null;
     String deliveryAddress = null;
+    String orderNumber = null;
     if (doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
         Order order = orderRepository.findById(doc.getReferenceId()).orElse(null);
-        if (order != null && order.getPartner() != null) {
-            partnerName = order.getPartner().getName();
-            deliveryAddress = order.getPartner().getAddress();
+        if (order != null) {
+            orderNumber = order.getOrderNumber();
+            if (order.getPartner() != null) {
+                partnerName = order.getPartner().getName();
+                deliveryAddress = order.getPartner().getAddress();
+            }
         }
     }
 
@@ -793,6 +810,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         doc.getDocumentType(),
         doc.getReferenceType(),
         doc.getReferenceId(),
+        orderNumber,
         partnerName,
         deliveryAddress,
         doc.getDocumentStatus(),
@@ -806,5 +824,36 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         updatedByResp,
         hasActiveReplenishment
     );
+  }
+
+  private void checkAndCompleteOrder(UUID orderId) {
+    Order order = orderRepository.findById(orderId).orElse(null);
+    if (order == null) return;
+
+    // 1. Check if the linked invoice is paid
+    boolean isInvoicePaid = invoiceRepository.findByOrderIdAndOrganizationId(order.getId(), order.getOrganization().getId())
+        .map(inv -> inv.getStatus() == InvoiceStatus.PAID)
+        .orElse(false);
+
+    // 2. Check if the active warehouse issue document is completed
+    boolean isDeliveryCompleted = inventoryDocumentRepository
+        .findByReferenceTypeAndReferenceIdAndDocumentType(
+            ReferenceType.SALES_ORDER, order.getId(), DocumentType.ISSUE)
+        .map(doc -> doc.getDocumentStatus() == DocumentStatus.COMPLETED)
+        .orElse(false);
+
+    // 3. If both are completed/paid -> Close the order
+    if (isInvoicePaid && isDeliveryCompleted) {
+      OrderStatus oldStatus = order.getStatus();
+      if (oldStatus != OrderStatus.COMPLETED) {
+        order.setStatus(OrderStatus.COMPLETED);
+        if (order.getLead() != null && order.getLead().getStage() != LeadStage.WON) {
+          order.getLead().setStage(LeadStage.WON);
+        }
+        orderRepository.save(order);
+        log.info("Automatically completed order {} because both delivery and payment are completed.", order.getOrderNumber());
+        applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.COMPLETED));
+      }
+    }
   }
 }

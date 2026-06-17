@@ -103,6 +103,7 @@ export interface InventoryDocument {
   documentType: DocumentType;
   referenceType: ReferenceType;
   referenceId?: string;
+  orderNumber?: string;
   partnerName?: string;
   deliveryAddress?: string;
   documentStatus: DocumentStatus;
@@ -139,6 +140,8 @@ export interface ReplenishmentRequest {
   notes?: string;
   status: 'OPEN' | 'RESOLVED';
   createdAt: string;
+  orderNumber?: string;
+  referenceId?: string;
 }
 
 export interface RouteProposalResponse {

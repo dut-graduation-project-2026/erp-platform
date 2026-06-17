@@ -46,6 +46,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   initializeSSE: () => {
+    // Commented out to disable active SSE notification stream connection
+    /*
     const { eventSource } = get();
     if (eventSource) return;
 
@@ -69,6 +71,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     };
 
     set({ eventSource: es });
+    */
   },
 
   cleanupSSE: () => {

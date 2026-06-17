@@ -17,6 +17,8 @@ import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.repository.ReplenishmentRequestRepository;
 import com.dut.erp.repository.WarehouseRepository;
+import com.dut.erp.repository.OrderRepository;
+import com.dut.erp.entity.Order;
 import com.dut.erp.service.ReplenishmentRequestService;
 import com.dut.erp.dto.event.ReplenishmentRequestStatusChangedEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -44,6 +46,7 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
   private final WarehouseRepository warehouseRepository;
   private final InventoryDocumentRepository inventoryDocumentRepository;
   private final ReplenishmentRequestRepository replenishmentRequestRepository;
+  private final OrderRepository orderRepository;
   private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
@@ -80,7 +83,7 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
 
   @Override
   public PagedEntityResponse<ReplenishmentRequestResponse> getReplenishmentRequests(
-      UUID organizationId, UUID warehouseId, PaginationRequest paginationRequest) {
+      UUID organizationId, UUID warehouseId, String search, PaginationRequest paginationRequest) {
     log.info("Fetching replenishment requests for warehouse {}", warehouseId);
 
     Pageable pageable = PageRequest.of(
@@ -89,7 +92,9 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
         SortingConstants.customEntitiesSort(SortField.desc("createdAt"))
     );
 
-    Page<UUID> ids = replenishmentRequestRepository.findIdsByWarehouseId(warehouseId, pageable);
+    Page<UUID> ids = (search != null && !search.trim().isEmpty())
+        ? replenishmentRequestRepository.findIdsByWarehouseIdAndSearch(warehouseId, search, pageable)
+        : replenishmentRequestRepository.findIdsByWarehouseId(warehouseId, pageable);
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));
@@ -113,6 +118,18 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
         ? new UserBaseResponse(req.getCreatedBy().getId(), req.getCreatedBy().getEmail(), req.getCreatedBy().getFirstName(), req.getCreatedBy().getLastName())
         : null;
 
+    String orderNumber = null;
+    if (req.getInventoryDocument() != null 
+        && req.getInventoryDocument().getReferenceType() == com.dut.erp.enums.ReferenceType.SALES_ORDER 
+        && req.getInventoryDocument().getReferenceId() != null) {
+        Order order = orderRepository.findById(req.getInventoryDocument().getReferenceId()).orElse(null);
+        if (order != null) {
+            orderNumber = order.getOrderNumber();
+        }
+    }
+
+    UUID referenceId = req.getInventoryDocument() != null ? req.getInventoryDocument().getReferenceId() : null;
+
     return new ReplenishmentRequestResponse(
         req.getId(),
         req.getWarehouse().getId(),
@@ -122,7 +139,9 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
         req.getNotes(),
         req.getStatus().name(),
         req.getCreatedAt(),
-        createdByResp
+        createdByResp,
+        orderNumber,
+        referenceId
     );
   }
 }

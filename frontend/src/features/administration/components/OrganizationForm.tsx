@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { AddressInput } from '@/components/ui/address-input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Upload } from 'lucide-react';
 import type { Organization, OrganizationFormData } from '../types';
@@ -43,17 +43,17 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
     const newErrors: Partial<OrganizationFormData> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Tên tổ chức là bắt buộc';
+      newErrors.name = 'Organization name is required';
     }
 
     if (!formData.code.trim()) {
-      newErrors.code = 'Mã code là bắt buộc';
+      newErrors.code = 'Organization code is required';
     } else if (!/^[A-Z0-9]+$/.test(formData.code)) {
-      newErrors.code = 'Mã code chỉ chứa chữ hoa và số';
+      newErrors.code = 'Organization code must contain only uppercase letters and numbers';
     }
 
     if (formData.contactEmail && !/\S+@\S+\.\S+/.test(formData.contactEmail)) {
-      newErrors.contactEmail = 'Email không hợp lệ';
+      newErrors.contactEmail = 'Invalid email address';
     }
 
     setErrors(newErrors);
@@ -79,7 +79,7 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-charcoal">
-            {organization ? 'Chỉnh sửa Tổ chức' : 'Thêm Tổ chức Mới'}
+            {organization ? 'Edit Organization' : 'Add New Organization'}
           </DialogTitle>
         </DialogHeader>
 
@@ -87,13 +87,13 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-semibold text-charcoal">
-                Tên Tổ chức *
+                Organization Name *
               </Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Nhập tên tổ chức"
+                placeholder="Enter organization name"
                 className={errors.name ? 'border-error-red' : ''}
               />
               {errors.name && (
@@ -103,7 +103,7 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="code" className="text-sm font-semibold text-charcoal">
-                Mã Code *
+                Organization Code *
               </Label>
               <Input
                 id="code"
@@ -138,7 +138,7 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="contactEmail" className="text-sm font-semibold text-charcoal">
-                Email Liên hệ
+                Contact Email
               </Label>
               <Input
                 id="contactEmail"
@@ -155,7 +155,7 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="contactPhone" className="text-sm font-semibold text-charcoal">
-                Số Điện thoại
+                Contact Phone
               </Label>
               <Input
                 id="contactPhone"
@@ -168,14 +168,13 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="address" className="text-sm font-semibold text-charcoal">
-              Địa chỉ
+              Address
             </Label>
-            <Textarea
+            <AddressInput
               id="address"
-              value={formData.address}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('address', e.target.value)}
-              placeholder="Nhập địa chỉ tổ chức"
-              rows={3}
+              value={formData.address || ''}
+              onChange={(value) => handleInputChange('address', value)}
+              placeholder="Enter organization address..."
             />
           </div>
 
@@ -186,14 +185,14 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
               onClick={onClose}
               disabled={loading}
             >
-              Hủy
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
               className="bg-primary-blue hover:bg-dark-blue text-white"
             >
-              {loading ? 'Đang lưu...' : organization ? 'Cập nhật' : 'Thêm mới'}
+              {loading ? 'Saving...' : organization ? 'Update' : 'Add New'}
             </Button>
           </DialogFooter>
         </form>

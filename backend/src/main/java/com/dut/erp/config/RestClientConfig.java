@@ -21,4 +21,12 @@ public class RestClientConfig {
         .defaultHeader("Accept", "application/json")
         .build();
   }
+
+  @Bean(name = "geoapifyRestClient")
+  public RestClient geoapifyRestClient() {
+    return RestClient.builder()
+        .baseUrl("https://api.geoapify.com")
+        .defaultHeader("Accept", "application/json")
+        .build();
+  }
 }

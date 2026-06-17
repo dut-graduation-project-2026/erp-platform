@@ -301,7 +301,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
               <XCircle className="w-4 h-4 mr-2" />Cancel
             </Button>
           )}
-          {canWrite && order?.id && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && (
+          {canWrite && order?.id && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && !order?.invoiceId && (
             <Button className="bg-[#28a745] hover:bg-[#218838] text-white h-10 px-4 rounded-[4px]" onClick={handleCreateInvoice}>
               <Receipt className="w-4 h-4 mr-2" />Create Invoice
             </Button>
@@ -647,7 +647,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
               <XCircle className="w-4 h-4 mr-1.5" /> Cancel
             </Button>
           )}
-          {canWrite && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && (
+          {canWrite && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && !order.invoiceId && (
             <Button 
               className="bg-[#28a745] hover:bg-[#218838] text-white h-8 px-3 text-[13px] rounded-[4px] flex items-center" 
               onClick={handleCreateInvoice}
@@ -782,6 +782,25 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
                     <span className="text-[#0369a1] font-[600]">
                       {order.warehouseName}
                     </span>
+                  </div>
+                )}
+
+                {order.invoiceId && (
+                  <div className="flex text-[14px] items-center bg-[#f0fdf4] px-3 py-1.5 rounded-[4px] border border-[#bbf7d0] mt-2">
+                    <span className="w-32 shrink-0 text-[#166534] font-[600] flex items-center">
+                      <Receipt className="w-4 h-4 mr-1.5 text-[#15803d]" /> Invoice
+                    </span>
+                    <Link 
+                      href={`/dashboard/${orgId}/sales/invoices/${order.invoiceId}`}
+                      className="text-[#15803d] font-[600] underline hover:text-[#166534]"
+                    >
+                      {order.invoiceNumber || 'View Invoice'}
+                    </Link>
+                    {order.invoiceStatus && (
+                      <span className="ml-2 bg-[#dcfce7] text-[#15803d] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-[#bbf7d0]">
+                        {order.invoiceStatus}
+                      </span>
+                    )}
                   </div>
                 )}
 

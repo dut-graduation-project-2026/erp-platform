@@ -12,5 +12,5 @@ public interface ReplenishmentRequestService {
       UUID organizationId, UUID warehouseId, CreateReplenishmentRequest request);
 
   PagedEntityResponse<ReplenishmentRequestResponse> getReplenishmentRequests(
-      UUID organizationId, UUID warehouseId, PaginationRequest paginationRequest);
+      UUID organizationId, UUID warehouseId, String search, PaginationRequest paginationRequest);
 }

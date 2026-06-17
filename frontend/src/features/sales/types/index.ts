@@ -40,7 +40,7 @@ export interface Product {
   id: string;
   name: string;
   code: string;   // backend field
-  sku?: string;   // alias kept for legacy UI
+  sku: string;   // alias kept for legacy UI
   description: string;
   price: number;  // frontend alias; backend sends `salePrice`
   salePrice?: number;
@@ -49,6 +49,7 @@ export interface Product {
   isArchived?: boolean;
   categoryId?: string;
   category?: ProductCategory;
+  image?: string;
 }
 
 // ─── Tax ──────────────────────────────────────────────────────────────────
@@ -139,6 +140,9 @@ export interface SaleOrder {
   netAmount?: number;
   warehouseId?: string;
   warehouseName?: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoiceStatus?: InvoiceStatus;
 }
 
 // ─── Invoice (Tích hợp thực tế backend) ───────────────────────────

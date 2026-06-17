@@ -25,8 +25,10 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
 
   @Query("""
       SELECT d.id FROM InventoryDocument d
+      LEFT JOIN Order o ON d.referenceType = com.dut.erp.enums.ReferenceType.SALES_ORDER AND d.referenceId = o.id
       WHERE d.warehouse.id = :warehouseId
-        AND LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%'))
+        AND (LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%'))
+             OR (d.referenceType = com.dut.erp.enums.ReferenceType.SALES_ORDER AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))))
       """)
   Page<UUID> findIdsByWarehouseIdAndSearch(
       @Param("warehouseId") UUID warehouseId, @Param("search") String search, Pageable pageable);

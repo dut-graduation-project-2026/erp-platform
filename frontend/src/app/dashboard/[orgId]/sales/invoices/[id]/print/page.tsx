@@ -8,6 +8,8 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import Image from 'next/image';
+import dutIcon from '@/app/icon_dut.ico';
 
 export default function InvoicePrintPage({ params }: { params: Promise<{ orgId: string, id: string }> }) {
   const router = useRouter();
@@ -121,8 +123,8 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ orgId: 
         {/* Header Section */}
         <div className="flex justify-between items-start border-b-2 border-[#0066cc] pb-6 mb-6">
           <div className="flex items-center space-x-4">
-            <div className="w-[80px] h-[80px] bg-[#f0f4ff] border border-[#d0d0d0] flex items-center justify-center text-[#0066cc] font-bold text-[24px]">
-              ERP
+            <div className="w-[80px] h-[80px] bg-white border border-[#d0d0d0] flex items-center justify-center relative overflow-hidden">
+              <Image src={dutIcon} alt="DUT Logo" width={80} height={80} className="object-contain" priority />
             </div>
             <div>
               <h1 className="text-[20px] font-bold text-[#0066cc] uppercase tracking-wide">

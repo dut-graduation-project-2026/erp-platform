@@ -8,7 +8,9 @@ import java.util.UUID;
 public record ProductBaseResponse(
     UUID id,
     String name,
+    String sku,
     BigDecimal price,
     boolean isArchived,
-    ProductCategoryBaseResponse category
+    ProductCategoryBaseResponse category,
+    String image
 ) {}

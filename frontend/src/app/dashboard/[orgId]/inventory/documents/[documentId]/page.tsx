@@ -247,7 +247,7 @@ export default function DocumentDetailsPage({
             <h2 className="text-[16px] font-[700] text-[#242424] font-mono">{doc.name}</h2>
           </div>
           <span className={cn(
-            "text-[11px] font-[700] px-2.5 py-0.5 rounded-[12px] uppercase ml-3",
+            "text-[11px] font-[700] px-2.5 py-0.5 rounded-[4px] min-w-[110px] text-center uppercase ml-3",
             doc.documentStatus === 'DRAFT' && "bg-[#e2e8f0] text-[#475569]",
             doc.documentStatus === 'CONFIRMED' && "bg-[#e8f4fd] text-[#0066cc]",
             doc.documentStatus === 'COMPLETED' && "bg-[#e2f0d9] text-[#385723]",

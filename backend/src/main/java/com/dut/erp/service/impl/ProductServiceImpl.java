@@ -96,13 +96,19 @@ public class ProductServiceImpl implements ProductService {
     ProductCategory category = productCategoryRepository.findByIdAndOrganizationId(request.categoryId(), organizationId)
         .orElseThrow(() -> new ResourceNotFoundException("Product category not found with id: " + request.categoryId()));
 
+    if (productRepository.existsByOrganizationIdAndSkuIgnoreCase(organizationId, request.sku().trim())) {
+      throw new com.dut.erp.exception.BadRequestException("SKU '" + request.sku() + "' is already in use in this organization.");
+    }
+
     Product product =
         Product.builder()
             .organization(organization)
             .category(category)
             .name(request.name())
+            .sku(request.sku().trim().toUpperCase())
             .price(request.price())
             .description(request.description())
+            .image(request.image())
             .build();
 
     product = productRepository.save(product);
@@ -134,10 +140,16 @@ public class ProductServiceImpl implements ProductService {
     ProductCategory category = productCategoryRepository.findByIdAndOrganizationId(request.categoryId(), organizationId)
         .orElseThrow(() -> new ResourceNotFoundException("Product category not found with id: " + request.categoryId()));
 
+    if (productRepository.existsByOrganizationIdAndSkuIgnoreCaseAndIdNot(organizationId, request.sku().trim(), productId)) {
+      throw new com.dut.erp.exception.BadRequestException("SKU '" + request.sku() + "' is already in use by another product in this organization.");
+    }
+
     product.setName(request.name());
+    product.setSku(request.sku().trim().toUpperCase());
     product.setPrice(request.price());
     product.setDescription(request.description());
     product.setCategory(category);
+    product.setImage(request.image());
 
     product = productRepository.save(product);
     log.info("Updated product {} in organization {}", productId, organizationId);

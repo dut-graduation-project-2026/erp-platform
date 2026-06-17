@@ -203,7 +203,7 @@ export default function ReceiptsPage() {
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <span className={cn(
-                          "inline-block px-2.5 py-0.5 rounded-[12px] text-[11px] font-[600] uppercase",
+                          "inline-block px-2.5 py-0.5 rounded-[4px] min-w-[110px] text-center text-[11px] font-[600] uppercase",
                           doc.documentStatus === DOCUMENT_STATUS.DRAFT && "bg-[#e2e8f0] text-[#475569]",
                           doc.documentStatus === DOCUMENT_STATUS.CONFIRMED && "bg-[#e8f4fd] text-[#0066cc]",
                           doc.documentStatus === DOCUMENT_STATUS.COMPLETED && "bg-[#e2f0d9] text-[#385723]",

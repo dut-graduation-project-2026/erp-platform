@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CrmLead, CreateCrmLeadRequest } from '../types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AddressInput } from '@/components/ui/address-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Clock, MessageSquare, Mail, Phone, Building, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -321,9 +322,9 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
 
               <div>
                 <label className="block text-[14px] font-[600] text-[#242424] mb-1">Address</label>
-                <Input 
+                <AddressInput 
                   value={formData.address || ''}
-                  onChange={e => setFormData({...formData, address: e.target.value})}
+                  onChange={val => setFormData({...formData, address: val})}
                   className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
                 />
               </div>
@@ -468,9 +469,9 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
 
               <div>
                 <label className="block text-[13px] font-[600] text-[#242424] mb-1">Address</label>
-                <Input
+                <AddressInput
                   value={newCustomer.address}
-                  onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                  onChange={val => setNewCustomer({ ...newCustomer, address: val })}
                   placeholder="e.g. 123 Main St"
                   className="h-9"
                 />
