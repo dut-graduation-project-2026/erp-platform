@@ -15,6 +15,9 @@ public class RestClientConfig {
   @Bean(name = "aiServiceRestClient")
   public RestClient aiServiceRestClient() {
     String aiBaseUrl = systemDomainProperties.ai();
+    if (aiBaseUrl != null && !aiBaseUrl.startsWith("http://") && !aiBaseUrl.startsWith("https://")) {
+      aiBaseUrl = "https://" + aiBaseUrl;
+    }
     return RestClient.builder()
         .baseUrl(aiBaseUrl)
         .defaultHeader("Content-Type", "application/json")
