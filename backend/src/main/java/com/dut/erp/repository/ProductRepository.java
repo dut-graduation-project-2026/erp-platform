@@ -72,4 +72,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
       WHERE p.organization.id = :organizationId
       """)
   List<Product> findAllByOrganizationId(@Param("organizationId") UUID organizationId);
+
+  boolean existsByOrganizationIdAndSkuIgnoreCase(UUID organizationId, String sku);
+
+  boolean existsByOrganizationIdAndSkuIgnoreCaseAndIdNot(UUID organizationId, String sku, UUID id);
 }

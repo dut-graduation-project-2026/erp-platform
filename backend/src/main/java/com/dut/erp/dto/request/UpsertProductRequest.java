@@ -12,6 +12,9 @@ public record UpsertProductRequest(
     @NotBlank(message = "Name cannot be blank")
         @Size(max = 255, message = "Name cannot exceed 255 characters")
         String name,
+    @NotBlank(message = "SKU cannot be blank")
+        @Size(max = 100, message = "SKU cannot exceed 100 characters")
+        String sku,
     String description,
     @NotNull(message = "Price cannot be null")
         @DecimalMin(value = "0.00", message = "Price must be greater than or equal to 0.00")
@@ -23,4 +26,5 @@ public record UpsertProductRequest(
                     + " places")
         BigDecimal price,
     @NotNull(message = "Product category ID is required")
-        UUID categoryId) {}
+        UUID categoryId,
+    String image) {}

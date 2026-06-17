@@ -56,7 +56,10 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
 
   const handleOpenModal = (product?: Product) => {
     if (product) {
-      setSelectedProduct(product);
+      setSelectedProduct({
+        ...product,
+        categoryId: product.categoryId || product.category?.id || ''
+      });
     } else {
       setSelectedProduct({ name: '', sku: '', description: '', price: 0, isActive: true, categoryId: categories[0]?.id || '' });
     }
@@ -146,8 +149,12 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                 onClick={() => handleOpenModal(product)}
                 className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_rgba(0,0,0,0.15)] hover:border-[#0066cc] transition-all cursor-pointer overflow-hidden flex flex-col"
               >
-                 <div className="h-[120px] bg-[#f0f4ff] flex items-center justify-center border-b border-[#e0e0e0]">
-                    <span className="text-[48px] opacity-20">📦</span>
+                 <div className="h-[120px] bg-[#f0f4ff] flex items-center justify-center border-b border-[#e0e0e0] overflow-hidden">
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[48px] opacity-20">📦</span>
+                    )}
                  </div>
                  <div className="p-4 flex-1 flex flex-col">
                     <h3 className="text-[14px] font-[600] text-[#242424] mb-1 leading-tight line-clamp-2">{product.name}</h3>
@@ -214,6 +221,64 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                  </div>
                </div>
                
+               <div>
+                 <label className="block text-[14px] font-[600] text-[#242424] mb-1">Product Image</label>
+                 <div className="flex items-center space-x-4 mb-2">
+                   <div className="w-16 h-16 bg-[#f0f4ff] rounded-[4px] border border-[#e0e0e0] flex items-center justify-center overflow-hidden shrink-0">
+                     {selectedProduct.image ? (
+                       <img src={selectedProduct.image} alt="Preview" className="w-full h-full object-cover" />
+                     ) : (
+                       <span className="text-[24px] opacity-20">📦</span>
+                     )}
+                   </div>
+                   <div className="flex-1 flex items-center">
+                     <input 
+                       type="file" 
+                       accept="image/*"
+                       id="product-image-file"
+                       className="hidden" 
+                       onChange={async (e) => {
+                         const file = e.target.files?.[0];
+                         if (!file) return;
+                         
+                         const formData = new FormData();
+                         formData.append('file', file);
+                         
+                         try {
+                           const res = await apiClient.post<{ url: string }>(
+                             `${API_ENDPOINTS.SALES.PRODUCTS(orgId)}/upload`, 
+                             formData, 
+                             { headers: { 'Content-Type': 'multipart/form-data' } }
+                           );
+                           if (res.data?.url) {
+                             setSelectedProduct({ ...selectedProduct, image: res.data.url });
+                           }
+                         } catch (err) {
+                           console.error("Image upload failed", err);
+                           alert("Failed to upload image. Please try again.");
+                         }
+                       }}
+                     />
+                     <label 
+                       htmlFor="product-image-file"
+                       className="inline-flex items-center justify-center px-4 h-10 border border-[#d0d0d0] rounded-[4px] bg-white text-[13px] font-[600] text-[#242424] hover:bg-gray-50 cursor-pointer transition-colors"
+                     >
+                       Choose Image File
+                     </label>
+                     {selectedProduct.image && (
+                       <Button 
+                         type="button"
+                         variant="ghost" 
+                         onClick={() => setSelectedProduct({ ...selectedProduct, image: '' })}
+                         className="ml-2 h-10 text-red-500 hover:text-red-700 hover:bg-red-50 px-3 text-[13px] font-[600]"
+                       >
+                         Remove
+                       </Button>
+                     )}
+                   </div>
+                 </div>
+               </div>
+
                <div>
                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Description</label>
                  <Textarea 

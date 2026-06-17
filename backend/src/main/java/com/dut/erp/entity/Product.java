@@ -45,6 +45,9 @@ public class Product {
   @Column(name = "name", nullable = false, length = 255)
   String name;
 
+  @Column(name = "sku", nullable = false, length = 100)
+  String sku;
+
   @Column(name = "price", nullable = false, precision = 15, scale = 2)
   BigDecimal price;
 
@@ -67,6 +70,9 @@ public class Product {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "category_id", nullable = false)
   ProductCategory category;
+
+  @Column(name = "image", length = 512)
+  String image;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)

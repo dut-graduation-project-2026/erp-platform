@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 054-add-product-image
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: image
+                  type: VARCHAR(512)
