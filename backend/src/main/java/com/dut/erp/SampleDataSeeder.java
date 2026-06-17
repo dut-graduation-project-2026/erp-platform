@@ -59,8 +59,8 @@ public class SampleDataSeeder implements CommandLineRunner {
   private static final String ADMIN_EMAIL = "admin@erp.local";
   private static final String ADMIN_PASSWORD = "Admin@123";
 
-  private static final String ORG_NAME = "Default Organization";
-  private static final String ORG_TAX_CODE = "SEED-TAX-0001";
+  private static final String ORG_NAME = "SmartERP Da Nang Co., Ltd.";
+  private static final String ORG_TAX_CODE = "0401234567";
 
   private final OrganizationRepository organizationRepository;
   private final ErpModuleRepository erpModuleRepository;
@@ -127,7 +127,7 @@ public class SampleDataSeeder implements CommandLineRunner {
         organizationsByTaxCode,
         ORG_NAME,
         "Default seeded organization for initial setup",
-        "1 Default Street",
+        "36 Bach Dang, Hai Chau I Ward, Hai Chau District, Da Nang, Vietnam",
         "19001001",
         ORG_TAX_CODE);
 
@@ -176,6 +176,7 @@ public class SampleDataSeeder implements CommandLineRunner {
             () -> productRepository.save(
                 Product.builder()
                     .name("Seeded Product")
+                    .sku("PROD-SEED-0001")
                     .price(BigDecimal.valueOf(150.00))
                     .description("High quality seeded product for testing")
                     .organization(organization)
@@ -359,8 +360,8 @@ public class SampleDataSeeder implements CommandLineRunner {
 
     // 6. Warehouses
     List<Warehouse> warehouses = seedWarehouses(org, keeperMgr, keeperStaff);
-    Warehouse chicagoWh = warehouses.stream()
-        .filter(w -> "WH-CHI".equals(w.getCode()))
+    Warehouse centralWh = warehouses.stream()
+        .filter(w -> "WH-DAD-CENTRAL".equals(w.getCode()))
         .findFirst()
         .orElse(warehouses.get(0));
 
@@ -368,7 +369,7 @@ public class SampleDataSeeder implements CommandLineRunner {
     seedInboundInventory(org, warehouses, products);
 
     // 8. Orders, Issues, Stock Valuations, Invoices
-    seedOrdersAndInvoices(org, partners, products, leads, salesAgents, chicagoWh, vat10, vat5);
+    seedOrdersAndInvoices(org, partners, products, leads, salesAgents, centralWh, vat10, vat5);
 
     // 9. Replenishment Requests
     seedReplenishmentRequests(warehouses);
@@ -413,88 +414,102 @@ public class SampleDataSeeder implements CommandLineRunner {
             "XPS Developer Laptop",
             "2200.00",
             "Powerful workstation for developers",
-            com.dut.erp.enums.CogsMethod.FIFO
+            com.dut.erp.enums.CogsMethod.FIFO,
+            "XPS-DEV-LAPTOP"
         },
         {
-            "MacBook Pro M3 Max", "3500.00", "Premium Apple notebook", com.dut.erp.enums.CogsMethod.FIFO
+            "MacBook Pro M3 Max", "3500.00", "Premium Apple notebook", com.dut.erp.enums.CogsMethod.FIFO, "MBP-M3-MAX"
         },
         {
             "ThinkPad X1 Carbon",
             "1800.00",
             "Business ultra-portable laptop",
-            com.dut.erp.enums.CogsMethod.FIFO
+            com.dut.erp.enums.CogsMethod.FIFO,
+            "TP-X1-CARBON"
         },
         {
             "4K Curved Monitor 34\"",
             "650.00",
             "Ultrawide high resolution monitor",
-            com.dut.erp.enums.CogsMethod.AVERAGE
+            com.dut.erp.enums.CogsMethod.AVERAGE,
+            "MON-4K-34"
         },
         {
             "Ergonomic Office Chair Premium",
             "450.00",
             "Ergonomic chair with mesh backing",
-            com.dut.erp.enums.CogsMethod.AVERAGE
+            com.dut.erp.enums.CogsMethod.AVERAGE,
+            "CHR-ERG-PREM"
         },
         {
             "Mechanical Keyboard RGB",
             "180.00",
             "Premium mechanical gaming keyboard",
-            com.dut.erp.enums.CogsMethod.LIFO
+            com.dut.erp.enums.CogsMethod.LIFO,
+            "KBD-MECH-RGB"
         },
         {
             "Precision Wireless Mouse",
             "90.00",
             "Ergonomic productivity mouse",
-            com.dut.erp.enums.CogsMethod.AVERAGE
+            com.dut.erp.enums.CogsMethod.AVERAGE,
+            "MSE-PRC-WL"
         },
         {
             "USB-C Dual Docking Station",
             "200.00",
             "Docking station with dual monitor output",
-            com.dut.erp.enums.CogsMethod.FIFO
+            com.dut.erp.enums.CogsMethod.FIFO,
+            "DK-USBC-DUAL"
         },
         {
             "Active Noise Cancelling Headset",
             "250.00",
             "Wireless headphones with ANC",
-            com.dut.erp.enums.CogsMethod.FIFO
+            com.dut.erp.enums.CogsMethod.FIFO,
+            "HD-ANC-WL"
         },
         {
             "HD Web Camera 1080p",
             "120.00",
             "High definition camera for meetings",
-            com.dut.erp.enums.CogsMethod.AVERAGE
+            com.dut.erp.enums.CogsMethod.AVERAGE,
+            "CAM-HD-1080P"
         },
         {
             "Smart LED Desk Lamp",
             "80.00",
             "Dimmable desk lamp with wireless charger",
-            com.dut.erp.enums.CogsMethod.LIFO
+            com.dut.erp.enums.CogsMethod.LIFO,
+            "LMP-LED-SMART"
         },
         {
             "External SSD 2TB Rugged",
             "160.00",
             "High speed water-resistant drive",
-            com.dut.erp.enums.CogsMethod.FIFO
+            com.dut.erp.enums.CogsMethod.FIFO,
+            "SSD-2TB-RUG"
         },
         {
             "Smart Stand Desk Frame",
             "400.00",
             "Dual-motor motorized standing desk frame",
-            com.dut.erp.enums.CogsMethod.AVERAGE
+            com.dut.erp.enums.CogsMethod.AVERAGE,
+            "DSK-FRM-SMART"
         },
         {
             "Bamboo Standing Desk Top",
             "150.00",
             "Sustainable solid bamboo desk top",
-            com.dut.erp.enums.CogsMethod.AVERAGE
+            com.dut.erp.enums.CogsMethod.AVERAGE,
+            "DSK-TOP-BAMBOO"
         },
         {
             "Multi-device Bluetooth Trackpad",
             "110.00",
             "Wireless trackpad with gesture support",
-            com.dut.erp.enums.CogsMethod.LIFO
+            com.dut.erp.enums.CogsMethod.LIFO,
+            "TRK-BT-MULTI"
         }
     };
 
@@ -520,6 +535,7 @@ public class SampleDataSeeder implements CommandLineRunner {
       BigDecimal price = new BigDecimal((String) data[1]);
       String desc = (String) data[2];
       com.dut.erp.enums.CogsMethod method = (com.dut.erp.enums.CogsMethod) data[3];
+      String sku = (String) data[4];
 
       String categoryName = "General";
       if (name.contains("Laptop")
@@ -549,6 +565,7 @@ public class SampleDataSeeder implements CommandLineRunner {
               () -> productRepository.save(
                   Product.builder()
                       .name(name)
+                      .sku(sku)
                       .price(price)
                       .description(desc)
                       .cogsMethod(method)
@@ -565,130 +582,130 @@ public class SampleDataSeeder implements CommandLineRunner {
     List<Partner> partners = new ArrayList<>();
     Object[][] partnerData = {
         {
-            "AeroSpace Tech Corp",
-            "info@aerotech.example.com",
+            "Da Nang High-Tech Software Park",
+            "info@dntechpark.example.com",
             "0901234567",
-            "123 Apex Blvd, New York",
-            "TAX-AERO-01",
+            "2 Quang Trung Street, Hai Chau I Ward, Hai Chau District, Da Nang, Vietnam",
+            "TAX-DN-TECH",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Glenn",
-            "john@aerotech.example.com",
+            "glenn@dntechpark.example.com",
             "0901234568",
             "Purchasing Manager"
         },
         {
-            "Blue Ocean Logistics",
-            "contact@blueocean.example.com",
+            "Song Han Logistics JSC",
+            "contact@songhanlog.example.com",
             "0907654321",
-            "456 Ocean Way, Miami",
-            "TAX-BLUE-02",
+            "15 Bach Dang Street, Thach Thang Ward, Hai Chau District, Da Nang, Vietnam",
+            "TAX-SONGHAN",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Nemo",
-            "nemo@blueocean.example.com",
+            "nemo@songhanlog.example.com",
             "0907654322",
             "Operations Lead"
         },
         {
-            "Cyberdyne Systems",
-            "procurement@cyberdyne.example.com",
+            "VinaTech Solutions",
+            "procurement@vinatech.example.com",
             "0911223344",
-            "789 Cybernetic Way, Los Angeles",
-            "TAX-CYBER-03",
+            "789 Dien Bien Phu Street, Thanh Khe District, Da Nang, Vietnam",
+            "TAX-VINATECH",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Miles Dyson",
-            "mdyson@cyberdyne.example.com",
+            "mdyson@vinatech.example.com",
             "0911223345",
             "Director of R&D"
         },
         {
-            "Dynamo Energy Corp",
-            "info@dynamo.example.com",
+            "Da Nang Power Joint Stock Company",
+            "info@dpc.example.com",
             "0922334455",
-            "321 Power Ave, Houston",
-            "TAX-DYNA-04",
+            "321 Tran Hung Dao Street, Son Tra District, Da Nang, Vietnam",
+            "TAX-DPC",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Sarah",
-            "sarah@dynamo.example.com",
+            "sarah@dpc.example.com",
             "0922334456",
             "General Procurement"
         },
         {
-            "Epsilon Retailers",
-            "sales@epsilon.example.com",
+            "Han River Retail Group",
+            "sales@hanretail.example.com",
             "0933445566",
-            "159 Epsilon Rd, Chicago",
-            "TAX-EPSI-05",
+            "159 Le Loi Street, Hai Chau District, Da Nang, Vietnam",
+            "TAX-HANRETAIL",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Eric",
-            "eric@epsilon.example.com",
+            "eric@hanretail.example.com",
             "0933445567",
             "Store Manager"
         },
         {
-            "Falcon Aerospace",
-            "purchasing@falcon.example.com",
+            "Lien Chieu Port Corporation",
+            "purchasing@lcport.example.com",
             "0944556677",
-            "987 Falcon St, Seattle",
-            "TAX-FALC-06",
+            "987 Nguyen Luong Bang Street, Lien Chieu District, Da Nang, Vietnam",
+            "TAX-LCPORT",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Sam",
-            "sam@falcon.example.com",
+            "sam@lcport.example.com",
             "0944556678",
             "Procurement Officer"
         },
         {
-            "Genesis BioTech",
-            "office@genesis.example.com",
+            "Da Nang Medical Equipment JSC",
+            "office@dnmed.example.com",
             "0955667788",
-            "147 Science Lane, Boston",
-            "TAX-GENE-07",
+            "147 Quang Trung Street, Hai Chau District, Da Nang, Vietnam",
+            "TAX-DNMED",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Dr. Alice",
-            "alice@genesis.example.com",
+            "alice@dnmed.example.com",
             "0955667789",
             "Lab Director"
         },
         {
-            "Horizon Software",
-            "billing@horizon.example.com",
+            "Green Space Landscaping",
+            "billing@greenspace.example.com",
             "0966778899",
-            "369 Cloud Street, Denver",
-            "TAX-HORI-08",
+            "369 Nguyen Huu Tho Street, Cam Le District, Da Nang, Vietnam",
+            "TAX-GREENSPACE",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Bob",
-            "bob@horizon.example.com",
+            "bob@greenspace.example.com",
             "0966778900",
             "Finance Lead"
         },
         {
-            "Infinity Electronics",
-            "orders@infinity.example.com",
+            "Cam Le Electronics Assembly",
+            "orders@camleelec.example.com",
             "0977889900",
-            "258 Loop Rd, Atlanta",
-            "TAX-INFI-09",
+            "258 Cam Le Industrial Zone, Cam Le District, Da Nang, Vietnam",
+            "TAX-CAMLE",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Isaac",
-            "isaac@infinity.example.com",
+            "isaac@camleelec.example.com",
             "0977889901",
             "Inventory Mgr"
         },
         {
-            "Jupiter Manufacturing",
-            "supply@jupiter.example.com",
+            "Da Nang Steel Manufacturing",
+            "supply@dnsteel.example.com",
             "0988990011",
-            "951 Gas Giant Way, Detroit",
-            "TAX-JUPI-10",
+            "951 Hoa Khanh Industrial Park, Lien Chieu District, Da Nang, Vietnam",
+            "TAX-DNSTEEL",
             com.dut.erp.enums.PartnerType.COMPANY,
             "Jane",
-            "jane@jupiter.example.com",
+            "jane@dnsteel.example.com",
             "0988990012",
             "Supply Chain Director"
         },
         {
-            "David Miller",
-            "david.miller@gmail.com",
+            "Nam Nguyen",
+            "nam.nguyen@gmail.com",
             "0900111222",
-            "111 Elm St, Chicago",
+            "111 Elm Street, Cam Le District, Da Nang, Vietnam",
             null,
             com.dut.erp.enums.PartnerType.INDIVIDUAL,
             null,
@@ -697,10 +714,10 @@ public class SampleDataSeeder implements CommandLineRunner {
             null
         },
         {
-            "Sarah Connor",
-            "sconnor@gmail.com",
+            "Hoa Tran",
+            "hoa.tran@gmail.com",
             "0900222333",
-            "222 Oak St, Los Angeles",
+            "222 Oak Street, Son Tra District, Da Nang, Vietnam",
             null,
             com.dut.erp.enums.PartnerType.INDIVIDUAL,
             null,
@@ -709,10 +726,10 @@ public class SampleDataSeeder implements CommandLineRunner {
             null
         },
         {
-            "Bruce Wayne",
-            "bwayne@waynecorp.com",
+            "Minh Pham",
+            "minh.pham@gmail.com",
             "0900333444",
-            "Wayne Manor, Gotham",
+            "333 Ngo Quyen Street, Son Tra District, Da Nang, Vietnam",
             null,
             com.dut.erp.enums.PartnerType.INDIVIDUAL,
             "Alfred",
@@ -721,10 +738,10 @@ public class SampleDataSeeder implements CommandLineRunner {
             "Butler/Advisor"
         },
         {
-            "Tony Stark",
-            "tstark@starkindustries.com",
+            "Hoang Le",
+            "hoang.le@gmail.com",
             "0900444555",
-            "10880 Malibu Point, Malibu",
+            "444 Dien Bien Phu Street, Thanh Khe District, Da Nang, Vietnam",
             null,
             com.dut.erp.enums.PartnerType.INDIVIDUAL,
             "Pepper Potts",
@@ -733,10 +750,10 @@ public class SampleDataSeeder implements CommandLineRunner {
             "CEO/Admin"
         },
         {
-            "Peter Parker",
-            "pparker@dailybugle.com",
+            "Duy Tran",
+            "duy.tran@gmail.com",
             "0900555666",
-            "20 Ingram St, Queens, NY",
+            "555 Ton Duc Thang Street, Lien Chieu District, Da Nang, Vietnam",
             null,
             com.dut.erp.enums.PartnerType.INDIVIDUAL,
             null,
@@ -835,11 +852,11 @@ public class SampleDataSeeder implements CommandLineRunner {
     List<Lead> leads = new ArrayList<>();
     Object[][] leadData = {
         {
-            "Blue Ocean Cloud Migration",
-            "TAX-BLUE-02",
-            "contact@blueocean.example.com",
+            "Song Han Logistics Cloud Migration",
+            "TAX-SONGHAN",
+            "contact@songhanlog.example.com",
             "0907654321",
-            "456 Ocean Way, Miami",
+            "15 Bach Dang Street, Thach Thang Ward, Hai Chau District, Da Nang, Vietnam",
             "Moving legacy systems to AWS",
             "45000.00",
             com.dut.erp.enums.LeadStage.NEW,
@@ -849,12 +866,12 @@ public class SampleDataSeeder implements CommandLineRunner {
             1
         },
         {
-            "Falcon Fleet Modernization",
-            "TAX-FALC-06",
-            "purchasing@falcon.example.com",
+            "Lien Chieu Port Modernization",
+            "TAX-LCPORT",
+            "purchasing@lcport.example.com",
             "0944556677",
-            "987 Falcon St, Seattle",
-            "Upgrading aircraft logistics",
+            "987 Nguyen Luong Bang Street, Lien Chieu District, Da Nang, Vietnam",
+            "Upgrading warehouse logistics",
             "120000.00",
             com.dut.erp.enums.LeadStage.NEW,
             "15.00",
@@ -863,11 +880,11 @@ public class SampleDataSeeder implements CommandLineRunner {
             5
         },
         {
-            "Horizon Security Systems",
-            "TAX-HORI-08",
-            "billing@horizon.example.com",
+            "Green Space Corporate Security",
+            "TAX-GREENSPACE",
+            "billing@greenspace.example.com",
             "0966778899",
-            "369 Cloud Street, Denver",
+            "369 Nguyen Huu Tho Street, Cam Le District, Da Nang, Vietnam",
             "Installing corporate firewalls",
             "35000.00",
             com.dut.erp.enums.LeadStage.QUALIFIED,
@@ -877,11 +894,11 @@ public class SampleDataSeeder implements CommandLineRunner {
             7
         },
         {
-            "Genesis Tech Refresh",
-            "TAX-GENE-07",
-            "office@genesis.example.com",
+            "Da Nang Medical Tech Refresh",
+            "TAX-DNMED",
+            "office@dnmed.example.com",
             "0955667788",
-            "147 Science Lane, Boston",
+            "147 Quang Trung Street, Hai Chau District, Da Nang, Vietnam",
             "Replacing lab computers",
             "25000.00",
             com.dut.erp.enums.LeadStage.QUALIFIED,
@@ -891,11 +908,11 @@ public class SampleDataSeeder implements CommandLineRunner {
             6
         },
         {
-            "AeroSpace Workstation Proposal",
-            "TAX-AERO-01",
-            "info@aerotech.example.com",
+            "Da Nang Tech Park Workstation Proposal",
+            "TAX-DN-TECH",
+            "info@dntechpark.example.com",
             "0901234567",
-            "123 Apex Blvd, New York",
+            "2 Quang Trung Street, Hai Chau I Ward, Hai Chau District, Da Nang, Vietnam",
             "Custom developer workstations",
             "50000.00",
             com.dut.erp.enums.LeadStage.PROPOSAL,
@@ -905,11 +922,11 @@ public class SampleDataSeeder implements CommandLineRunner {
             0
         },
         {
-            "Dynamo Energy Infrastructure",
-            "TAX-DYNA-04",
-            "info@dynamo.example.com",
+            "Da Nang Power Grid Infrastructure",
+            "TAX-DPC",
+            "info@dpc.example.com",
             "0922334455",
-            "321 Power Ave, Houston",
+            "321 Tran Hung Dao Street, Son Tra District, Da Nang, Vietnam",
             "Grid management servers",
             "95000.00",
             com.dut.erp.enums.LeadStage.PROPOSAL,
@@ -919,11 +936,11 @@ public class SampleDataSeeder implements CommandLineRunner {
             3
         },
         {
-            "Cyberdyne Server Upgrade",
-            "TAX-CYBER-03",
-            "procurement@cyberdyne.example.com",
+            "VinaTech Core Server Upgrade",
+            "TAX-VINATECH",
+            "procurement@vinatech.example.com",
             "0911223344",
-            "789 Cybernetic Way, Los Angeles",
+            "789 Dien Bien Phu Street, Thanh Khe District, Da Nang, Vietnam",
             "Upgrading core AI servers",
             "150000.00",
             com.dut.erp.enums.LeadStage.LOST,
@@ -933,11 +950,11 @@ public class SampleDataSeeder implements CommandLineRunner {
             2
         },
         {
-            "Jupiter Supply Chain",
-            "TAX-JUPI-10",
-            "supply@jupiter.example.com",
+            "Da Nang Steel Logistics Automation",
+            "TAX-DNSTEEL",
+            "supply@dnsteel.example.com",
             "0988990011",
-            "951 Gas Giant Way, Detroit",
+            "951 Hoa Khanh Industrial Park, Lien Chieu District, Da Nang, Vietnam",
             "Factory logistics automation",
             "80000.00",
             com.dut.erp.enums.LeadStage.LOST,
@@ -947,12 +964,12 @@ public class SampleDataSeeder implements CommandLineRunner {
             9
         },
         {
-            "Waynecorp IT Procurement",
+            "Minh Pham IT Procurement",
             null,
-            "bwayne@waynecorp.com",
+            "minh.pham@gmail.com",
             "0900333444",
-            "Wayne Manor, Gotham",
-            "Confidential Wayne Enterprises hardware",
+            "333 Ngo Quyen Street, Son Tra District, Da Nang, Vietnam",
+            "Confidential hardware supply",
             "200000.00",
             com.dut.erp.enums.LeadStage.WON,
             "100.00",
@@ -961,11 +978,11 @@ public class SampleDataSeeder implements CommandLineRunner {
             12
         },
         {
-            "Stark Industries Lab Equip",
+            "Hoang Le Lab Equipment",
             null,
-            "tstark@starkindustries.com",
+            "hoang.le@gmail.com",
             "0900444555",
-            "10880 Malibu Point, Malibu",
+            "444 Dien Bien Phu Street, Thanh Khe District, Da Nang, Vietnam",
             "Clean room tech refresh",
             "180000.00",
             com.dut.erp.enums.LeadStage.WON,
@@ -1020,22 +1037,22 @@ public class SampleDataSeeder implements CommandLineRunner {
     List<Warehouse> warehouses = new ArrayList<>();
     Object[][] whData = {
         {
-            "Central Chicago Warehouse",
-            "WH-CHI",
-            "100 Logistics Blvd, Chicago, IL",
-            "Main distribution hub"
+            "Central Da Nang Warehouse",
+            "WH-DAD-CENTRAL",
+            "254 Nguyen Van Linh Street, Thac Gian Ward, Thanh Khe District, Da Nang, Vietnam",
+            "Main distribution hub in central Da Nang"
         },
         {
-            "Dallas Regional Warehouse",
-            "WH-DAL",
-            "200 Delivery Rd, Dallas, TX",
-            "South regional warehouse"
+            "Lien Chieu Port Warehouse",
+            "WH-DAD-LIENCHIEU",
+            "45 Ton Duc Thang Street, Hoa Khanh Nam Ward, Lien Chieu District, Da Nang, Vietnam",
+            "Northern regional warehouse near Lien Chieu port"
         },
         {
-            "Seattle West Warehouse",
-            "WH-SEA",
-            "300 Freight Ave, Seattle, WA",
-            "Pacific Northwest warehouse"
+            "Son Tra Logistics Warehouse",
+            "WH-DAD-SONTRA",
+            "12 Hoang Sa Street, Tho Quang Ward, Son Tra District, Da Nang, Vietnam",
+            "Eastern warehouse near Son Tra port"
         }
     };
 
@@ -1089,15 +1106,15 @@ public class SampleDataSeeder implements CommandLineRunner {
       List<InventoryDocumentLine> lines = new ArrayList<>();
       for (Product prod : products) {
         BigDecimal qty = BigDecimal.valueOf(
-            wh.getCode().contains("CHI") ? 100 : (wh.getCode().contains("DAL") ? 80 : 50));
+            wh.getCode().contains("CENTRAL") ? 100 : (wh.getCode().contains("LIENCHIEU") ? 80 : 50));
 
         // Create low stock items for ROP/Warning test scenarios
         if ("MacBook Pro M3 Max".equals(prod.getName())
             || "Mechanical Keyboard RGB".equals(prod.getName())) {
-          qty = BigDecimal.valueOf(wh.getCode().contains("CHI") ? 2 : 0);
+          qty = BigDecimal.valueOf(wh.getCode().contains("CENTRAL") ? 2 : 0);
         } else if ("ThinkPad X1 Carbon".equals(prod.getName())
             || "Active Noise Cancelling Headset".equals(prod.getName())) {
-          qty = BigDecimal.valueOf(wh.getCode().contains("CHI") ? 4 : 1);
+          qty = BigDecimal.valueOf(wh.getCode().contains("CENTRAL") ? 4 : 1);
         }
 
         BigDecimal unitCost = prod.getPrice()
@@ -1242,7 +1259,7 @@ public class SampleDataSeeder implements CommandLineRunner {
           vat5,
           leads.get(i % leads.size()));
 
-      String outDocName = "WH-CHI/OUT/2026/" + String.format("%04d", i);
+      String outDocName = centralWh.getCode() + "/OUT/2026/" + String.format("%04d", i);
       if (!inventoryDocumentRepository.existsByName(outDocName)) {
         InventoryDocument outDoc = inventoryDocumentRepository.save(
             InventoryDocument.builder()
@@ -1264,7 +1281,7 @@ public class SampleDataSeeder implements CommandLineRunner {
 
           Optional<InventoryDocumentLine> receiptLineOpt = inventoryDocumentLineRepository.findAll().stream()
               .filter(
-                  l -> l.getInventoryDocument().getName().equals("WH-CHI/IN/2026/0001")
+                  l -> l.getInventoryDocument().getName().equals(centralWh.getCode() + "/IN/2026/0001")
                       && l.getProduct().getId().equals(prod.getId()))
               .findFirst();
 

@@ -76,7 +76,7 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
         setTopProducts(productsRes);
         setCategoryDistribution(categoryRes);
 
-        // Gọi API dự báo doanh số của AI (bọc trong try-catch riêng để tránh block cả dashboard)
+        // Call AI sales forecast API (wrapped in a separate try-catch to avoid blocking the whole dashboard)
         try {
           const forecastRes = await getAiSalesForecast(orgId);
           setAiForecast(forecastRes);
@@ -242,12 +242,12 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
               </div>
               <div>
                 <h2 className="text-[15px] font-[700] text-[#242424] flex items-center gap-2">
-                  Trợ Lý Dự Báo Doanh Số AI (Actionable AI)
+                  AI Sales Forecast Assistant (Actionable AI)
                   <span className="text-[10px] bg-[#0066cc]/10 text-[#0066cc] px-2 py-0.5 rounded-[2px] font-bold uppercase tracking-wider">
                     Gemma-31B-Reasoning
                   </span>
                 </h2>
-                <p className="text-[12px] text-[#898989]">Nhận định xu hướng doanh số và dự báo nhu cầu thị trường tự động</p>
+                <p className="text-[12px] text-[#898989]">Automatic sales trend analysis and market demand forecasting</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 self-end md:self-auto">
@@ -260,20 +260,20 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
                     : "border-[#d0d0d0] text-[#242424] bg-white hover:bg-gray-50"
                 }`}
               >
-                {showForecast ? "📊 Xem Xu Hướng Thực Tế" : "🔮 Kích Hoạt Dự Báo AI 30 Ngày"}
+                {showForecast ? "📊 View Actual Trend" : "🔮 Activate 30-Day AI Forecast"}
               </Button>
             </div>
           </div>
           
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-dashed border-[#e0e0e0] pt-4">
             <div className="md:col-span-2">
-              <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">AI Phân Tích & Nhận Định</span>
+              <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">AI Analysis & Insights</span>
               <p className="text-[13px] leading-relaxed text-[#4a4a4a] italic bg-white/50 p-3 rounded border border-gray-100">
                 &quot;{aiForecast.summary || ''}&quot;
               </p>
             </div>
             <div>
-              <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Đề xuất Hành động</span>
+              <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Actionable Recommendations</span>
               <ul className="text-[12px] text-[#4a4a4a] space-y-1.5 list-disc pl-4">
                 {aiForecast.insights?.map((insight, idx) => (
                   <li key={idx} className="font-[500]">{insight}</li>
@@ -322,8 +322,8 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
                   <XAxis dataKey="name" stroke="#898989" fontSize={10} tickLine={false} />
                   <YAxis stroke="#898989" fontSize={11} tickLine={false} />
                   <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                  <Area type="monotone" dataKey="historical" name="Doanh thu thực tế" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorHist)" />
-                  <Area type="monotone" dataKey="predicted" name="Dự báo doanh số (Dự kiến)" stroke="#e67e22" strokeWidth={2} strokeDasharray="4 4" fillOpacity={1} fill="url(#colorPred)" />
+                  <Area type="monotone" dataKey="historical" name="Actual Revenue" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorHist)" />
+                  <Area type="monotone" dataKey="predicted" name="AI Predicted Revenue" stroke="#e67e22" strokeWidth={2} strokeDasharray="4 4" fillOpacity={1} fill="url(#colorPred)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : chartData.length === 0 ? (

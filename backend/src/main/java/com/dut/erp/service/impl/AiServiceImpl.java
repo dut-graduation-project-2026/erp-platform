@@ -9,7 +9,6 @@ import com.dut.erp.service.InventoryDocumentService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
@@ -20,13 +19,17 @@ import org.springframework.web.util.UriBuilder;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AiServiceImpl implements AiService {
 
   private final InventoryDocumentService inventoryDocumentService;
-
-  @Qualifier("aiServiceRestClient")
   private final RestClient restClient;
+
+  public AiServiceImpl(
+      InventoryDocumentService inventoryDocumentService,
+      @Qualifier("aiServiceRestClient") RestClient restClient) {
+    this.inventoryDocumentService = inventoryDocumentService;
+    this.restClient = restClient;
+  }
 
   private static final String SALES_FORECAST_PATH = "/analysis/sales-forecast";
   private static final String INVENTORY_ANALYSIS_PATH = "/analysis/inventory";

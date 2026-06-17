@@ -15,7 +15,8 @@ public interface AiService {
 
   AiReorderRecommendationResponse getReorderRecommendations(UUID organizationId);
 
-  void confirmReorders(UUID organizationId, UUID warehouseId, List<Map<String, Object>> recommendations);
+  void confirmReorders(
+      UUID organizationId, UUID warehouseId, List<Map<String, Object>> recommendations);
 
   AiDashboardSummaryResponse getDashboardSummary(UUID organizationId);
 }

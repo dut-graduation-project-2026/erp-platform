@@ -4,6 +4,7 @@ import com.dut.erp.entity.Order;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.service.InventoryDocumentService;
 import com.dut.erp.service.SalesOrderIntegrationService;
+import com.dut.erp.service.GeocodingService;
 import com.dut.erp.entity.Warehouse;
 import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.OrderRepository;
@@ -43,6 +44,8 @@ public class SalesOrderIntegrationServiceImpl implements SalesOrderIntegrationSe
     );
   }
 
+  private final GeocodingService geocodingService;
+
   @Override
   @Transactional(readOnly = true)
   public List<com.dut.erp.dto.response.RouteProposalResponse> previewSmartRoute(UUID organizationId) {
@@ -58,10 +61,24 @@ public class SalesOrderIntegrationServiceImpl implements SalesOrderIntegrationSe
     // 2. Get all warehouses for the organization
     List<Warehouse> warehouses = warehouseRepository.findAllByOrganizationId(organizationId);
 
-    // 3. For each order, try to find a warehouse with sufficient stock
+    // 3. For each order, try to find the closest warehouse with sufficient stock
     for (Order order : pendingOrders) {
       Warehouse proposedWarehouse = null;
       boolean found = false;
+      double minDistance = Double.MAX_VALUE;
+
+      // Geocode the destination address (customer's address)
+      String orderAddress = order.getPartner() != null ? order.getPartner().getAddress() : null;
+      Double orderLat = null;
+      Double orderLng = null;
+
+      if (orderAddress != null && !orderAddress.isBlank()) {
+        List<com.dut.erp.dto.response.GeocodingSearchResult> orderCoords = geocodingService.search(orderAddress, null);
+        if (orderCoords != null && !orderCoords.isEmpty() && orderCoords.get(0).lat() != null && orderCoords.get(0).lng() != null) {
+          orderLat = orderCoords.get(0).lat();
+          orderLng = orderCoords.get(0).lng();
+        }
+      }
 
       if (!warehouses.isEmpty()) {
         for (Warehouse warehouse : warehouses) {
@@ -78,9 +95,23 @@ public class SalesOrderIntegrationServiceImpl implements SalesOrderIntegrationSe
           }
 
           if (hasSufficientStock) {
-            proposedWarehouse = warehouse;
-            found = true;
-            break; // Stop looking for warehouses for this order
+            double distance = Double.MAX_VALUE;
+            String whAddress = warehouse.getAddress();
+
+            // Geocode the warehouse address and calculate distance
+            if (orderLat != null && orderLng != null && whAddress != null && !whAddress.isBlank()) {
+              List<com.dut.erp.dto.response.GeocodingSearchResult> whCoords = geocodingService.search(whAddress, null);
+              if (whCoords != null && !whCoords.isEmpty() && whCoords.get(0).lat() != null && whCoords.get(0).lng() != null) {
+                distance = calculateDistance(orderLat, orderLng, whCoords.get(0).lat(), whCoords.get(0).lng());
+              }
+            }
+
+            // Select the warehouse with sufficient stock that is closest to the order address
+            if (proposedWarehouse == null || distance < minDistance) {
+              proposedWarehouse = warehouse;
+              minDistance = distance;
+              found = true;
+            }
           }
         }
       }
@@ -97,6 +128,18 @@ public class SalesOrderIntegrationServiceImpl implements SalesOrderIntegrationSe
     }
 
     return proposals;
+  }
+
+  /** Calculate geographic distance using Haversine formula (in km) */
+  private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    final int R = 6371; // Earth radius in km
+    double latDistance = Math.toRadians(lat2 - lat1);
+    double lonDistance = Math.toRadians(lon2 - lon1);
+    double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+        + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+        * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
 
   @Override
