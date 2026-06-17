@@ -131,8 +131,12 @@ export function Header({ className }: HeaderProps) {
   }, [backendModules, hasModuleAccess]);
 
   const handleModuleClick = (route: string) => {
-    router.push(`/dashboard/${currentOrgId}${route}`);
-    setIsAppLauncherOpen(false);
+    const targetPath = `/dashboard/${currentOrgId}${route}`;
+    if (pathname === targetPath) {
+      setIsAppLauncherOpen(false);
+    } else {
+      router.push(targetPath);
+    }
   };
 
   return (
