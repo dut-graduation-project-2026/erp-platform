@@ -11,5 +11,6 @@ public record PartnerBaseResponse(
     String taxCode,
     String email,
     String phone,
+    String address,
     Boolean isArchived,
     PartnerType partnerType) {}

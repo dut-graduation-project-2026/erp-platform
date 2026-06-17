@@ -4,7 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import { getPartners, createPartner, updatePartner, getPartnerById } from '@/features/sales/services/salesService';
 import { SalePartner } from '@/features/sales/types';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, Building2, Phone, Mail, X, Save, User } from 'lucide-react';
+import { Plus, Search, Building2, Phone, Mail, X, Save, User, LayoutGrid, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { AddressInput } from '@/components/ui/address-input';
@@ -19,6 +19,7 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { hasPermission } = usePermissions();
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -152,7 +153,7 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
           <div className="flex justify-center items-center h-full text-[#898989]">Loading Customers...</div>
         ) : filteredCustomers.length === 0 ? (
           <div className="flex justify-center items-center h-full text-[#898989]">No customers found</div>
-        ) : (
+        ) : viewMode === 'card' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredCustomers.map((customer) => (
               <div
@@ -187,13 +188,94 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
               </div>
             ))}
           </div>
+        ) : (
+          <div className="bg-white border border-[#e0e0e0] rounded-[4px] overflow-hidden shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
+            <table className="min-w-full divide-y divide-[#e0e0e0]">
+              <thead className="bg-[#f8f8f8]">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Code</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Name</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Type</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Phone</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Email</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Address</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-[#e0e0e0]">
+                {filteredCustomers.map((customer) => (
+                  <tr 
+                    key={customer.id} 
+                    onClick={() => handleOpenModal(customer)}
+                    className="hover:bg-[#f0f4ff]/30 cursor-pointer transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] font-mono text-[#0066cc] font-[600]">
+                      {customer.code || customer.id || 'CUST-UNK'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] font-[600] text-[#242424]">
+                      {customer.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px]">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-[4px] text-[11px] font-bold uppercase tracking-wider",
+                        customer.type === PARTNER_TYPES.COMPANY 
+                          ? "bg-[#e0f2fe] text-[#0369a1]" 
+                          : "bg-[#f0fdf4] text-[#166534]"
+                      )}>
+                        {customer.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] text-[#242424]">
+                      {customer.phone || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] text-[#242424]">
+                      {customer.email || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] text-[#898989] max-w-[200px] truncate">
+                      {customer.address || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
+      </div>
+
+      {/* Floating Toggle View Mode Pill */}
+      <div className="fixed bottom-6 right-6 z-40 bg-white border border-[#e0e0e0] shadow-[0px_4px_16px_rgba(0,0,0,0.12)] rounded-full p-1.5 flex items-center space-x-1">
+        <button
+          onClick={() => setViewMode('card')}
+          title="Card View"
+          className={cn(
+            "p-2 rounded-full transition-all duration-200",
+            viewMode === 'card'
+              ? "bg-[#0066cc] text-white"
+              : "text-[#898989] hover:bg-gray-100 hover:text-[#242424]"
+          )}
+        >
+          <LayoutGrid className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setViewMode('table')}
+          title="Table View"
+          className={cn(
+            "p-2 rounded-full transition-all duration-200",
+            viewMode === 'table'
+              ? "bg-[#0066cc] text-white"
+              : "text-[#898989] hover:bg-gray-100 hover:text-[#242424]"
+          )}
+        >
+          <List className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Partner Form Modal */}
       {isModalOpen && selectedPartner && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-[8px] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] w-full max-w-[600px] flex flex-col max-h-[90vh]">
+          <div className={cn(
+            "bg-white rounded-[8px] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] flex flex-col max-h-[90vh] transition-all duration-300 w-full",
+            (selectedPartner.contacts || []).length > 0 ? "max-w-[1100px]" : "max-w-[600px]"
+          )}>
             <div className="px-6 py-4 border-b border-[#e0e0e0] flex justify-between items-center bg-[#f8f8f8]">
               <h2 className="text-[20px] font-[700] text-[#242424]">
                 {selectedPartner.id ? 'Edit Partner' : 'New Partner'}
@@ -203,84 +285,14 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
               </Button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-5">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Company / Name <span className="text-red-500">*</span></label>
-                  <Input
-                    value={selectedPartner.name || ''}
-                    onChange={e => setSelectedPartner({ ...selectedPartner, name: e.target.value })}
-                    placeholder="e.g. Acme Corporation"
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Partner Code <span className="text-red-500">*</span></label>
-                  <Input
-                    value={selectedPartner.code || ''}
-                    onChange={e => setSelectedPartner({ ...selectedPartner, code: e.target.value })}
-                    placeholder="e.g. CUST-001"
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] font-mono uppercase"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Partner Type <span className="text-red-500">*</span></label>
-                  <select
-                    value={selectedPartner.type || PARTNER_TYPES.INDIVIDUAL}
-                    onChange={e => setSelectedPartner({ ...selectedPartner, type: e.target.value as any })}
-                    className="h-10 w-full border border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] px-3 text-[14px]"
-                  >
-                    <option value={PARTNER_TYPES.INDIVIDUAL}>Individual</option>
-                    <option value={PARTNER_TYPES.COMPANY}>Company</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Email</label>
-                  <Input
-                    type="email"
-                    value={selectedPartner.email || ''}
-                    onChange={e => setSelectedPartner({ ...selectedPartner, email: e.target.value })}
-                    placeholder="e.g. contact@acme.com"
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Phone</label>
-                  <Input
-                    value={selectedPartner.phone || ''}
-                    onChange={e => setSelectedPartner({ ...selectedPartner, phone: e.target.value })}
-                    placeholder="e.g. +1 555-0198"
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Tax ID / VAT</label>
-                  <Input
-                    value={selectedPartner.taxCode || ''}
-                    onChange={e => setSelectedPartner({ ...selectedPartner, taxCode: e.target.value })}
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] font-mono"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Address</label>
-                  <AddressInput
-                    value={selectedPartner.address || ''}
-                    onChange={val => setSelectedPartner({ ...selectedPartner, address: val })}
-                    placeholder="e.g. 123 Business Rd, Suite 100"
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-                  />
-                </div>
-
-                {/* Contacts Section */}
-                <div className="col-span-2 border-t border-[#e0e0e0] pt-4 mt-2">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-[15px] font-[600] text-[#242424]">Contacts</h3>
+            <div className="flex-1 flex overflow-hidden min-h-0">
+              {/* Left Panel: Contacts list (Only if contacts exist) */}
+              {(selectedPartner.contacts || []).length > 0 && (
+                <div className="w-[450px] border-r border-[#e0e0e0] flex flex-col bg-[#fcfcfc] shrink-0">
+                  <div className="px-6 py-4 border-b border-[#e0e0e0] flex justify-between items-center bg-[#f8f8f8] shrink-0">
+                    <h3 className="text-[15px] font-[600] text-[#242424]">
+                      Contacts ({(selectedPartner.contacts || []).length})
+                    </h3>
                     <Button
                       type="button"
                       variant="outline"
@@ -291,32 +303,37 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
                           contacts: [...currentContacts, { name: '', email: '', phone: '', jobPosition: '', notes: '' }]
                         });
                       }}
-                      className="h-8 px-2 text-[12px] border-[#d0d0d0]"
+                      className="h-8 px-2 text-[12px] border-[#d0d0d0] bg-white hover:bg-[#f0f4ff] hover:text-[#0066cc]"
                     >
                       <Plus className="w-3.5 h-3.5 mr-1" /> Add Contact
                     </Button>
                   </div>
 
-                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+                  <div className="p-6 overflow-y-auto space-y-4 flex-1">
                     {(selectedPartner.contacts || []).map((contact, index) => (
-                      <div key={index} className="border border-[#e0e0e0] rounded-[4px] p-3 relative bg-[#fcfcfc] space-y-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const currentContacts = selectedPartner.contacts || [];
-                            setSelectedPartner({
-                              ...selectedPartner,
-                              contacts: currentContacts.filter((_, i) => i !== index)
-                            });
-                          }}
-                          className="absolute right-2 top-2 text-[#898989] hover:text-[#dc3545] p-1"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                      <div key={index} className="border border-[#e0e0e0] rounded-[6px] p-4 relative bg-white shadow-[0px_1px_3px_rgba(0,0,0,0.05)] hover:border-[#0066cc] transition-all space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-bold text-[#0066cc] bg-[#f0f4ff] px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
+                            Contact #{index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentContacts = selectedPartner.contacts || [];
+                              setSelectedPartner({
+                                ...selectedPartner,
+                                contacts: currentContacts.filter((_, i) => i !== index)
+                              });
+                            }}
+                            className="text-[#898989] hover:text-[#dc3545] p-1 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
 
-                        <div className="grid grid-cols-2 gap-3 pr-6">
-                          <div>
-                            <label className="block text-[11px] font-[600] text-[#242424] mb-1">Contact Name <span className="text-red-500">*</span></label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="col-span-2">
+                            <label className="block text-[11px] font-[600] text-[#898989] mb-1 uppercase tracking-wider">Contact Name <span className="text-red-500">*</span></label>
                             <Input
                               value={contact.name || ''}
                               onChange={e => {
@@ -325,11 +342,11 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
                                 setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
                               }}
                               placeholder="e.g. John Doe"
-                              className="h-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                              className="h-9 text-[13px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                             />
                           </div>
                           <div>
-                            <label className="block text-[11px] font-[600] text-[#242424] mb-1">Job Position</label>
+                            <label className="block text-[11px] font-[600] text-[#898989] mb-1 uppercase tracking-wider">Job Position</label>
                             <Input
                               value={contact.jobPosition || ''}
                               onChange={e => {
@@ -338,11 +355,24 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
                                 setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
                               }}
                               placeholder="e.g. Sales Manager"
-                              className="h-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                              className="h-9 text-[13px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                             />
                           </div>
                           <div>
-                            <label className="block text-[11px] font-[600] text-[#242424] mb-1">Email</label>
+                            <label className="block text-[11px] font-[600] text-[#898989] mb-1 uppercase tracking-wider">Phone</label>
+                            <Input
+                              value={contact.phone || ''}
+                              onChange={e => {
+                                const currentContacts = [...(selectedPartner.contacts || [])];
+                                currentContacts[index] = { ...currentContacts[index], phone: e.target.value };
+                                setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
+                              }}
+                              placeholder="e.g. +1 555-1234"
+                              className="h-9 text-[13px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-[11px] font-[600] text-[#898989] mb-1 uppercase tracking-wider">Email</label>
                             <Input
                               type="email"
                               value={contact.email || ''}
@@ -352,29 +382,113 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
                                 setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
                               }}
                               placeholder="e.g. john@acme.com"
-                              className="h-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-[600] text-[#242424] mb-1">Phone</label>
-                            <Input
-                              value={contact.phone || ''}
-                              onChange={e => {
-                                const currentContacts = [...(selectedPartner.contacts || [])];
-                                currentContacts[index] = { ...currentContacts[index], phone: e.target.value };
-                                setSelectedPartner({ ...selectedPartner, contacts: currentContacts });
-                              }}
-                              placeholder="e.g. +1 555-1234"
-                              className="h-8 text-[12px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                              className="h-9 text-[13px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                             />
                           </div>
                         </div>
                       </div>
                     ))}
-                    {(selectedPartner.contacts || []).length === 0 && (
-                      <p className="text-[12px] text-[#898989] text-center py-2">No contacts added yet.</p>
-                    )}
                   </div>
+                </div>
+              )}
+
+              {/* Right Panel: Main Partner fields */}
+              <div className="flex-1 p-6 overflow-y-auto space-y-5">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="col-span-2">
+                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Company / Name <span className="text-red-500">*</span></label>
+                    <Input
+                      value={selectedPartner.name || ''}
+                      onChange={e => setSelectedPartner({ ...selectedPartner, name: e.target.value })}
+                      placeholder="e.g. Acme Corporation"
+                      className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Partner Code <span className="text-red-500">*</span></label>
+                    <Input
+                      value={selectedPartner.code || ''}
+                      onChange={e => setSelectedPartner({ ...selectedPartner, code: e.target.value })}
+                      placeholder="e.g. CUST-001"
+                      className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] font-mono uppercase"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Partner Type <span className="text-red-500">*</span></label>
+                    <select
+                      value={selectedPartner.type || PARTNER_TYPES.INDIVIDUAL}
+                      onChange={e => setSelectedPartner({ ...selectedPartner, type: e.target.value as any })}
+                      className="h-10 w-full border border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] px-3 text-[14px]"
+                    >
+                      <option value={PARTNER_TYPES.INDIVIDUAL}>Individual</option>
+                      <option value={PARTNER_TYPES.COMPANY}>Company</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Email</label>
+                    <Input
+                      type="email"
+                      value={selectedPartner.email || ''}
+                      onChange={e => setSelectedPartner({ ...selectedPartner, email: e.target.value })}
+                      placeholder="e.g. contact@acme.com"
+                      className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Phone</label>
+                    <Input
+                      value={selectedPartner.phone || ''}
+                      onChange={e => setSelectedPartner({ ...selectedPartner, phone: e.target.value })}
+                      placeholder="e.g. +1 555-0198"
+                      className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Tax ID / VAT</label>
+                    <Input
+                      value={selectedPartner.taxCode || ''}
+                      onChange={e => setSelectedPartner({ ...selectedPartner, taxCode: e.target.value })}
+                      className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] font-mono"
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Address</label>
+                    <AddressInput
+                      value={selectedPartner.address || ''}
+                      onChange={val => setSelectedPartner({ ...selectedPartner, address: val })}
+                      placeholder="e.g. 123 Business Rd, Suite 100"
+                      className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                    />
+                  </div>
+
+                  {/* Empty State when no contacts added yet */}
+                  {(selectedPartner.contacts || []).length === 0 && (
+                    <div className="col-span-2 border-t border-[#e0e0e0] pt-4 mt-2">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-[15px] font-[600] text-[#242424]">Contacts</h3>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedPartner({
+                              ...selectedPartner,
+                              contacts: [{ name: '', email: '', phone: '', jobPosition: '', notes: '' }]
+                            });
+                          }}
+                          className="h-8 px-2 text-[12px] border-[#d0d0d0]"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" /> Add Contact
+                        </Button>
+                      </div>
+                      <p className="text-[12px] text-[#898989] text-center py-2">No contacts added yet.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

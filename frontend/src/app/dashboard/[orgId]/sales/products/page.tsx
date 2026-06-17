@@ -4,7 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import { getProducts, getProductCategories, ProductCategory } from '@/features/sales/services/salesService';
 import { Product } from '@/features/sales/types';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, Filter, X, Save } from 'lucide-react';
+import { Plus, Search, Filter, X, Save, LayoutGrid, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,6 +21,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { hasPermission } = usePermissions();
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -141,7 +142,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
           <div className="flex justify-center items-center h-full text-[#898989]">Loading Products...</div>
         ) : filteredProducts.length === 0 ? (
           <div className="flex justify-center items-center h-full text-[#898989]">No products found</div>
-        ) : (
+        ) : viewMode === 'card' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
              {filteredProducts.map((product) => (
               <div 
@@ -183,7 +184,98 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
               </div>
             ))}
           </div>
+        ) : (
+          <div className="bg-white border border-[#e0e0e0] rounded-[4px] overflow-hidden shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
+            <table className="min-w-full divide-y divide-[#e0e0e0]">
+              <thead className="bg-[#f8f8f8]">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Product</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">SKU</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Category</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Sales Price</th>
+                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-[#e0e0e0]">
+                {filteredProducts.map((product) => (
+                  <tr 
+                    key={product.id} 
+                    onClick={() => handleOpenModal(product)}
+                    className="hover:bg-[#f0f4ff]/30 cursor-pointer transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-[#f0f4ff] rounded-[4px] border border-[#e0e0e0] flex items-center justify-center overflow-hidden shrink-0">
+                          {product.image ? (
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[20px] opacity-30">📦</span>
+                          )}
+                        </div>
+                        <div className="text-[13px] font-[600] text-[#242424]">
+                          {product.name}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] font-mono text-[#898989]">
+                      {product.sku || product.id || 'PRD-UNKNOWN'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px]">
+                      {product.category?.name ? (
+                        <span className="bg-[#eef2f6] text-[#475569] text-[11px] px-2 py-0.5 rounded font-[500]">
+                          {product.category.name}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] font-mono font-[700] text-[#0066cc]">
+                      ${product.price?.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px]">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-[4px] text-[11px] font-bold uppercase tracking-wider",
+                        product.isActive !== false 
+                          ? "bg-[#dcfce7] text-[#15803d]" 
+                          : "bg-[#fee2e2] text-[#b91c1c]"
+                      )}>
+                        {product.isActive !== false ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
+      </div>
+
+      {/* Floating Toggle View Mode Pill */}
+      <div className="fixed bottom-6 right-6 z-40 bg-white border border-[#e0e0e0] shadow-[0px_4px_16px_rgba(0,0,0,0.12)] rounded-full p-1.5 flex items-center space-x-1">
+        <button
+          onClick={() => setViewMode('card')}
+          title="Card View"
+          className={cn(
+            "p-2 rounded-full transition-all duration-200",
+            viewMode === 'card'
+              ? "bg-[#0066cc] text-white"
+              : "text-[#898989] hover:bg-gray-100 hover:text-[#242424]"
+          )}
+        >
+          <LayoutGrid className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setViewMode('table')}
+          title="Table View"
+          className={cn(
+            "p-2 rounded-full transition-all duration-200",
+            viewMode === 'table'
+              ? "bg-[#0066cc] text-white"
+              : "text-[#898989] hover:bg-gray-100 hover:text-[#242424]"
+          )}
+        >
+          <List className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Product Form Modal */}
