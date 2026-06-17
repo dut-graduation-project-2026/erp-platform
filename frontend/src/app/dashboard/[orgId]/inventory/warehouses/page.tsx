@@ -11,6 +11,7 @@ import { Warehouse, CreateWarehouseRequest } from '@/features/inventory/types';
 import { useOrganizationMembers } from '@/features/organization/hooks/useOrganizationMembers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AddressInput } from '@/components/ui/address-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Search, Filter, X, Save, Edit, Trash2, User, MapPin, Clipboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -281,9 +282,9 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
               
               <div>
                 <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Address</label>
-                <Input 
+                <AddressInput 
                   value={selectedWarehouse.address || ''}
-                  onChange={e => setSelectedWarehouse({...selectedWarehouse, address: e.target.value})}
+                  onChange={val => setSelectedWarehouse({...selectedWarehouse, address: val})}
                   placeholder="e.g. 123 Logistics Parkway, Binh Duong"
                   className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                 />

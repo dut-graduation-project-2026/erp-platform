@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
-import { getPartners, createPartner, updatePartner } from '@/features/sales/services/salesService';
+import { getPartners, createPartner, updatePartner, getPartnerById } from '@/features/sales/services/salesService';
 import { SalePartner } from '@/features/sales/types';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, Building2, Phone, Mail, X, Save, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { AddressInput } from '@/components/ui/address-input';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PARTNER_TYPES } from '@/config/constants';
 import { PERMISSIONS } from '@/config/permissions';
@@ -52,13 +53,26 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
     }
   }, [searchQuery, customers]);
 
-  const handleOpenModal = (partner?: SalePartner) => {
+  const handleOpenModal = async (partner?: SalePartner) => {
     if (partner) {
-      setSelectedPartner(partner);
+      setSelectedPartner({
+        ...partner,
+        code: partner.code || partner.id?.substring(0, 8).toUpperCase() || ''
+      });
+      setIsModalOpen(true);
+      try {
+        const res = await getPartnerById(orgId, partner.id);
+        setSelectedPartner({
+          ...res,
+          code: res.code || res.id?.substring(0, 8).toUpperCase() || ''
+        });
+      } catch (err) {
+        console.error("Failed to load partner details", err);
+      }
     } else {
       setSelectedPartner({ name: '', code: '', email: '', phone: '', address: '', type: PARTNER_TYPES.INDIVIDUAL, contacts: [] });
+      setIsModalOpen(true);
     }
-    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
@@ -255,9 +269,9 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
 
                 <div className="col-span-2">
                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Address</label>
-                  <Input
+                  <AddressInput
                     value={selectedPartner.address || ''}
-                    onChange={e => setSelectedPartner({ ...selectedPartner, address: e.target.value })}
+                    onChange={val => setSelectedPartner({ ...selectedPartner, address: val })}
                     placeholder="e.g. 123 Business Rd, Suite 100"
                     className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                   />

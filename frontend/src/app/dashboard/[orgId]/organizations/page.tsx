@@ -9,6 +9,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddressInput } from "@/components/ui/address-input";
 import { Textarea } from "@/components/ui/textarea";
 import { UsersTab } from "@/features/organization/components/UsersTab";
 import { RolesTab } from "@/features/organization/components/RolesTab";
@@ -196,10 +197,10 @@ export default function OrganizationsPage({ params }: { params: Promise<{ orgId:
                 <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">
                   Address Location <span className="text-[#dc3545]">*</span>
                 </label>
-                <Input 
+                <AddressInput 
                   value={formAddress}
-                  onChange={e => setFormAddress(e.target.value)}
-                  placeholder="e.g. Đà Nẵng, Việt Nam"
+                  onChange={val => setFormAddress(val)}
+                  placeholder="e.g. 54 Nguyễn Lương Bằng, Đà Nẵng"
                   required
                   disabled={!canEdit}
                   className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] text-[14px]"
