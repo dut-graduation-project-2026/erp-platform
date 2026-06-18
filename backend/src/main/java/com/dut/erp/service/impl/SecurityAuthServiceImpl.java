@@ -73,9 +73,12 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
       return false;
     }
     return userDetails.getAuthorities().stream()
-        .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") 
+                    || a.getAuthority().equals("ROLE_SYSTEM ADMIN")
+                    || a.getAuthority().equals("ROLE_SYSTEM_ADMIN")
+                    || a.getAuthority().equals("SUPER_ADMIN"));
   }
-
+ 
   @Override
   public boolean isWarehouseManagerOrAdmin(Warehouse warehouse, CustomUserDetails userDetails) {
     if (isAdmin(userDetails)) {
@@ -84,10 +87,17 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
     if (warehouse.getManager() != null && warehouse.getManager().getId().equals(userDetails.getId())) {
       return true;
     }
+    // Check if user has 'warehouses:write' permission in the organization
+    boolean hasWritePermission = permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+        userDetails.getId(), warehouse.getOrganization().getId(), "warehouses:write"
+    );
+    if (hasWritePermission) {
+      return true;
+    }
     log.warn("User {} denied update access to warehouse {}", userDetails.getId(), warehouse.getId());
     throw new AccessDeniedException("Access denied: You must be the warehouse manager or an administrator.");
   }
-
+ 
   @Override
   public boolean isWarehouseStaffOrManagerOrAdmin(Warehouse warehouse, CustomUserDetails userDetails) {
     if (isAdmin(userDetails)) {
@@ -99,6 +109,13 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
     boolean isStaff = warehouse.getStaff() != null && warehouse.getStaff().stream()
         .anyMatch(staff -> staff.getId().equals(userDetails.getId()));
     if (isStaff) {
+      return true;
+    }
+    // Check if user has 'warehouses:select' permission in the organization
+    boolean hasSelectPermission = permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+        userDetails.getId(), warehouse.getOrganization().getId(), "warehouses:select"
+    );
+    if (hasSelectPermission) {
       return true;
     }
     log.warn("User {} denied access to warehouse {}", userDetails.getId(), warehouse.getId());

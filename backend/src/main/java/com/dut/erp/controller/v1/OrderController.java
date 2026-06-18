@@ -127,8 +127,9 @@ public class OrderController {
       """)
   public ResponseEntity<List<RouteProposalResponse>> previewSmartRoute(
       @PathVariable UUID organizationId,
+      @RequestParam(required = false) java.util.UUID warehouseId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    return ResponseEntity.ok(salesOrderIntegrationService.previewSmartRoute(organizationId));
+    return ResponseEntity.ok(salesOrderIntegrationService.previewSmartRoute(organizationId, warehouseId));
   }
 
   @PostMapping("/smart-route/confirm")

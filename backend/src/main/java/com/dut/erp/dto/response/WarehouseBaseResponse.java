@@ -12,5 +12,6 @@ public record WarehouseBaseResponse(
     String description,
     boolean isActive,
     UserBaseResponse manager,
-    int staffCount
+    int staffCount,
+    java.util.List<UserBaseResponse> staff
 ) {}

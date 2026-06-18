@@ -48,8 +48,8 @@ public class SalesOrderIntegrationServiceImpl implements SalesOrderIntegrationSe
 
   @Override
   @Transactional(readOnly = true)
-  public List<com.dut.erp.dto.response.RouteProposalResponse> previewSmartRoute(UUID organizationId) {
-    log.info("Previewing smart routing for organization: {}", organizationId);
+  public List<com.dut.erp.dto.response.RouteProposalResponse> previewSmartRoute(UUID organizationId, UUID warehouseId) {
+    log.info("Previewing smart routing for organization: {} and warehouse: {}", organizationId, warehouseId);
     List<com.dut.erp.dto.response.RouteProposalResponse> proposals = new java.util.ArrayList<>();
 
     // 1. Get all CONFIRMED orders
@@ -58,8 +58,15 @@ public class SalesOrderIntegrationServiceImpl implements SalesOrderIntegrationSe
       return proposals;
     }
 
-    // 2. Get all warehouses for the organization
-    List<Warehouse> warehouses = warehouseRepository.findAllByOrganizationId(organizationId);
+    // 2. Get warehouses for the organization (filtered by warehouseId if provided)
+    List<Warehouse> warehouses;
+    if (warehouseId != null) {
+      warehouses = warehouseRepository.findById(warehouseId)
+          .map(List::of)
+          .orElse(List.of());
+    } else {
+      warehouses = warehouseRepository.findAllByOrganizationId(organizationId);
+    }
 
     // 3. For each order, try to find the closest warehouse with sufficient stock
     for (Order order : pendingOrders) {

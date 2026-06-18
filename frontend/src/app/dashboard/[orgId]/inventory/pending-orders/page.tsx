@@ -38,7 +38,7 @@ export default function PendingOrdersPage() {
   const handlePreviewSmartRoute = async () => {
     setIsPreviewLoading(true);
     try {
-      const result = await previewSmartRoute(orgId);
+      const result = await previewSmartRoute(orgId, warehouseId || undefined);
       if (result.length === 0) {
         toast.info('No pending confirmed orders to evaluate for routing.');
         return;

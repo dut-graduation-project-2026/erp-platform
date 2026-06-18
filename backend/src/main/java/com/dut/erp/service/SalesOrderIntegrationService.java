@@ -8,6 +8,6 @@ import java.util.UUID;
 
 public interface SalesOrderIntegrationService {
   void handleOrderConfirmation(Order order, UUID warehouseId);
-  List<RouteProposalResponse> previewSmartRoute(UUID organizationId);
+  List<RouteProposalResponse> previewSmartRoute(UUID organizationId, UUID warehouseId);
   void confirmSmartRoute(UUID organizationId, ConfirmRouteRequest request);
 }

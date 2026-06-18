@@ -182,10 +182,12 @@ export const claimOrderStockMove = async (
 };
 
 export const previewSmartRoute = async (
-  orgId: string
+  orgId: string,
+  warehouseId?: string
 ): Promise<RouteProposalResponse[]> => {
   const response = await apiClient.get<RouteProposalResponse[]>(
-    `/organizations/${orgId}/orders/smart-route/preview`
+    `/organizations/${orgId}/orders/smart-route/preview`,
+    { params: { warehouseId } }
   );
   return response.data;
 };
