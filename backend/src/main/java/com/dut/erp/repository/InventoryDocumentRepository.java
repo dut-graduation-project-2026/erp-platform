@@ -20,6 +20,11 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
   @Query("""
       SELECT d.id FROM InventoryDocument d
       WHERE d.warehouse.id = :warehouseId
+      ORDER BY CASE d.documentStatus
+        WHEN com.dut.erp.enums.DocumentStatus.COMPLETED THEN 3
+        WHEN com.dut.erp.enums.DocumentStatus.CANCELLED THEN 2
+        ELSE 1
+      END ASC, COALESCE(d.updatedAt, d.createdAt) DESC, d.id ASC
       """)
   Page<UUID> findIdsByWarehouseId(@Param("warehouseId") UUID warehouseId, Pageable pageable);
 
@@ -29,6 +34,11 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
       WHERE d.warehouse.id = :warehouseId
         AND (LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%'))
              OR (d.referenceType = com.dut.erp.enums.ReferenceType.SALES_ORDER AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))))
+      ORDER BY CASE d.documentStatus
+        WHEN com.dut.erp.enums.DocumentStatus.COMPLETED THEN 3
+        WHEN com.dut.erp.enums.DocumentStatus.CANCELLED THEN 2
+        ELSE 1
+      END ASC, COALESCE(d.updatedAt, d.createdAt) DESC, d.id ASC
       """)
   Page<UUID> findIdsByWarehouseIdAndSearch(
       @Param("warehouseId") UUID warehouseId, @Param("search") String search, Pageable pageable);

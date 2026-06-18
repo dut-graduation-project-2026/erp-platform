@@ -314,8 +314,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
     Pageable pageable = PageRequest.of(
         paginationRequest.page() - 1,
-        paginationRequest.limit(),
-        SortingConstants.customEntitiesSort(SortField.desc("name"), SortField.asc("createdAt"))
+        paginationRequest.limit()
     );
 
     Page<UUID> ids = (search != null && !search.trim().isEmpty())
