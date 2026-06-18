@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotificationStore } from '../store/use-notification-store';
 import { Bell, Info, CheckCircle2, AlertTriangle, AlertOctagon, Trash2, Check } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 type TabType = 'all' | 'unread';
@@ -60,7 +60,7 @@ export function NotificationPopover() {
 
   const formatTime = (dateStr: string) => {
     try {
-      return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: vi });
+      return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: enUS });
     } catch (e) {
       return '';
     }
@@ -137,10 +137,10 @@ export function NotificationPopover() {
       >
         {/* Header */}
         <div className="flex items-center justify-between py-3 px-4 border-b border-[#e0e0e0]/50 bg-[#f8f8f8]">
-          <span className="text-[15px] font-semibold text-[#242424]">Thông báo</span>
+          <span className="text-[15px] font-semibold text-[#242424]">Notifications</span>
           {unreadCount > 0 && (
             <span className="text-[11px] text-[#0066cc] font-medium animate-pulse">
-              Có thông báo mới
+              New notifications
             </span>
           )}
         </div>
@@ -156,7 +156,7 @@ export function NotificationPopover() {
                 : "border-transparent text-[#898989] hover:text-[#242424]"
             )}
           >
-            <span>Tất cả</span>
+            <span>All</span>
             <span className={cn(
               "px-1.5 py-0.2 rounded-full text-[10px] font-semibold",
               activeTab === 'all'
@@ -175,7 +175,7 @@ export function NotificationPopover() {
                 : "border-transparent text-[#898989] hover:text-[#242424]"
             )}
           >
-            <span>Chưa đọc</span>
+            <span>Unread</span>
             {currentUnreadListCount > 0 && (
               <span className={cn(
                 "px-1.5 py-0.2 rounded-full text-[10px] font-semibold",
@@ -216,12 +216,12 @@ export function NotificationPopover() {
                 )}
               </div>
               <p className="text-[13px] font-semibold text-[#242424]">
-                {activeTab === 'unread' ? 'Bạn đã xem hết thông báo' : 'Không có thông báo mới'}
+                {activeTab === 'unread' ? 'You have read all notifications' : 'No notifications found'}
               </p>
               <p className="text-[11px] text-[#898989] mt-1 max-w-[240px] leading-relaxed">
                 {activeTab === 'unread'
-                  ? 'Tuyệt vời! Không còn thông báo chưa đọc nào trong danh sách.'
-                  : 'Hệ thống sẽ gửi thông báo cho bạn khi có cập nhật mới.'}
+                  ? 'Great! No unread notifications remaining.'
+                  : 'You will be notified when there are new updates.'}
               </p>
             </div>
           ) : (
@@ -274,7 +274,7 @@ export function NotificationPopover() {
                     <button
                       onClick={(e) => handleDelete(e, notification.id)}
                       className="absolute right-2 top-2 p-1.5 rounded-[4px] text-[#898989] hover:text-[#dc3545] hover:bg-[#fff5f5] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-150"
-                      title="Xóa thông báo"
+                      title="Delete notification"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

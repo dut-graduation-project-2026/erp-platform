@@ -179,7 +179,7 @@ export const PERMISSION_GROUPS = [
   },
   {
     id: "sales",
-    name: "Bán hàng",
+    name: "Sales",
     resources: [
       "partners",
       "sale_teams",
@@ -193,7 +193,7 @@ export const PERMISSION_GROUPS = [
   },
   {
     id: "inventory",
-    name: "Kho & Chuỗi cung ứng",
+    name: "Inventory & Supply Chain",
     resources: [
       "warehouses",
       "inventory-documents",
@@ -208,7 +208,7 @@ export const PERMISSION_GROUPS = [
   },
   {
     id: "admin",
-    name: "Quản trị Hệ thống",
+    name: "System Administration",
     resources: [
       "users",
       "roles",
@@ -220,35 +220,35 @@ export const PERMISSION_GROUPS = [
 
 export const RESOURCE_LABELS: Record<string, string> = {
   // CRM
-  'leads': 'Cơ hội kinh doanh (CRM Leads)',
-  'dashboard': 'Bảng thông tin chính (Dashboard)',
+  'leads': 'Leads (CRM)',
+  'dashboard': 'Dashboard',
   
   // Sales
-  'partners': 'Khách hàng & Nhà cung cấp (Partners)',
-  'sale_teams': 'Đội ngũ bán hàng (Sale Teams)',
-  'orders': 'Đơn bán hàng (Orders)',
-  'invoices': 'Hóa đơn (Invoices)',
-  'products': 'Sản phẩm (Products)',
-  'taxes': 'Thuế suất (Taxes)',
-  'product_categories': 'Nhóm sản phẩm (Product Categories)',
-  'sales': 'Phân hệ Bán hàng (Sales)',
+  'partners': 'Customers & Suppliers (Partners)',
+  'sale_teams': 'Sales Teams',
+  'orders': 'Sales Orders',
+  'invoices': 'Invoices',
+  'products': 'Products',
+  'taxes': 'Tax Rates',
+  'product_categories': 'Product Categories',
+  'sales': 'Sales Module',
   
   // Inventory
-  'warehouses': 'Kho hàng (Warehouses)',
-  'inventory-documents': 'Phiếu kho (Inventory Documents)',
-  'inventory-transactions': 'Giao dịch kho (Inventory Transactions)',
-  'replenishment-requests': 'Yêu cầu cung ứng (Replenishment Requests)',
-  'stock-valuations': 'Định giá tồn kho (Stock Valuations)',
-  'inventory': 'Phân hệ Kho hàng (Inventory)',
-  'finance': 'Tài chính & Kế toán (Finance)',
-  'hr': 'Quản trị nhân sự (HR)',
-  'blockchain_audit': 'Kiểm toán Blockchain (Blockchain Audit)',
+  'warehouses': 'Warehouses',
+  'inventory-documents': 'Inventory Documents',
+  'inventory-transactions': 'Inventory Transactions',
+  'replenishment-requests': 'Replenishment Requests',
+  'stock-valuations': 'Stock Valuations',
+  'inventory': 'Inventory Module',
+  'finance': 'Finance & Accounting',
+  'hr': 'Human Resources (HR)',
+  'blockchain_audit': 'Blockchain Audit',
   
   // Administration
-  'users': 'Quản lý Người dùng (Users)',
-  'roles': 'Vai trò & Phân quyền (Roles)',
-  'organizations': 'Thông tin Tổ chức (Organizations)',
-  'administration': 'Quản trị Hệ thống (Administration)',
+  'users': 'User Management',
+  'roles': 'Roles & Permissions',
+  'organizations': 'Organization Info',
+  'administration': 'System Administration',
 };
 
 // Map high-level backend module codes to resource prefixes for Launcher hasModuleAccess filter
@@ -264,17 +264,17 @@ export const MODULE_PERMISSIONS_MAP: Record<string, string[]> = {
 
 // Actions definition for role permission matrices
 export const MATRIX_ACTIONS = [
-  { key: 'READ', label: 'Xem', icon: '👁️' },
-  { key: 'CREATE', label: 'Tạo', icon: '➕' },
-  { key: 'UPDATE', label: 'Sửa', icon: '✏️' },
-  { key: 'DELETE', label: 'Xóa', icon: '🗑️' },
-  { key: 'EXPORT', label: 'Xuất', icon: '📥' },
+  { key: 'READ', label: 'Read', icon: '👁️' },
+  { key: 'CREATE', label: 'Create', icon: '➕' },
+  { key: 'UPDATE', label: 'Update', icon: '✏️' },
+  { key: 'DELETE', label: 'Delete', icon: '🗑️' },
+  { key: 'EXPORT', label: 'Export', icon: '📥' },
 ];
 
 export const BACKEND_ACTIONS = [
-  { key: 'read', label: 'Xem (Read)' },
-  { key: 'select', label: 'Chọn (Select)' },
-  { key: 'create', label: 'Tạo (Create)' },
-  { key: 'write', label: 'Sửa (Write)' },
-  { key: 'delete', label: 'Xóa (Delete)' },
+  { key: 'read', label: 'Read' },
+  { key: 'select', label: 'Select' },
+  { key: 'create', label: 'Create' },
+  { key: 'write', label: 'Write' },
+  { key: 'delete', label: 'Delete' },
 ];

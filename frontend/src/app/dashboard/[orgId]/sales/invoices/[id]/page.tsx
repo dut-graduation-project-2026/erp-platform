@@ -115,8 +115,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
             </Button>
           )}
           {invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED' && (
-            <Button variant="outline" className="border-[#0066cc] text-[#0066cc] hover:bg-[#f0f4ff] h-10 px-4 rounded-[4px]" onClick={() => window.open(`/dashboard/${orgId}/sales/invoices/${id}/print`, '_blank')}>
-              <Printer className="w-4 h-4 mr-2" /> Print Invoice
+            <Button asChild variant="outline" className="border-[#0066cc] text-[#0066cc] hover:bg-[#f0f4ff] h-10 px-4 rounded-[4px]">
+              <Link href={`/dashboard/${orgId}/sales/invoices/${id}/print`} target="_blank" rel="noopener noreferrer">
+                <Printer className="w-4 h-4 mr-2" /> Print Invoice
+              </Link>
             </Button>
           )}
           {canWrite && (invoice.status === 'POSTED' || invoice.status === 'DRAFT' || invoice.status === 'PARTIAL_PAID') && (

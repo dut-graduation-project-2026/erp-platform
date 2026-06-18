@@ -48,17 +48,17 @@ export const UserForm: React.FC<UserFormProps> = ({
     const newErrors: Partial<UserFormData> = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email là bắt buộc';
+      newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email không hợp lệ';
+      newErrors.email = 'Invalid email';
     }
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'Họ là bắt buộc';
+      newErrors.firstName = 'First name is required';
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Tên là bắt buộc';
+      newErrors.lastName = 'Last name is required';
     }
 
     setErrors(newErrors);
@@ -106,7 +106,7 @@ export const UserForm: React.FC<UserFormProps> = ({
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-charcoal">
-              {user ? 'Chỉnh sửa Người dùng' : 'Thêm Người dùng Mới'}
+              {user ? 'Edit User' : 'Add New User'}
             </DialogTitle>
           </DialogHeader>
 
@@ -114,13 +114,13 @@ export const UserForm: React.FC<UserFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="firstName" className="text-sm font-semibold text-charcoal">
-                  Họ *
+                  First Name *
                 </Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  placeholder="Nguyễn"
+                  placeholder="John"
                   className={errors.firstName ? 'border-error-red' : ''}
                 />
                 {errors.firstName && (
@@ -130,13 +130,13 @@ export const UserForm: React.FC<UserFormProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="lastName" className="text-sm font-semibold text-charcoal">
-                  Tên *
+                  Last Name *
                 </Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  placeholder="Văn A"
+                  placeholder="Doe"
                   className={errors.lastName ? 'border-error-red' : ''}
                 />
                 {errors.lastName && (
@@ -154,7 +154,7 @@ export const UserForm: React.FC<UserFormProps> = ({
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="nguyenvana@company.com"
+                placeholder="john.doe@company.com"
                 className={errors.email ? 'border-error-red' : ''}
               />
               {errors.email && (
@@ -164,7 +164,7 @@ export const UserForm: React.FC<UserFormProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="role" className="text-sm font-semibold text-charcoal">
-                Vai trò
+                Role
               </Label>
               <div className="flex gap-3">
                 <Select
@@ -172,10 +172,10 @@ export const UserForm: React.FC<UserFormProps> = ({
                   onValueChange={(value: string) => handleInputChange('roleId', value)}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Chọn vai trò (tùy chọn)" />
+                    <SelectValue placeholder="Select role (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Không gán vai trò</SelectItem>
+                    <SelectItem value="">Unassigned</SelectItem>
                     {roles.map((role) => (
                       <SelectItem key={role.id} value={role.id}>
                         {role.name}
@@ -188,13 +188,13 @@ export const UserForm: React.FC<UserFormProps> = ({
                   variant="outline"
                   onClick={() => setQuickDefineRoleOpen(true)}
                   className="px-3"
-                  title="Tạo vai trò nhanh"
+                  title="Quick Define Role"
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
               <p className="text-xs text-mid-gray">
-                Nhấn + để tạo vai trò mới ngay lập tức
+                Press + to create a new role immediately
               </p>
             </div>
 
@@ -205,14 +205,14 @@ export const UserForm: React.FC<UserFormProps> = ({
                 onClick={onClose}
                 disabled={loading}
               >
-                Hủy
+                Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
                 className="bg-primary-blue hover:bg-dark-blue text-white"
               >
-                {loading ? 'Đang lưu...' : user ? 'Cập nhật' : 'Thêm mới'}
+                {loading ? 'Saving...' : user ? 'Update' : 'Add'}
               </Button>
             </DialogFooter>
           </form>

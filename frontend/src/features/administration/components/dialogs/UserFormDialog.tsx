@@ -68,7 +68,7 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
       <DialogContent className="max-w-md border border-[#e0e0e0] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] rounded-[4px]">
         <DialogHeader className="border-b border-[#e0e0e0] pb-4">
           <DialogTitle className="text-[24px] font-bold text-[#242424]">
-            {user ? 'Sửa Người dùng' : 'Thêm Người dùng'}
+            {user ? 'Edit User' : 'Add User'}
           </DialogTitle>
           <button
             onClick={onClose}
@@ -93,18 +93,18 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
               required
               disabled={!!user}
             />
-            {user && <p className="text-[12px] text-[#898989]">Email không thể thay đổi</p>}
+            {user && <p className="text-[12px] text-[#898989]">Email cannot be changed</p>}
           </div>
 
           {/* First Name */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Họ <span className="text-[#dc3545]">*</span>
+              First Name <span className="text-[#dc3545]">*</span>
             </Label>
             <Input
               value={formData.firstName}
               onChange={(e) => handleChange('firstName', e.target.value)}
-              placeholder="Nhập họ"
+              placeholder="Enter first name"
               className="h-10 rounded-[4px] border-[#d0d0d0] text-[14px] focus:border-[#0066cc]"
               required
             />
@@ -113,12 +113,12 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
           {/* Last Name */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Tên <span className="text-[#dc3545]">*</span>
+              Last Name <span className="text-[#dc3545]">*</span>
             </Label>
             <Input
               value={formData.lastName}
               onChange={(e) => handleChange('lastName', e.target.value)}
-              placeholder="Nhập tên"
+              placeholder="Enter last name"
               className="h-10 rounded-[4px] border-[#d0d0d0] text-[14px] focus:border-[#0066cc]"
               required
             />
@@ -128,7 +128,7 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-[14px] font-semibold text-[#242424]">
-                Vai trò
+                Role
               </Label>
               <Button
                 variant="link"
@@ -136,12 +136,12 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
                 className="text-[#0066cc] p-0 h-auto text-[12px]"
               >
                 <Plus className="w-3 h-3 mr-1" />
-                Tạo vai trò
+                Create role
               </Button>
             </div>
             <Select value={formData.roleId || ''} onValueChange={(value) => handleChange('roleId', value)}>
               <SelectTrigger className="h-10 rounded-[4px] border-[#d0d0d0] text-[14px]">
-                <SelectValue placeholder="Chọn vai trò..." />
+                <SelectValue placeholder="Select role..." />
               </SelectTrigger>
               <SelectContent className="rounded-[4px]">
                 {orgRoles.map(role => (
@@ -151,7 +151,7 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
                 ))}
                 {orgRoles.length === 0 && (
                   <div className="text-center py-2 text-[12px] text-[#898989]">
-                    Chưa có vai trò nào
+                    No roles available
                   </div>
                 )}
               </SelectContent>
@@ -165,14 +165,14 @@ export const UserFormDialog: React.FC<UserFormDialogProps> = ({
             onClick={onClose}
             className="h-10 px-4 border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] rounded-[4px]"
           >
-            Hủy
+            Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading || !formData.email || !formData.firstName || !formData.lastName}
             className="h-10 px-4 bg-[#0066cc] hover:bg-[#004499] text-white font-semibold rounded-[4px]"
           >
-            {loading ? 'Đang lưu...' : 'Lưu'}
+            {loading ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -58,7 +58,7 @@ export const OrganizationFormDialog: React.FC<OrganizationFormDialogProps> = ({
       <DialogContent className="max-w-md border border-[#e0e0e0] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] rounded-[4px]">
         <DialogHeader className="border-b border-[#e0e0e0] pb-4">
           <DialogTitle className="text-[24px] font-bold text-[#242424]">
-            {organization ? 'Sửa Tổ chức' : 'Thêm Tổ chức'}
+            {organization ? 'Edit Organization' : 'Add Organization'}
           </DialogTitle>
           <button
             onClick={onClose}
@@ -72,12 +72,12 @@ export const OrganizationFormDialog: React.FC<OrganizationFormDialogProps> = ({
           {/* Organization Name */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Tên Tổ chức <span className="text-[#dc3545]">*</span>
+              Organization Name <span className="text-[#dc3545]">*</span>
             </Label>
             <Input
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Nhập tên tổ chức"
+              placeholder="Enter organization name"
               className="h-10 rounded-[4px] border-[#d0d0d0] text-[14px] focus:border-[#0066cc]"
               required
             />
@@ -86,12 +86,12 @@ export const OrganizationFormDialog: React.FC<OrganizationFormDialogProps> = ({
           {/* Organization Code */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Mã Code <span className="text-[#dc3545]">*</span>
+              Code <span className="text-[#dc3545]">*</span>
             </Label>
             <Input
               value={formData.code}
               onChange={(e) => handleChange('code', e.target.value)}
-              placeholder="VD: ORG001"
+              placeholder="e.g., ORG001"
               className="h-10 rounded-[4px] border-[#d0d0d0] text-[14px] focus:border-[#0066cc]"
               required
             />
@@ -100,7 +100,7 @@ export const OrganizationFormDialog: React.FC<OrganizationFormDialogProps> = ({
           {/* Contact Email */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Email Liên hệ
+              Contact Email
             </Label>
             <Input
               type="email"
@@ -114,7 +114,7 @@ export const OrganizationFormDialog: React.FC<OrganizationFormDialogProps> = ({
           {/* Contact Phone */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Số điện thoại
+              Phone Number
             </Label>
             <Input
               value={formData.contactPhone}
@@ -127,12 +127,12 @@ export const OrganizationFormDialog: React.FC<OrganizationFormDialogProps> = ({
           {/* Address */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Địa chỉ
+              Address
             </Label>
             <Textarea
               value={formData.address}
               onChange={(e) => handleChange('address', e.target.value)}
-              placeholder="Nhập địa chỉ tổ chức"
+              placeholder="Enter organization address"
               className="h-24 rounded-[4px] border-[#d0d0d0] text-[14px] focus:border-[#0066cc]"
             />
           </div>
@@ -144,14 +144,14 @@ export const OrganizationFormDialog: React.FC<OrganizationFormDialogProps> = ({
             onClick={onClose}
             className="h-10 px-4 border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] rounded-[4px]"
           >
-            Hủy
+            Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading || !formData.name || !formData.code}
             className="h-10 px-4 bg-[#0066cc] hover:bg-[#004499] text-white font-semibold rounded-[4px]"
           >
-            {loading ? 'Đang lưu...' : 'Lưu'}
+            {loading ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

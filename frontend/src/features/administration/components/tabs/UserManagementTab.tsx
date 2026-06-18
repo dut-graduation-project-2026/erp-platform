@@ -38,7 +38,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
   };
 
   const handleDelete = async (user: User) => {
-    if (confirm(`Bạn có chắc chắn muốn xóa người dùng ${user.firstName} ${user.lastName}?`)) {
+    if (confirm(`Are you sure you want to delete user ${user.firstName} ${user.lastName}?`)) {
       await deleteUser(user.id);
     }
   };
@@ -51,7 +51,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Tổng người dùng</p>
+                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Total Users</p>
                 <p className="text-[32px] font-bold text-[#242424] mt-1">{orgUsers.length}</p>
               </div>
               <div className="h-12 w-12 bg-[#f0f4ff] rounded-[8px] flex items-center justify-center">
@@ -65,7 +65,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Đang hoạt động</p>
+                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Active</p>
                 <p className="text-[32px] font-bold text-[#28a745] mt-1">
                   {orgUsers.filter(u => u.isActive).length}
                 </p>
@@ -81,7 +81,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Không hoạt động</p>
+                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Inactive</p>
                 <p className="text-[32px] font-bold text-[#dc3545] mt-1">
                   {orgUsers.filter(u => !u.isActive).length}
                 </p>
@@ -97,7 +97,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Vai trò</p>
+                <p className="text-[12px] font-semibold text-[#898989] uppercase tracking-wide">Roles</p>
                 <p className="text-[32px] font-bold text-[#0066cc] mt-1">
                   {new Set(orgUsers.map(u => u.roleId).filter(Boolean)).size}
                 </p>
@@ -113,9 +113,9 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-[24px] font-bold text-[#242424]">Quản lý Người dùng</h2>
+          <h2 className="text-[24px] font-bold text-[#242424]">User Management</h2>
           <p className="text-[14px] text-[#898989] mt-1">
-            {filteredUsers.length} người dùng trong tổ chức này
+            {filteredUsers.length} users in this organization
           </p>
         </div>
         <Button
@@ -126,7 +126,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
           className="bg-[#0066cc] hover:bg-[#004499] text-white font-semibold h-10 px-4 rounded-[4px]"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Thêm Người dùng
+          Add User
         </Button>
       </div>
 
@@ -135,7 +135,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
           <Input
-            placeholder="Tìm kiếm người dùng..."
+            placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 h-10 rounded-[4px] border-[#d0d0d0] focus:border-[#0066cc]"
@@ -149,12 +149,12 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
           <Table>
             <TableHeader>
               <TableRow className="bg-[#f8f8f8] border-b border-[#e0e0e0]">
-                <TableHead className="font-semibold text-[13px] text-[#242424]">Họ tên</TableHead>
+                <TableHead className="font-semibold text-[13px] text-[#242424]">Name</TableHead>
                 <TableHead className="font-semibold text-[13px] text-[#242424]">Email</TableHead>
-                <TableHead className="font-semibold text-[13px] text-[#242424]">Vai trò</TableHead>
-                <TableHead className="font-semibold text-[13px] text-[#242424]">Trạng thái</TableHead>
-                <TableHead className="font-semibold text-[13px] text-[#242424]">Ngày tạo</TableHead>
-                <TableHead className="font-semibold text-[13px] text-[#242424] text-right">Hành động</TableHead>
+                <TableHead className="font-semibold text-[13px] text-[#242424]">Role</TableHead>
+                <TableHead className="font-semibold text-[13px] text-[#242424]">Status</TableHead>
+                <TableHead className="font-semibold text-[13px] text-[#242424]">Created At</TableHead>
+                <TableHead className="font-semibold text-[13px] text-[#242424] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -163,13 +163,13 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
                   <TableCell colSpan={6} className="text-center py-12">
                     <div className="flex flex-col items-center justify-center">
                       <AlertCircle className="w-8 h-8 mb-2 text-[#898989] opacity-50" />
-                      <p className="text-[14px] text-[#898989]">Không có người dùng nào</p>
+                      <p className="text-[14px] text-[#898989]">No users found</p>
                       <Button
                         variant="link"
                         onClick={() => setShowForm(true)}
                         className="mt-2 text-[#0066cc]"
                       >
-                        Thêm người dùng đầu tiên
+                        Add first user
                       </Button>
                     </div>
                   </TableCell>
@@ -191,18 +191,18 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ organizati
                     <TableCell className="text-[13px] text-[#898989]">{user.email}</TableCell>
                     <TableCell>
                       <Badge className="bg-blue-100 text-blue-800 font-500 text-[11px]">
-                        {user.roleId ? 'Quản lý' : 'Người dùng'}
+                        {user.roleId ? 'Manager' : 'User'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge
                         className={user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
                       >
-                        {user.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                        {user.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-[13px] text-[#898989]">
-                      {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                      {new Date(user.createdAt).toLocaleDateString('en-US')}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">

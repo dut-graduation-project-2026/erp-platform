@@ -16,17 +16,17 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      return toast.error("Vui lòng nhập địa chỉ email.");
+      return toast.error("Please enter your email address.");
     }
 
     setIsLoading(true);
     try {
       await forgotPasswordApi({ email: email.trim() });
       setIsSent(true);
-      toast.success("Yêu cầu đặt lại mật khẩu đã được gửi!");
+      toast.success("Reset password request has been sent!");
     } catch (err: any) {
       console.error(err);
-      const errorMessage = err.response?.data?.message || "Không thể gửi yêu cầu lấy lại mật khẩu. Vui lòng kiểm tra lại email.";
+      const errorMessage = err.response?.data?.message || "Failed to send reset password request. Please check your email.";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

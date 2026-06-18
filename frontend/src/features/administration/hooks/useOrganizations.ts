@@ -21,7 +21,7 @@ export const useOrganizations = () => {
         setOrganizations(mockOrganizations);
       } catch (error) {
         console.error('Failed to fetch organizations:', error);
-        toast.error('Không thể tải danh sách tổ chức');
+        toast.error('Failed to load organizations');
       } finally {
         setLoading(false);
       }
@@ -44,10 +44,10 @@ export const useOrganizations = () => {
       };
 
       setOrganizations(prev => [...prev, newOrg]);
-      toast.success('Tạo tổ chức thành công');
+      toast.success('Organization created successfully');
     } catch (error) {
       console.error('Failed to create organization:', error);
-      toast.error('Không thể tạo tổ chức');
+      toast.error('Failed to create organization');
       throw error;
     } finally {
       setLoading(false);
@@ -67,10 +67,10 @@ export const useOrganizations = () => {
             : org
         )
       );
-      toast.success('Cập nhật tổ chức thành công');
+      toast.success('Organization updated successfully');
     } catch (error) {
       console.error('Failed to update organization:', error);
-      toast.error('Không thể cập nhật tổ chức');
+      toast.error('Failed to update organization');
       throw error;
     } finally {
       setLoading(false);
@@ -84,10 +84,10 @@ export const useOrganizations = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       setOrganizations(prev => prev.filter(org => org.id !== id));
-      toast.success('Xóa tổ chức thành công');
+      toast.success('Organization deleted successfully');
     } catch (error) {
       console.error('Failed to delete organization:', error);
-      toast.error('Không thể xóa tổ chức');
+      toast.error('Failed to delete organization');
       throw error;
     } finally {
       setLoading(false);

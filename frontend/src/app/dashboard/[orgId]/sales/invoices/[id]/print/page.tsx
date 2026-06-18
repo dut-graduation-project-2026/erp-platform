@@ -3,6 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import { getSaleInvoiceById, getOrderItems } from '@/features/sales/services/salesService';
 import { SaleInvoice, OrderItem } from '@/features/sales/types';
+import { fetchOrganizationByIdApi, OrganizationResponse } from '@/features/organization/services/organizationService';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -15,14 +16,19 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ orgId: 
   const router = useRouter();
   const { orgId, id } = use(params);
   const [invoice, setInvoice] = useState<SaleInvoice | null>(null);
+  const [organization, setOrganization] = useState<OrganizationResponse | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchInvoiceAndItems = async () => {
       try {
-        const inv = await getSaleInvoiceById(orgId, id);
+        const [inv, org] = await Promise.all([
+          getSaleInvoiceById(orgId, id),
+          fetchOrganizationByIdApi(orgId)
+        ]);
         setInvoice(inv);
+        setOrganization(org);
         if (inv.saleOrder?.id) {
           const items = await getOrderItems(orgId, inv.saleOrder.id);
           setOrderItems(items);
@@ -128,11 +134,11 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ orgId: 
             </div>
             <div>
               <h1 className="text-[20px] font-bold text-[#0066cc] uppercase tracking-wide">
-                {invoice.organization?.name || "Company Name"}
+                {organization?.name || invoice.organization?.name || "Company Name"}
               </h1>
-              <p className="text-[12px] text-[#4a4a4a] mt-1">Tax Code: 0101234567</p>
-              <p className="text-[12px] text-[#4a4a4a]">Address: 123 Business Blvd, Tech District, City</p>
-              <p className="text-[12px] text-[#4a4a4a]">Phone: +1 234 567 8900</p>
+              <p className="text-[12px] text-[#4a4a4a] mt-1">Tax Code: {organization?.taxCode || "0101234567"}</p>
+              <p className="text-[12px] text-[#4a4a4a]">Address: {organization?.address || "123 Business Blvd, Tech District, City"}</p>
+              <p className="text-[12px] text-[#4a4a4a]">Phone: {organization?.hotline || "+1 234 567 8900"}</p>
             </div>
           </div>
           <div className="text-right">

@@ -72,7 +72,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       <Card className="border-[#e0e0e0] shadow-[0px_1px_3px_rgba(0,0,0,0.12)]">
         <CardHeader className="border-b border-[#e0e0e0] pb-4">
           <CardTitle className="text-[18px] font-bold text-[#242424]">
-            Thông tin Tổ chức
+            Organization Information
           </CardTitle>
         </CardHeader>
 
@@ -81,7 +81,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[14px] font-semibold text-[#242424]">
-                Tên Tổ chức <span className="text-[#dc3545]">*</span>
+                Organization Name <span className="text-[#dc3545]">*</span>
               </Label>
               <Input
                 value={formData.name}
@@ -94,7 +94,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {/* Organization Code */}
             <div className="space-y-2">
               <Label className="text-[14px] font-semibold text-[#242424]">
-                Mã Code <span className="text-[#dc3545]">*</span>
+                Code <span className="text-[#dc3545]">*</span>
               </Label>
               <Input
                 value={formData.code}
@@ -103,7 +103,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 required
                 disabled
               />
-              <p className="text-[12px] text-[#898989]">Mã code không thể thay đổi</p>
+              <p className="text-[12px] text-[#898989]">Code cannot be changed</p>
             </div>
           </div>
 
@@ -111,7 +111,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[14px] font-semibold text-[#242424]">
-                Email Liên hệ
+                Contact Email
               </Label>
               <Input
                 type="email"
@@ -124,7 +124,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
             <div className="space-y-2">
               <Label className="text-[14px] font-semibold text-[#242424]">
-                Số điện thoại
+                Phone Number
               </Label>
               <Input
                 value={formData.contactPhone}
@@ -138,12 +138,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           {/* Address */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Địa chỉ
+              Address
             </Label>
             <Textarea
               value={formData.address}
               onChange={(e) => handleChange('address', e.target.value)}
-              placeholder="Nhập địa chỉ tổ chức"
+              placeholder="Enter organization address"
               className="h-24 rounded-[4px] border-[#d0d0d0] text-[14px] focus:border-[#0066cc]"
             />
           </div>
@@ -155,13 +155,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               disabled={loading}
               className="bg-[#0066cc] hover:bg-[#004499] text-white font-semibold h-10 px-6 rounded-[4px]"
             >
-              {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
+              {loading ? 'Saving...' : 'Save changes'}
             </Button>
 
             {saved && (
               <div className="flex items-center gap-2 text-green-700">
                 <CheckCircle2 className="w-4 h-4" />
-                <span className="text-[13px] font-500">Đã lưu thành công</span>
+                <span className="text-[13px] font-500">Saved successfully</span>
               </div>
             )}
           </div>
@@ -172,10 +172,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       <Card className="border-[#e0e0e0] shadow-[0px_1px_3px_rgba(0,0,0,0.12)]">
         <CardHeader className="border-b border-[#e0e0e0] pb-4">
           <CardTitle className="text-[18px] font-bold text-[#242424]">
-            Cấu hình Mô-đun
+            Module Configuration
           </CardTitle>
           <p className="text-[13px] text-[#898989] mt-2">
-            Bật hoặc tắt các mô-đun chức năng cho tổ chức này
+            Enable or disable functional modules for this organization
           </p>
         </CardHeader>
 
@@ -183,11 +183,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           {/* Module List */}
           <div className="space-y-3">
             {[
-              { key: 'sales', label: 'Bán hàng', description: 'Quản lý đơn hàng, khách hàng, báo giá' },
-              { key: 'inventory', label: 'Kho & Chuỗi cung ứng', description: 'Quản lý tồn kho, nhập xuất hàng' },
-              { key: 'finance', label: 'Tài chính', description: 'Quản lý hóa đơn, thu chi, kế toán' },
-              { key: 'hr', label: 'Nhân sự', description: 'Quản lý nhân viên, lương, tuyển dụng' },
-              { key: 'blockchainAudit', label: 'Kiểm toán Blockchain', description: 'Ghi nhận giao dịch trên blockchain' },
+              { key: 'sales', label: 'Sales', description: 'Manage orders, customers, quotations' },
+              { key: 'inventory', label: 'Inventory & Supply Chain', description: 'Manage stock, warehouse movements' },
+              { key: 'finance', label: 'Finance', description: 'Manage invoices, revenue/expenses, accounting' },
+              { key: 'hr', label: 'Human Resources', description: 'Manage employees, payroll, recruitment' },
+              { key: 'blockchainAudit', label: 'Blockchain Audit', description: 'Record transactions on blockchain' },
             ].map(module => (
               <div
                 key={module.key}
@@ -217,13 +217,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               disabled={loading}
               className="bg-[#0066cc] hover:bg-[#004499] text-white font-semibold h-10 px-6 rounded-[4px]"
             >
-              {loading ? 'Đang lưu...' : 'Lưu cấu hình'}
+              {loading ? 'Saving...' : 'Save Configuration'}
             </Button>
 
             {saved && (
               <div className="flex items-center gap-2 text-green-700">
                 <CheckCircle2 className="w-4 h-4" />
-                <span className="text-[13px] font-500">Đã lưu thành công</span>
+                <span className="text-[13px] font-500">Saved successfully</span>
               </div>
             )}
           </div>
@@ -236,21 +236,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-[#dc3545]" />
             <CardTitle className="text-[18px] font-bold text-[#dc3545]">
-              Vùng Nguy hiểm
+              Danger Zone
             </CardTitle>
           </div>
         </CardHeader>
 
         <CardContent className="pt-6 space-y-4">
           <p className="text-[13px] text-[#8b3a3a]">
-            Các hành động dưới đây có thể gây ra hậu quả nghiêm trọng
+            The following actions are destructive and cannot be undone.
           </p>
 
           <Button
             variant="outline"
             className="border-[#dc3545] text-[#dc3545] hover:bg-[#ffe6e6] h-10 px-4 rounded-[4px]"
           >
-            Xóa Tổ chức
+            Delete Organization
           </Button>
         </CardContent>
       </Card>

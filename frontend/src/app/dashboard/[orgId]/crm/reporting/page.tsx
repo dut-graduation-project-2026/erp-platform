@@ -219,39 +219,6 @@ export default function CrmReportingPage({ params }: { params: Promise<{ orgId: 
              </table>
            </div>
         </div>
-
-        {/* Configuration Nook */}
-        <div className="border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] bg-white flex flex-col overflow-hidden">
-           <div className="bg-[#f8f8f8] px-4 py-3 border-b border-[#e0e0e0]">
-              <h2 className="text-[14px] font-[600] text-[#242424]">Lost Reasons Configuration</h2>
-           </div>
-           <div className="overflow-y-auto max-h-[200px]">
-             <table className="w-full text-left">
-                <tbody>
-                  {[
-                    { id: 1, reason: 'Too Expensive', selected: false },
-                    { id: 2, reason: 'No Budget', selected: true },
-                    { id: 3, reason: 'Competitor Chosen', selected: false },
-                    { id: 4, reason: 'Missing Feature', selected: false },
-                  ].map(row => (
-                    <tr 
-                      key={row.id} 
-                      className={cn(
-                        "border-b border-[#e0e0e0] cursor-pointer hover:bg-[#f8f8f8]",
-                        row.selected ? "bg-[#f0f4ff] border-l-[3px] border-l-[#0066cc]" : "border-l-[3px] border-l-transparent"
-                      )}
-                    >
-                      <td className="px-4 py-3 text-[13px] text-[#242424]">{row.reason}</td>
-                      <td className="px-4 py-3 text-right">
-                         <span className="text-[12px] text-[#898989]">Active</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-             </table>
-           </div>
-        </div>
-
       </div>
     </div>
   );

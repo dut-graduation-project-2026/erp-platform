@@ -46,3 +46,11 @@ export const updateOrganizationApi = async (
   const response = await apiClient.put<OrganizationResponse>(`${API_ENDPOINTS.ORGANIZATIONS.BASE}/${orgId}`, payload);
   return response.data;
 };
+
+export const fetchOrganizationByIdApi = async (
+  orgId: string
+): Promise<OrganizationResponse> => {
+  const response = await apiClient.get<OrganizationResponse>(`${API_ENDPOINTS.ORGANIZATIONS.BASE}/${orgId}`);
+  return response.data;
+};
+

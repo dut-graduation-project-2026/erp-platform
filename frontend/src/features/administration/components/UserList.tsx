@@ -28,39 +28,39 @@ export const UserList: React.FC<UserListProps> = ({
   onToggleStatus,
 }) => {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
+    return new Date(dateString).toLocaleDateString('en-US');
   };
 
   const getRoleName = (roleId?: string) => {
-    if (!roleId) return 'Chưa gán';
+    if (!roleId) return 'Unassigned';
     const role = roles.find(r => r.id === roleId);
-    return role?.name || 'Không tìm thấy';
+    return role?.name || 'Not Found';
   };
 
   return (
     <Card className="shadow-standard">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-2xl font-semibold text-charcoal">
-          Quản lý Người dùng
+          User Management
         </CardTitle>
         <Button
           onClick={onAdd}
           className="bg-primary-blue hover:bg-dark-blue text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Thêm Người dùng
+          Add User
         </Button>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow className="bg-light-gray border-b border-border-gray">
-              <TableHead className="font-semibold text-charcoal">Họ và Tên</TableHead>
+              <TableHead className="font-semibold text-charcoal">Name</TableHead>
               <TableHead className="font-semibold text-charcoal">Email</TableHead>
-              <TableHead className="font-semibold text-charcoal">Vai trò</TableHead>
-              <TableHead className="font-semibold text-charcoal">Trạng thái</TableHead>
-              <TableHead className="font-semibold text-charcoal">Ngày Tạo</TableHead>
-              <TableHead className="font-semibold text-charcoal text-right">Thao tác</TableHead>
+              <TableHead className="font-semibold text-charcoal">Role</TableHead>
+              <TableHead className="font-semibold text-charcoal">Status</TableHead>
+              <TableHead className="font-semibold text-charcoal">Created At</TableHead>
+              <TableHead className="font-semibold text-charcoal text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -83,7 +83,7 @@ export const UserList: React.FC<UserListProps> = ({
                     variant={user.isActive ? "default" : "destructive"}
                     className={user.isActive ? "bg-success-green text-white" : "bg-error-red text-white"}
                   >
-                    {user.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                    {user.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-mid-gray">{formatDate(user.createdAt)}</TableCell>
@@ -94,7 +94,7 @@ export const UserList: React.FC<UserListProps> = ({
                       size="sm"
                       onClick={() => onToggleStatus(user)}
                       className={user.isActive ? "text-error-red hover:bg-light-red" : "text-success-green hover:bg-light-green"}
-                      title={user.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
+                      title={user.isActive ? "Deactivate" : "Activate"}
                     >
                       {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                     </Button>
@@ -122,7 +122,7 @@ export const UserList: React.FC<UserListProps> = ({
         </Table>
         {users.length === 0 && (
           <div className="text-center py-8 text-mid-gray">
-            Chưa có người dùng nào. Nhấn &quot;Thêm Người dùng&quot; để tạo mới.
+            No users found. Click &quot;Add User&quot; to create a new one.
           </div>
         )}
       </CardContent>

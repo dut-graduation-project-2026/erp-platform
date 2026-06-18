@@ -21,7 +21,7 @@ export const useUsers = () => {
         setUsers(mockUsers);
       } catch (error) {
         console.error('Failed to fetch users:', error);
-        toast.error('Không thể tải danh sách người dùng');
+        toast.error('Failed to load users');
       } finally {
         setLoading(false);
       }
@@ -49,10 +49,10 @@ export const useUsers = () => {
       };
 
       setUsers(prev => [...prev, newUser]);
-      toast.success('Tạo người dùng thành công');
+      toast.success('User created successfully');
     } catch (error) {
       console.error('Failed to create user:', error);
-      toast.error('Không thể tạo người dùng');
+      toast.error('Failed to create user');
       throw error;
     } finally {
       setLoading(false);
@@ -72,10 +72,10 @@ export const useUsers = () => {
             : user
         )
       );
-      toast.success('Cập nhật người dùng thành công');
+      toast.success('User updated successfully');
     } catch (error) {
       console.error('Failed to update user:', error);
-      toast.error('Không thể cập nhật người dùng');
+      toast.error('Failed to update user');
       throw error;
     } finally {
       setLoading(false);
@@ -89,10 +89,10 @@ export const useUsers = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       setUsers(prev => prev.filter(user => user.id !== id));
-      toast.success('Xóa người dùng thành công');
+      toast.success('User deleted successfully');
     } catch (error) {
       console.error('Failed to delete user:', error);
-      toast.error('Không thể xóa người dùng');
+      toast.error('Failed to delete user');
       throw error;
     } finally {
       setLoading(false);
@@ -112,10 +112,10 @@ export const useUsers = () => {
             : user
         )
       );
-      toast.success('Cập nhật trạng thái thành công');
+      toast.success('Status updated successfully');
     } catch (error) {
       console.error('Failed to toggle user status:', error);
-      toast.error('Không thể cập nhật trạng thái');
+      toast.error('Failed to update status');
       throw error;
     } finally {
       setLoading(false);

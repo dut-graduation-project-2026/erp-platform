@@ -21,7 +21,7 @@ export const useRoles = () => {
         setRoles(mockRoles);
       } catch (error) {
         console.error('Failed to fetch roles:', error);
-        toast.error('Không thể tải danh sách vai trò');
+        toast.error('Failed to load roles');
       } finally {
         setLoading(false);
       }
@@ -46,10 +46,10 @@ export const useRoles = () => {
       };
 
       setRoles(prev => [...prev, newRole]);
-      toast.success('Tạo vai trò thành công');
+      toast.success('Role created successfully');
     } catch (error) {
       console.error('Failed to create role:', error);
-      toast.error('Không thể tạo vai trò');
+      toast.error('Failed to create role');
       throw error;
     } finally {
       setLoading(false);
@@ -69,10 +69,10 @@ export const useRoles = () => {
             : role
         )
       );
-      toast.success('Cập nhật vai trò thành công');
+      toast.success('Role updated successfully');
     } catch (error) {
       console.error('Failed to update role:', error);
-      toast.error('Không thể cập nhật vai trò');
+      toast.error('Failed to update role');
       throw error;
     } finally {
       setLoading(false);
@@ -86,10 +86,10 @@ export const useRoles = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       setRoles(prev => prev.filter(role => role.id !== id));
-      toast.success('Xóa vai trò thành công');
+      toast.success('Role deleted successfully');
     } catch (error) {
       console.error('Failed to delete role:', error);
-      toast.error('Không thể xóa vai trò');
+      toast.error('Failed to delete role');
       throw error;
     } finally {
       setLoading(false);

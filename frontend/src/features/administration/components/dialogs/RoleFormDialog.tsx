@@ -27,11 +27,11 @@ interface RoleFormDialogProps {
 }
 
 const RESOURCES = [
-  { name: 'Sales', label: 'Bán hàng' },
-  { name: 'Inventory', label: 'Kho & Chuỗi cung ứng' },
-  { name: 'Finance', label: 'Tài chính' },
-  { name: 'HR', label: 'Nhân sự' },
-  { name: 'Blockchain Audit', label: 'Kiểm toán Blockchain' },
+  { name: 'Sales', label: 'Sales' },
+  { name: 'Inventory', label: 'Inventory & Supply Chain' },
+  { name: 'Finance', label: 'Finance' },
+  { name: 'HR', label: 'Human Resources' },
+  { name: 'Blockchain Audit', label: 'Blockchain Audit' },
 ];
 
 const ACTIONS = ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT'];
@@ -117,7 +117,7 @@ export const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border border-[#e0e0e0] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] rounded-[4px]">
         <DialogHeader className="border-b border-[#e0e0e0] pb-4 sticky top-0 bg-white">
           <DialogTitle className="text-[24px] font-bold text-[#242424]">
-            {role ? 'Sửa Vai trò' : 'Tạo Vai trò'}
+            {role ? 'Edit Role' : 'Create Role'}
           </DialogTitle>
           <button
             onClick={onClose}
@@ -131,12 +131,12 @@ export const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
           {/* Role Name */}
           <div className="space-y-2">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Tên Vai trò <span className="text-[#dc3545]">*</span>
+              Role Name <span className="text-[#dc3545]">*</span>
             </Label>
             <Input
               value={formData.name}
               onChange={(e) => handleChangeName(e.target.value)}
-              placeholder="VD: Quản lý Bán hàng"
+              placeholder="e.g., Sales Manager"
               className="h-10 rounded-[4px] border-[#d0d0d0] text-[14px] focus:border-[#0066cc]"
               required
             />
@@ -145,7 +145,7 @@ export const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
           {/* Permission Matrix */}
           <div className="space-y-4">
             <Label className="text-[14px] font-semibold text-[#242424]">
-              Ma trận Quyền
+              Permission Matrix
             </Label>
 
             <div className="overflow-x-auto border border-[#e0e0e0] rounded-[4px]">
@@ -153,7 +153,7 @@ export const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
                 <thead>
                   <tr className="bg-[#f8f8f8] border-b border-[#e0e0e0]">
                     <th className="px-4 py-3 text-left font-semibold text-[13px] text-[#242424] border-r border-[#e0e0e0]">
-                      Tài nguyên
+                      Resource
                     </th>
                     {ACTIONS.map(action => (
                       <th
@@ -206,7 +206,7 @@ export const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
             </div>
 
             <div className="text-[12px] text-[#898989]">
-              Tổng: <span className="font-semibold text-[#242424]">{formData.permissions.length}</span> quyền được chọn
+              Total: <span className="font-semibold text-[#242424]">{formData.permissions.length}</span> permissions selected
             </div>
           </div>
         </div>
@@ -217,14 +217,14 @@ export const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
             onClick={onClose}
             className="h-10 px-4 border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] rounded-[4px]"
           >
-            Hủy
+            Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading || !formData.name || formData.permissions.length === 0}
             className="h-10 px-4 bg-[#0066cc] hover:bg-[#004499] text-white font-semibold rounded-[4px]"
           >
-            {loading ? 'Đang lưu...' : 'Lưu'}
+            {loading ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

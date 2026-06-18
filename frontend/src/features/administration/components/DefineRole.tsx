@@ -44,13 +44,13 @@ export const DefineRole: React.FC<DefineRoleProps> = ({
     const newErrors: RoleFormErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Tên vai trò là bắt buộc';
+      newErrors.name = 'Role name is required';
     } else if (formData.name.length < 2) {
-      newErrors.name = 'Tên vai trò phải có ít nhất 2 ký tự';
+      newErrors.name = 'Role name must be at least 2 characters';
     }
 
     if (formData.permissions.length === 0) {
-      newErrors.permissions = 'Phải chọn ít nhất một quyền';
+      newErrors.permissions = 'At least one permission must be selected';
     }
 
     setErrors(newErrors);
@@ -76,7 +76,7 @@ export const DefineRole: React.FC<DefineRoleProps> = ({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-charcoal">
-            {role ? 'Chỉnh sửa Vai trò' : 'Định nghĩa Vai trò Mới'}
+            {role ? 'Edit Role' : 'Define New Role'}
           </DialogTitle>
         </DialogHeader>
 
@@ -84,20 +84,20 @@ export const DefineRole: React.FC<DefineRoleProps> = ({
           <Card className="shadow-standard">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-charcoal">
-                Thông tin Cơ bản
+                Basic Information
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="roleName" className="text-sm font-semibold text-charcoal">
-                    Tên Vai trò *
+                    Role Name *
                   </Label>
                   <Input
                     id="roleName"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ví dụ: Quản lý kho, Nhân viên bán hàng"
+                    placeholder="e.g., Warehouse Manager, Salesperson"
                     className={errors.name ? 'border-error-red' : ''}
                   />
                   {errors.name && (
@@ -126,14 +126,14 @@ export const DefineRole: React.FC<DefineRoleProps> = ({
               onClick={onClose}
               disabled={loading}
             >
-              Hủy
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
               className="bg-primary-blue hover:bg-dark-blue text-white"
             >
-              {loading ? 'Đang lưu...' : role ? 'Cập nhật' : 'Tạo Vai trò'}
+              {loading ? 'Saving...' : role ? 'Update' : 'Create Role'}
             </Button>
           </DialogFooter>
         </form>

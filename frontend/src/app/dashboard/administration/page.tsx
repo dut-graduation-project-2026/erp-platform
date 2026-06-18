@@ -60,7 +60,7 @@ function AdministrationContent() {
   };
 
   const handleDeleteOrg = async (org: Organization) => {
-    if (confirm(`Bạn có chắc muốn xóa tổ chức "${org.name}"?`)) {
+    if (confirm(`Are you sure you want to delete organization "${org.name}"?`)) {
       try {
         await deleteOrganization(org.id);
       } catch {
@@ -94,7 +94,7 @@ function AdministrationContent() {
   };
 
   const handleDeleteRole = async (role: Role) => {
-    if (confirm(`Bạn có chắc muốn xóa vai trò "${role.name}"?`)) {
+    if (confirm(`Are you sure you want to delete role "${role.name}"?`)) {
       try {
         await deleteRole(role.id);
       } catch {
@@ -136,7 +136,7 @@ function AdministrationContent() {
   };
 
   const handleDeleteUser = async (user: User) => {
-    if (confirm(`Bạn có chắc muốn xóa người dùng "${user.firstName} ${user.lastName}"?`)) {
+    if (confirm(`Are you sure you want to delete user "${user.firstName} ${user.lastName}"?`)) {
       try {
         await deleteUser(user.id);
       } catch {
@@ -176,21 +176,21 @@ function AdministrationContent() {
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-charcoal mb-2">Quản trị Hệ thống</h1>
+        <h1 className="text-3xl font-bold text-charcoal mb-2">System Administration</h1>
         <p className="text-mid-gray">
-          Quản lý tổ chức, vai trò và người dùng trong hệ thống ERP
+          Manage organizations, roles, and users in the ERP system
         </p>
       </div>
 
       <Tabs defaultValue="organizations" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="organizations">Tổ chức</TabsTrigger>
-          <TabsTrigger value="roles">Vai trò</TabsTrigger>
-          <TabsTrigger value="users">Người dùng</TabsTrigger>
+          <TabsTrigger value="organizations">Organizations</TabsTrigger>
+          <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
 
         <TabsContent value="organizations" className="space-y-6">
-          <PermissionGuard permission="admin:read" fallback={<div>Bạn không có quyền truy cập trang này</div>}>
+          <PermissionGuard permission="admin:read" fallback={<div>You do not have permission to access this page</div>}>
             <OrganizationList
               organizations={organizations}
               onAdd={handleAddOrg}
@@ -201,14 +201,14 @@ function AdministrationContent() {
         </TabsContent>
 
         <TabsContent value="roles" className="space-y-6">
-          <PermissionGuard permission="admin:read" fallback={<div>Bạn không có quyền truy cập trang này</div>}>
+          <PermissionGuard permission="admin:read" fallback={<div>You do not have permission to access this page</div>}>
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold text-charcoal">Quản lý Vai trò</h2>
+              <h2 className="text-2xl font-semibold text-charcoal">Role Management</h2>
               <button
                 onClick={handleAddRole}
                 className="bg-primary-blue hover:bg-dark-blue text-white px-4 py-2 rounded-md font-medium"
               >
-                Định nghĩa Vai trò Mới
+                Define New Role
               </button>
             </div>
 
@@ -219,7 +219,7 @@ function AdministrationContent() {
                     <div>
                       <h3 className="font-semibold text-charcoal">{role.name}</h3>
                       <p className="text-sm text-mid-gray mt-1">
-                        Quyền: {role.permissions.join(', ')}
+                        Permissions: {role.permissions.join(', ')}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -227,13 +227,13 @@ function AdministrationContent() {
                         onClick={() => handleEditRole(role)}
                         className="text-primary-blue hover:bg-light-blue px-3 py-1 rounded text-sm"
                       >
-                        Sửa
+                        Edit
                       </button>
                       <button
                         onClick={() => handleDeleteRole(role)}
                         className="text-error-red hover:bg-light-red px-3 py-1 rounded text-sm"
                       >
-                        Xóa
+                        Delete
                       </button>
                     </div>
                   </div>
@@ -244,7 +244,7 @@ function AdministrationContent() {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
-          <PermissionGuard permission="admin:read" fallback={<div>Bạn không có quyền truy cập trang này</div>}>
+          <PermissionGuard permission="admin:read" fallback={<div>You do not have permission to access this page</div>}>
             <UserList
               users={users}
               roles={roles}

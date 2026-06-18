@@ -68,10 +68,10 @@ export const RoleMatrix: React.FC<RoleMatrixProps> = ({
     <Card className="shadow-standard">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-charcoal">
-          Ma trận Quyền hạn
+          Permission Matrix
         </CardTitle>
         <p className="text-sm text-mid-gray">
-          Chọn các quyền cho vai trò này. Hàng là Modules, cột là Actions.
+          Select the permissions for this role. Rows are Modules, columns are Actions.
         </p>
       </CardHeader>
       <CardContent>
@@ -118,7 +118,7 @@ export const RoleMatrix: React.FC<RoleMatrixProps> = ({
               {visibleResources.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={actions.length + 1} className="py-8 text-center text-mid-gray text-[13px]">
-                    Không có tài nguyên nào trong phân hệ này.
+                    No resources available in this module.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -151,10 +151,10 @@ export const RoleMatrix: React.FC<RoleMatrixProps> = ({
         </div>
 
         <div className="mt-6 p-4 bg-light-gray rounded-md">
-          <h4 className="font-semibold text-charcoal mb-2">Quyền đã chọn ({selectedPermissions.length}):</h4>
+          <h4 className="font-semibold text-charcoal mb-2">Selected permissions ({selectedPermissions.length}):</h4>
           <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
             {selectedPermissions.length === 0 ? (
-              <span className="text-mid-gray text-sm">Chưa chọn quyền nào</span>
+              <span className="text-mid-gray text-sm">No permissions selected</span>
             ) : (
               selectedPermissions.map(permission => (
                 <span

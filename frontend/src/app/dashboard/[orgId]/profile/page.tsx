@@ -102,7 +102,7 @@ export default function ProfilePage() {
       setConfirmPassword("");
     } catch (err: any) {
       console.error(err);
-      const errorMessage = err.response?.data?.message || "Không thể thay đổi mật khẩu. Vui lòng kiểm tra lại.";
+      const errorMessage = err.response?.data?.message || "Failed to change password. Please try again.";
       toast.error(errorMessage);
     } finally {
       setIsSavingPassword(false);
