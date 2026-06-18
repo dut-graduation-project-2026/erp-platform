@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus, Trash2, Save, ArrowRightLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function NewTransferPage({ 
   params 
@@ -105,7 +106,7 @@ export default function NewTransferPage({
         items
       });
       toast.success('Internal transfer document created successfully');
-      router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}?whId=${sourceWarehouseId}`);
+      router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?whId=${sourceWarehouseId}`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to create transfer document');

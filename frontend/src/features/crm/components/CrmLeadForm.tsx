@@ -14,6 +14,7 @@ import { getPartners, createPartner } from '@/features/sales/services/salesServi
 import { fetchUsersApi } from '@/features/organization/services/userService';
 import { toast } from 'sonner';
 import { PERMISSIONS } from '@/config/permissions';
+import { APP_ROUTES } from '@/config/constants';
 interface Props {
   lead: CrmLead | null;
   orgId: string;
@@ -108,7 +109,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
       if (isNew) {
         const res = await createLead(orgId, formData as CreateCrmLeadRequest);
         alert("Lead created successfully!");
-        router.push(`/dashboard/${orgId}/crm/leads/${res.id}`);
+        router.push(APP_ROUTES.CRM.LEAD_DETAIL(orgId, res.id));
       } else if (lead?.id) {
         await updateLead(orgId, lead.id, formData as CreateCrmLeadRequest);
         alert("Lead updated successfully!");
@@ -160,13 +161,13 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
                   toast.error('You must link a Customer/Partner to this lead and save before converting to an order.');
                   return;
                 }
-                router.push(`/dashboard/${orgId}/sales/quotations/new?leadId=${lead?.id}`);
+                router.push(`${APP_ROUTES.SALES.QUOTATION_NEW(orgId)}?leadId=${lead?.id}`);
               }}
             >
               Convert to Order
             </Button>
           )}
-          <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={() => router.push(`/dashboard/${orgId}/crm`)}>
+          <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={() => router.push(APP_ROUTES.CRM.DASHBOARD(orgId))}>
             Cancel
           </Button>
           {(isNew ? hasPermission(PERMISSIONS.LEADS.CREATE) : hasPermission(PERMISSIONS.LEADS.WRITE)) && (

@@ -19,6 +19,7 @@ import {
 import { Building2, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
+import { APP_ROUTES } from '@/config/constants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,7 +73,7 @@ export default function SelectOrgPage() {
       document.cookie = `currentOrgId=${orgId}; path=/; max-age=86400; secure; SameSite=Lax`;
       document.cookie = `userOrgIds=${orgIds}; path=/; max-age=86400; secure; SameSite=Lax`;
       
-      router.push(`/dashboard/${orgId}`);
+      router.push(APP_ROUTES.DASHBOARD(orgId));
     } catch (err) {
       console.error("Failed to fetch permissions:", err);
       // Bạn có thể show toast lỗi ở đây nếu cần

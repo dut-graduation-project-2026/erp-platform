@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
 import { toast } from 'sonner';
+import { APP_ROUTES } from '@/config/constants';
 import { Textarea } from '@/components/ui/textarea';
 
 // Helper to iterate warehouses and find the document
@@ -159,7 +160,7 @@ export default function DocumentDetailsPage({
       toast.success('Document marked as COMPLETED. Inventory levels and COGS updated.');
       if (doc.documentType === 'RECEIPT' && fulfillShortageFor) {
         toast.success('Stock shortage resolved. Returning to originating document.');
-        router.push(`/dashboard/${orgId}/inventory/documents/${fulfillShortageFor}`);
+        router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, fulfillShortageFor));
       } else {
         setDoc(updated);
       }
@@ -236,7 +237,7 @@ export default function DocumentDetailsPage({
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={() => router.push(`/dashboard/${orgId}/inventory/documents`)} 
+            onClick={() => router.push(APP_ROUTES.INVENTORY.DOCUMENTS(orgId))} 
             className="h-8 w-8 text-[#898989] hover:text-[#242424]"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -317,7 +318,7 @@ export default function DocumentDetailsPage({
             </div>
             <div className="flex space-x-2">
               <Button 
-                onClick={() => router.push(`/dashboard/${orgId}/inventory/receipts/new?warehouseId=${doc.warehouseId}&fulfillShortageFor=${doc.id}`)}
+                onClick={() => router.push(`${APP_ROUTES.INVENTORY.RECEIPTS_NEW(orgId)}?warehouseId=${doc.warehouseId}&fulfillShortageFor=${doc.id}`)}
                 variant="outline"
                 className="bg-transparent border-[#ff9900] text-[#d68100] hover:bg-[#fff7e6] text-[12px] h-8 px-3 rounded-[4px] font-[600]"
               >

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
 import { PERMISSIONS } from '@/config/permissions';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function SalesLayout({
   children,
@@ -17,7 +18,6 @@ export default function SalesLayout({
 }) {
   const pathname = usePathname();
   const { orgId } = use(params);
-  const basePath = `/dashboard/${orgId}/sales`;
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -35,19 +35,19 @@ export default function SalesLayout({
   };
 
   const docItems = [
-    { name: 'Quotations', href: `${basePath}/quotations`, icon: FileText },
-    { name: 'Orders', href: `${basePath}/orders`, icon: ShoppingCart },
-    { name: 'Invoices', href: `${basePath}/invoices`, icon: Receipt },
+    { name: 'Quotations', href: APP_ROUTES.SALES.QUOTATIONS(orgId), icon: FileText },
+    { name: 'Orders', href: APP_ROUTES.SALES.ORDERS(orgId), icon: ShoppingCart },
+    { name: 'Invoices', href: APP_ROUTES.SALES.INVOICES(orgId), icon: Receipt },
   ];
 
   const masterItems = [
-    { name: 'Customers', href: `${basePath}/customers`, icon: Users },
-    { name: 'Products', href: `${basePath}/products`, icon: Package },
-    { name: 'Taxes', href: `${basePath}/taxes`, icon: Percent },
+    { name: 'Customers', href: APP_ROUTES.SALES.CUSTOMERS(orgId), icon: Users },
+    { name: 'Products', href: APP_ROUTES.SALES.PRODUCTS(orgId), icon: Package },
+    { name: 'Taxes', href: APP_ROUTES.SALES.TAXES(orgId), icon: Percent },
   ];
 
   const reportItems = [
-    { name: 'Analytics', href: `${basePath}/analytics`, icon: BarChart2 },
+    { name: 'Analytics', href: APP_ROUTES.SALES.ANALYTICS(orgId), icon: BarChart2 },
   ];
 
   const renderNavItem = (item: { name: string; href: string; icon: React.ElementType }) => {

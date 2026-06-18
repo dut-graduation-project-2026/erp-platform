@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus, Trash2, Save, PackageMinus } from 'lucide-react';
 import { toast } from 'sonner';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function NewDeliveryPage({ 
   params 
@@ -98,7 +99,7 @@ export default function NewDeliveryPage({
         items
       });
       toast.success('Delivery document created successfully');
-      router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}?whId=${warehouseId}`);
+      router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?whId=${warehouseId}`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to create delivery document');

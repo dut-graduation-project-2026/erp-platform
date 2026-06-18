@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { OrderItem, Product, SaleOrder, SaleTax } from '../types';
 import { Button } from '@/components/ui/button';
-import { ORDER_STATUS, TAX_COMPUTATION, ORDER_STATUS_CONFIG, OrderStatus } from '@/config/constants';
+import { ORDER_STATUS, TAX_COMPUTATION, ORDER_STATUS_CONFIG, OrderStatus, APP_ROUTES } from '@/config/constants';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, ChevronRight, Save, CheckCircle, XCircle, Receipt, Building, Mail, Phone, User, Calendar, ArrowLeft, Clock, Activity, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -194,7 +194,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
 
       toast.success('Quotation saved successfully.');
       if (!order?.id) {
-        router.push(`/dashboard/${orgId}/sales/quotations/${saved.id}`);
+        router.push(APP_ROUTES.SALES.QUOTATION_DETAIL(orgId, saved.id));
       }
       return true;
     } catch (err: any) {
@@ -215,7 +215,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
       await confirmQuotation(orgId, order.id);
       setLocalStatus('CONFIRMED');
       toast.success('Order confirmed successfully.');
-      router.push(`/dashboard/${orgId}/sales/orders/${order.id}`);
+      router.push(APP_ROUTES.SALES.ORDER_DETAIL(orgId, order.id));
     } catch {
       // error toast already shown by api-client interceptor
     }
@@ -239,7 +239,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
     try {
       const invoice = await createInvoice(orgId, { orderId: order.id });
       toast.success('Invoice created successfully.');
-      router.push(`/dashboard/${orgId}/sales/invoices/${invoice.id}`);
+      router.push(APP_ROUTES.SALES.INVOICE_DETAIL(orgId, invoice.id));
     } catch {
       // error toast handled
     }
@@ -267,7 +267,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
       {/* Breadcrumb bar */}
       <div className="bg-white border-b border-[#e0e0e0] px-6 h-12 flex items-center shrink-0 justify-between">
         <div className="flex items-center text-[14px]">
-          <Link href={`/dashboard/${orgId}/sales/quotations`} className="text-[#898989] hover:text-[#242424]">
+          <Link href={APP_ROUTES.SALES.QUOTATIONS(orgId)} className="text-[#898989] hover:text-[#242424]">
             Quotations
           </Link>
           <ChevronRight className="w-4 h-4 text-[#898989] mx-2" />
@@ -633,7 +633,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
           <Button
             variant="outline"
             className="border-[#d0d0d0] text-[#242424] h-8 px-3 text-[13px] rounded-[4px] bg-white hover:bg-[#f8f8f8]"
-            onClick={() => router.push(`/dashboard/${orgId}/sales/orders`)}
+            onClick={() => router.push(APP_ROUTES.SALES.ORDERS(orgId))}
           >
             Back to List
           </Button>
@@ -791,7 +791,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
                       <Receipt className="w-4 h-4 mr-1.5 text-[#15803d]" /> Invoice
                     </span>
                     <Link
-                      href={`/dashboard/${orgId}/sales/invoices/${order.invoiceId}`}
+                      href={APP_ROUTES.SALES.INVOICE_DETAIL(orgId, order.invoiceId)}
                       className="text-[#15803d] font-[600] underline hover:text-[#166534]"
                     >
                       {order.invoiceNumber || 'View Invoice'}

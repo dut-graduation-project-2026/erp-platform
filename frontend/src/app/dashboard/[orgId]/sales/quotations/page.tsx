@@ -10,6 +10,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { PERMISSIONS } from '@/config/permissions';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function QuotationsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
           </div>
           {hasPermission(PERMISSIONS.ORDERS.CREATE) && (
             <Button
-              onClick={() => router.push(`/dashboard/${orgId}/sales/quotations/new`)}
+              onClick={() => router.push(APP_ROUTES.SALES.QUOTATION_NEW(orgId))}
               className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
             >
               <Plus className="w-4 h-4 mr-2" /> New Quotation
@@ -90,7 +91,7 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
                 filteredOrders.map((order, idx) => (
                   <tr
                     key={order.id}
-                    onClick={() => router.push(`/dashboard/${orgId}/sales/quotations/${order.id}`)}
+                    onClick={() => router.push(APP_ROUTES.SALES.QUOTATION_DETAIL(orgId, order.id))}
                     className={cn("border-b border-[#e0e0e0] hover:bg-[#f0f4ff] cursor-pointer", idx % 2 === 0 ? "bg-white" : "bg-[#fafafa]")}
                   >
                     <td className="px-4 py-3 text-[13px] text-[#242424] font-[600] border-r border-[#e0e0e0]">{order.orderNumber || order.code}</td>

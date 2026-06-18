@@ -7,6 +7,7 @@ import { PermissionGuard } from "@/components/rbac/PermissionGuard";
 import { PERMISSIONS } from "@/config/permissions";
 import { useOrganizationMember } from "@/features/organization/hooks/useOrganizationMember";
 import { useRoles } from "@/features/organization/hooks/useRoles";
+import { APP_ROUTES } from "@/config/constants";
 
 export default function UserDetailPage({ params }: { params: Promise<{ orgId: string; userId: string }> }) {
   const unwrappedParams = use(params);
@@ -49,12 +50,12 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
     // Updating profile (name, phone) is restricted to the user themselves.
     const success = await updateRoles(selectedRoleIds);
     if (success) {
-      router.push(`/dashboard/${orgId}/users`);
+      router.push(APP_ROUTES.ADMINISTRATION.USERS(orgId));
     }
   };
 
   const handleDiscard = () => {
-    router.push(`/dashboard/${orgId}/users`);
+    router.push(APP_ROUTES.ADMINISTRATION.USERS(orgId));
   };
 
   const toggleRole = (roleId: string) => {
@@ -81,9 +82,9 @@ export default function UserDetailPage({ params }: { params: Promise<{ orgId: st
         {/* Top Control Bar (Odoo Style) */}
         <div className="bg-white border-b border-[#e0e0e0] px-6 py-4 sticky top-0 z-10 shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
           <div className="flex items-center gap-2 mb-4 text-[13px]">
-            <span className="text-[#898989] cursor-pointer hover:underline" onClick={() => router.push(`/dashboard/${orgId}`)}>Dashboard</span>
+            <span className="text-[#898989] cursor-pointer hover:underline" onClick={() => router.push(APP_ROUTES.DASHBOARD(orgId))}>Dashboard</span>
             <span className="text-[#898989]">{'>'}</span>
-            <span className="text-[#898989] cursor-pointer hover:underline" onClick={() => router.push(`/dashboard/${orgId}/users`)}>Users</span>
+            <span className="text-[#898989] cursor-pointer hover:underline" onClick={() => router.push(APP_ROUTES.ADMINISTRATION.USERS(orgId))}>Users</span>
             <span className="text-[#898989]">{'>'}</span>
             <span className="text-[#0066cc] font-medium">{formData.name}</span>
           </div>

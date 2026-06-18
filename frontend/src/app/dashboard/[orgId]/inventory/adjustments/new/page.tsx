@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus, Trash2, Save, Activity } from 'lucide-react';
 import { toast } from 'sonner';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function NewAdjustmentPage({ 
   params 
@@ -98,7 +99,7 @@ export default function NewAdjustmentPage({
         items
       });
       toast.success('Inventory adjustment document created successfully');
-      router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}?whId=${warehouseId}`);
+      router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?whId=${warehouseId}`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to create adjustment document');

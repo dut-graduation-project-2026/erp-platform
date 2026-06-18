@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CrmLead } from '../types';
+import { APP_ROUTES } from '@/config/constants';
 import { CheckCircle2, Clock, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateLeadStage } from '../services/crmService';
@@ -109,7 +110,7 @@ export function CrmKanbanBoard({ leads: initialLeads, orgId }: Props) {
                   draggable={hasPermission(PERMISSIONS.LEADS.WRITE)}
                   onDragStart={(e) => handleDragStart(e, lead.id)}
                   onDragEnd={handleDragEnd}
-                  onClick={() => router.push(`/dashboard/${orgId}/crm/leads/${lead.id}`)}
+                  onClick={() => router.push(APP_ROUTES.CRM.LEAD_DETAIL(orgId, lead.id))}
                   className={cn("bg-white p-3 rounded-[4px] shadow-[0px_1px_3px_rgba(0,0,0,0.12)] border border-transparent hover:border-[#0066cc] hover:shadow-[0px_2px_8px_rgba(0,0,0,0.15)] transition-all", hasPermission(PERMISSIONS.LEADS.WRITE) ? "cursor-pointer active:cursor-grabbing" : "cursor-pointer")}
                 >
                   <div className="flex justify-between items-start mb-2">

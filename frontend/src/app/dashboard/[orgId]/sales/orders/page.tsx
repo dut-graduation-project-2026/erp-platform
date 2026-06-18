@@ -10,7 +10,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { PERMISSIONS } from '@/config/permissions';
-import { ORDER_STATUS, ORDER_STATUS_CONFIG, OrderStatus } from '@/config/constants';
+import { ORDER_STATUS, ORDER_STATUS_CONFIG, OrderStatus, APP_ROUTES } from '@/config/constants';
 
 export default function OrdersListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const router = useRouter();
@@ -111,7 +111,7 @@ export default function OrdersListPage({ params }: { params: Promise<{ orgId: st
                 filteredOrders.map((order, idx) => (
                   <tr
                     key={order.id}
-                    onClick={() => router.push(`/dashboard/${orgId}/sales/orders/${order.id}`)}
+                    onClick={() => router.push(APP_ROUTES.SALES.ORDER_DETAIL(orgId, order.id))}
                     className={cn("border-b border-[#e0e0e0] hover:bg-[#f0f4ff] cursor-pointer", idx % 2 === 0 ? "bg-white" : "bg-[#fafafa]")}
                   >
                     <td className="px-4 py-3 text-[13px] text-[#242424] font-[600] border-r border-[#e0e0e0]">{order.orderNumber || order.code}</td>

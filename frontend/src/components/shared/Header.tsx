@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/use-auth-store';
 import { APP_MODULES } from '@/config/modules';
+import { APP_ROUTES } from '@/config/constants';
 import { useErpModules } from '@/features/organization/hooks/useErpModules';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -89,7 +90,7 @@ export function Header({ className }: HeaderProps) {
         }
       }
 
-      router.push(`/dashboard/${orgId}`);
+      router.push(APP_ROUTES.DASHBOARD(orgId));
       toast.success(`Switched to organization: ${orgName}`);
     } catch (error) {
       console.error('Switch org error:', error);
@@ -246,14 +247,14 @@ export function Header({ className }: HeaderProps) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-[#f5f5f5] my-1" />
               <DropdownMenuItem 
-                onClick={() => currentOrgId && router.push(`/dashboard/${currentOrgId}/profile`)}
+                onClick={() => currentOrgId && router.push(APP_ROUTES.PROFILE(currentOrgId))}
                 className="flex items-center text-[13px] text-[#242424] hover:bg-[#f0f4ff] hover:text-[#0066cc] cursor-pointer py-2 px-3 rounded-[2px] focus:bg-[#f0f4ff] focus:text-[#0066cc] transition-colors"
               >
                 <User className="mr-2.5 h-4 w-4 text-[#898989]" />
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => currentOrgId && router.push(`/dashboard/${currentOrgId}/profile?tab=settings`)}
+                onClick={() => currentOrgId && router.push(APP_ROUTES.PROFILE_SETTINGS(currentOrgId))}
                 className="flex items-center text-[13px] text-[#242424] hover:bg-[#f0f4ff] hover:text-[#0066cc] cursor-pointer py-2 px-3 rounded-[2px] focus:bg-[#f0f4ff] focus:text-[#0066cc] transition-colors"
               >
                 <Settings className="mr-2.5 h-4 w-4 text-[#898989]" />

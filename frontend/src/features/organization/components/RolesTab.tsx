@@ -5,6 +5,7 @@ import { Search, Plus, MoreHorizontal, ShieldCheck, LayoutGrid, List as ListIcon
 import { PermissionGuard } from "@/components/rbac/PermissionGuard";
 import { PERMISSIONS } from "@/config/permissions";
 import Link from "next/link";
+import { APP_ROUTES } from "@/config/constants";
 import { useRoles } from "@/features/organization/hooks/useRoles";
 
 export function RolesTab({ orgId }: { orgId: string }) {
@@ -22,7 +23,7 @@ export function RolesTab({ orgId }: { orgId: string }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <PermissionGuard permission={PERMISSIONS.ROLES.CREATE}>
-              <Link href={`/dashboard/${orgId}/roles/new`}>
+              <Link href={APP_ROUTES.ADMINISTRATION.ROLE_NEW(orgId)}>
                 <button className="bg-[#0066cc] text-white px-4 py-2 rounded-[4px] text-[14px] font-[600] hover:bg-[#004499] transition-colors flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   New Role
@@ -97,7 +98,7 @@ export function RolesTab({ orgId }: { orgId: string }) {
                       ?
                     </div>
                   </div>
-                  <Link href={`/dashboard/${orgId}/roles/${role.id}`}>
+                  <Link href={APP_ROUTES.ADMINISTRATION.ROLE_DETAIL(orgId, role.id)}>
                     <button className="text-[#0066cc] text-[13px] font-[600] hover:underline">
                       Edit Permissions
                     </button>
@@ -126,7 +127,7 @@ export function RolesTab({ orgId }: { orgId: string }) {
                       <td className="py-3 px-4 text-[13px] text-[#242424] font-[600]">{role.name}</td>
                       <td className="py-3 px-4 text-[13px] text-[#666]">-</td>
                       <td className="py-3 px-4 text-center">
-                        <Link href={`/dashboard/${orgId}/roles/${role.id}`}>
+                        <Link href={APP_ROUTES.ADMINISTRATION.ROLE_DETAIL(orgId, role.id)}>
                           <button className="text-[#0066cc] text-[13px] hover:underline font-[600]">
                             Edit
                           </button>

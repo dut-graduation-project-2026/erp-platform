@@ -17,7 +17,7 @@ import {
   InventoryDocumentItemRequest
 } from '@/features/inventory/types';
 import { Product } from '@/features/sales/types';
-import { DOCUMENT_TYPE, DOCUMENT_STATUS, REFERENCE_TYPE } from '@/config/constants';
+import { DOCUMENT_TYPE, DOCUMENT_STATUS, REFERENCE_TYPE, APP_ROUTES } from '@/config/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -162,7 +162,7 @@ export default function DocumentsListPage() {
       toast.success('Draft document created successfully');
       setIsModalOpen(false);
       fetchDocuments();
-      router.push(`/dashboard/${orgId}/inventory/documents/${created.id}`);
+      router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, created.id));
     } catch (e) {
       console.error(e);
       toast.error('Failed to create stock move document');
@@ -323,7 +323,7 @@ export default function DocumentsListPage() {
                   return (
                     <tr 
                       key={doc.id} 
-                      onClick={() => router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}`)}
+                      onClick={() => router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id))}
                       className="border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f0f4ff] transition-colors cursor-pointer group"
                     >
                       <td className="py-3.5 px-4 font-mono text-[13px] font-[700] text-[#0066cc] group-hover:underline">
@@ -351,13 +351,17 @@ export default function DocumentsListPage() {
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-[13px] text-[#4a4a4a] font-medium" onClick={(e) => e.stopPropagation()}>
-                        {doc.orderNumber ? (
+                        {doc.orderNumber && doc.referenceId ? (
                           <Link 
-                            href={`/dashboard/${orgId}/sales/orders/${doc.referenceId}`}
+                            href={APP_ROUTES.SALES.ORDER_DETAIL(orgId, doc.referenceId)}
                             className="inline-flex items-center justify-center min-w-[110px] text-center px-2 py-0.5 rounded-[4px] text-[11px] font-[600] uppercase bg-[#e8f4fd] text-[#1b75bb] border border-[#d0e8fc] hover:bg-[#d0e8fc] hover:text-[#004499] transition-colors"
                           >
                             {doc.orderNumber}
                           </Link>
+                        ) : doc.orderNumber ? (
+                          <span className="inline-flex items-center justify-center min-w-[110px] text-center px-2 py-0.5 rounded-[4px] text-[11px] font-[600] uppercase bg-gray-100 text-gray-750 border border-gray-200">
+                            {doc.orderNumber}
+                          </span>
                         ) : (
                           <span className="text-[#898989] italic">-</span>
                         )}
@@ -385,7 +389,7 @@ export default function DocumentsListPage() {
                       </td>
                       <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
                         <Button 
-                          onClick={() => router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}`)}
+                          onClick={() => router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id))}
                           variant="ghost" 
                           className="h-8 px-2 text-[#64748b] hover:bg-[#f5f5f5] hover:text-[#242424]"
                         >

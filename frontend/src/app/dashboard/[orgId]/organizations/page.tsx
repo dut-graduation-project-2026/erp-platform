@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { UsersTab } from "@/features/organization/components/UsersTab";
 import { RolesTab } from "@/features/organization/components/RolesTab";
 import { useSearchParams, useRouter } from "next/navigation";
+import { APP_ROUTES } from "@/config/constants";
 
 export default function OrganizationsPage({ params }: { params: Promise<{ orgId: string }> }) {
   const unwrappedParams = use(params);
@@ -57,7 +58,7 @@ export default function OrganizationsPage({ params }: { params: Promise<{ orgId:
 
   const handleTabChange = (tab: 'users' | 'roles') => {
     setActiveTab(tab);
-    router.replace(`/dashboard/${orgId}/organizations?tab=${tab}`);
+    router.replace(tab === 'users' ? APP_ROUTES.ADMINISTRATION.USERS(orgId) : APP_ROUTES.ADMINISTRATION.ROLES(orgId));
   };
 
   const handleSave = async (e: React.FormEvent) => {

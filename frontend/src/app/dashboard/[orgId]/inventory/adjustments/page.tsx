@@ -10,7 +10,7 @@ import {
   Warehouse, 
   InventoryDocument, 
 } from '@/features/inventory/types';
-import { DOCUMENT_TYPE, DOCUMENT_STATUS } from '@/config/constants';
+import { DOCUMENT_TYPE, DOCUMENT_STATUS, APP_ROUTES } from '@/config/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, RefreshCw, Eye, Calendar, FileText } from 'lucide-react';
@@ -129,7 +129,7 @@ export default function AdjustmentsListPage() {
 
           {hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.CREATE) && (
             <Button 
-              onClick={() => router.push(`/dashboard/${orgId}/inventory/adjustments/new?warehouseId=${selectedWarehouseId}`)}
+              onClick={() => router.push(`${APP_ROUTES.INVENTORY.ADJUSTMENTS_NEW(orgId)}?warehouseId=${selectedWarehouseId}`)}
               className="bg-[#475569] hover:bg-[#334155] text-white h-10 px-4 rounded-[4px] font-[600] text-[13px]"
             >
               <Plus className="w-4 h-4 mr-2" /> New Adjustment
@@ -190,7 +190,7 @@ export default function AdjustmentsListPage() {
                   return (
                     <tr 
                       key={doc.id} 
-                      onClick={() => router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}`)}
+                      onClick={() => router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id))}
                       className="border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f8fafc] transition-colors cursor-pointer group"
                     >
                       <td className="py-3.5 px-4 font-mono text-[13px] font-[700] text-[#475569] group-hover:underline">
@@ -218,7 +218,7 @@ export default function AdjustmentsListPage() {
                       </td>
                       <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
                         <Button 
-                          onClick={() => router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}`)}
+                          onClick={() => router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id))}
                           variant="ghost" 
                           className="h-8 px-2 text-[#64748b] hover:bg-[#f5f5f5] hover:text-[#242424]"
                         >

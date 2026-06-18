@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function CrmPipelinePage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -59,7 +60,7 @@ export default function CrmPipelinePage({ params }: { params: Promise<{ orgId: s
 
           {hasPermission(PERMISSIONS.LEADS.CREATE) && (
             <Button
-              onClick={() => router.push(`/dashboard/${orgId}/crm/leads/new`)}
+              onClick={() => router.push(APP_ROUTES.CRM.LEADS_NEW(orgId))}
               className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
             >
               <Plus className="w-4 h-4 mr-2" /> New Lead

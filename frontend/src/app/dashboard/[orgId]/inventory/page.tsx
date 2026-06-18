@@ -7,7 +7,7 @@ import { getWarehouses, getWarehouseMetrics } from '@/features/inventory/service
 import { Warehouse } from '@/features/inventory/types';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
-import { DOCUMENT_TYPE, DOCUMENT_STATUS, ORDER_STATUS } from '@/config/constants';
+import { DOCUMENT_TYPE, DOCUMENT_STATUS, ORDER_STATUS, APP_ROUTES } from '@/config/constants';
 import Link from 'next/link';
 
 export default function InventoryDashboard() {
@@ -106,7 +106,7 @@ export default function InventoryDashboard() {
                   <div>
                     <h2 
                       className="text-[16px] font-[600] text-[#0066cc] hover:underline cursor-pointer flex items-center"
-                      onClick={() => router.push(`/dashboard/${orgId}/inventory/receipts?warehouseId=${selectedWarehouseId}`)}
+                      onClick={() => router.push(`${APP_ROUTES.INVENTORY.RECEIPTS(orgId)}?warehouseId=${selectedWarehouseId}`)}
                     >
                       Receipts
                     </h2>
@@ -115,7 +115,7 @@ export default function InventoryDashboard() {
                 
                 </div>
                 <div className="p-5 flex-1 grid grid-cols-2 gap-4">
-                  <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`/dashboard/${orgId}/inventory/receipts?warehouseId=${selectedWarehouseId}`)}>
+                  <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`${APP_ROUTES.INVENTORY.RECEIPTS(orgId)}?warehouseId=${selectedWarehouseId}`)}>
                     <span className="text-[28px] font-mono font-[700] text-[#0066cc] leading-none mb-1">{metrics.receipts.toProcess}</span>
                     <span className="text-[12px] font-[600] text-[#0066cc] uppercase tracking-wide">To Process</span>
                   </div>
@@ -134,7 +134,7 @@ export default function InventoryDashboard() {
                 </div>
                 <div className="px-5 py-3 bg-[#fbfbfb] border-t border-[#f0f0f0]">
                   <button 
-                    onClick={() => router.push(`/dashboard/${orgId}/inventory/receipts/new?warehouseId=${selectedWarehouseId}`)} 
+                    onClick={() => router.push(`${APP_ROUTES.INVENTORY.RECEIPTS_NEW(orgId)}?warehouseId=${selectedWarehouseId}`)} 
                     className="text-[13px] font-[600] text-[#0066cc] hover:underline"
                   >
                     New Receipt
@@ -148,7 +148,7 @@ export default function InventoryDashboard() {
                   <div>
                     <h2 
                       className="text-[16px] font-[600] text-[#0066cc] hover:underline cursor-pointer flex items-center"
-                      onClick={() => router.push(`/dashboard/${orgId}/inventory/deliveries?warehouseId=${selectedWarehouseId}`)}
+                      onClick={() => router.push(`${APP_ROUTES.INVENTORY.DELIVERIES(orgId)}?warehouseId=${selectedWarehouseId}`)}
                     >
                       Delivery Orders
                     </h2>
@@ -157,7 +157,7 @@ export default function InventoryDashboard() {
                 
                 </div>
                 <div className="p-5 flex-1 grid grid-cols-2 gap-4">
-                  <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`/dashboard/${orgId}/inventory/deliveries?warehouseId=${selectedWarehouseId}`)}>
+                  <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`${APP_ROUTES.INVENTORY.DELIVERIES(orgId)}?warehouseId=${selectedWarehouseId}`)}>
                     <span className="text-[28px] font-mono font-[700] text-[#0066cc] leading-none mb-1">{metrics.deliveries.toProcess}</span>
                     <span className="text-[12px] font-[600] text-[#0066cc] uppercase tracking-wide">To Process</span>
                   </div>
@@ -176,7 +176,7 @@ export default function InventoryDashboard() {
                 </div>
                 <div className="px-5 py-3 bg-[#fbfbfb] border-t border-[#f0f0f0]">
                   <button 
-                    onClick={() => router.push(`/dashboard/${orgId}/inventory/deliveries/new?warehouseId=${selectedWarehouseId}`)} 
+                    onClick={() => router.push(`${APP_ROUTES.INVENTORY.DELIVERIES_NEW(orgId)}?warehouseId=${selectedWarehouseId}`)} 
                     className="text-[13px] font-[600] text-[#0066cc] hover:underline"
                   >
                     New Delivery
@@ -190,7 +190,7 @@ export default function InventoryDashboard() {
                   <div>
                     <h2 
                       className="text-[16px] font-[600] text-[#0066cc] hover:underline cursor-pointer flex items-center"
-                      onClick={() => router.push(`/dashboard/${orgId}/inventory/documents?type=TRANSFER&warehouseId=${selectedWarehouseId}`)}
+                      onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENTS(orgId)}?type=TRANSFER&warehouseId=${selectedWarehouseId}`)}
                     >
                       Internal Transfers
                     </h2>
@@ -199,7 +199,7 @@ export default function InventoryDashboard() {
                  
                 </div>
                 <div className="p-5 flex-1 grid grid-cols-2 gap-4">
-                  <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`/dashboard/${orgId}/inventory/documents?type=TRANSFER&warehouseId=${selectedWarehouseId}`)}>
+                  <div className="flex flex-col items-center justify-center p-3 bg-[#f0f4ff] rounded-[6px] cursor-pointer hover:bg-[#e0eafb] transition-colors" onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENTS(orgId)}?type=TRANSFER&warehouseId=${selectedWarehouseId}`)}>
                     <span className="text-[28px] font-mono font-[700] text-[#0066cc] leading-none mb-1">{metrics.transfers.toProcess}</span>
                     <span className="text-[12px] font-[600] text-[#0066cc] uppercase tracking-wide">To Process</span>
                   </div>
@@ -218,7 +218,7 @@ export default function InventoryDashboard() {
                 </div>
                 <div className="px-5 py-3 bg-[#fbfbfb] border-t border-[#f0f0f0]">
                   <button 
-                    onClick={() => router.push(`/dashboard/${orgId}/inventory/transfers/new?warehouseId=${selectedWarehouseId}`)} 
+                    onClick={() => router.push(`${APP_ROUTES.INVENTORY.TRANSFERS_NEW(orgId)}?warehouseId=${selectedWarehouseId}`)} 
                     className="text-[13px] font-[600] text-[#0066cc] hover:underline"
                   >
                     New Transfer
@@ -232,7 +232,7 @@ export default function InventoryDashboard() {
                   <div>
                     <h2 
                       className="text-[16px] font-[600] text-[#b7791f] hover:underline cursor-pointer flex items-center"
-                      onClick={() => router.push(`/dashboard/${orgId}/inventory/pending-orders?warehouseId=${selectedWarehouseId}`)}
+                      onClick={() => router.push(`${APP_ROUTES.INVENTORY.PENDING_ORDERS(orgId)}?warehouseId=${selectedWarehouseId}`)}
                     >
                       Pending Fulfillment
                     </h2>
@@ -241,7 +241,7 @@ export default function InventoryDashboard() {
                   <button className="text-[#b7791f] opacity-60 hover:opacity-100 p-1"><Clock className="w-4 h-4" /></button>
                 </div>
                 <div className="p-5 flex-1 grid grid-cols-2 gap-4">
-                  <div className="flex flex-col items-center justify-center p-3 bg-[#fffaf0] rounded-[6px] cursor-pointer hover:bg-[#fef3c7] transition-colors border border-[#fef3c7]" onClick={() => router.push(`/dashboard/${orgId}/inventory/pending-orders?warehouseId=${selectedWarehouseId}`)}>
+                  <div className="flex flex-col items-center justify-center p-3 bg-[#fffaf0] rounded-[6px] cursor-pointer hover:bg-[#fef3c7] transition-colors border border-[#fef3c7]" onClick={() => router.push(`${APP_ROUTES.INVENTORY.PENDING_ORDERS(orgId)}?warehouseId=${selectedWarehouseId}`)}>
                     <span className="text-[28px] font-mono font-[700] text-[#b7791f] leading-none mb-1">{metrics.pendingOrders}</span>
                     <span className="text-[12px] font-[600] text-[#b7791f] uppercase tracking-wide text-center">Orders to Claim</span>
                   </div>
@@ -251,7 +251,7 @@ export default function InventoryDashboard() {
                 </div>
                 <div className="px-5 py-3 bg-[#fbfbfb] border-t border-[#f0f0f0]">
                   <button 
-                    onClick={() => router.push(`/dashboard/${orgId}/inventory/pending-orders?warehouseId=${selectedWarehouseId}`)} 
+                    onClick={() => router.push(`${APP_ROUTES.INVENTORY.PENDING_ORDERS(orgId)}?warehouseId=${selectedWarehouseId}`)} 
                     className="text-[13px] font-[600] text-[#0066cc] hover:underline"
                   >
                     View Sales Orders

@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
 import { PERMISSIONS } from '@/config/permissions';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function InventoryLayout({
   children,
@@ -25,7 +26,7 @@ export default function InventoryLayout({
   const pathname = usePathname();
   const params = useParams();
   const orgId = params.orgId as string;
-  const basePath = `/dashboard/${orgId}/inventory`;
+  const basePath = APP_ROUTES.INVENTORY.DASHBOARD(orgId);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 

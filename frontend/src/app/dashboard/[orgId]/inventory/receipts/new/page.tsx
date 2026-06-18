@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus, Trash2, Save, PackagePlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function NewReceiptPage({ 
   params 
@@ -133,7 +134,7 @@ export default function NewReceiptPage({
         items
       });
       toast.success('Receipt document created successfully');
-      const redirectUrl = `/dashboard/${orgId}/inventory/documents/${doc.id}?whId=${warehouseId}` +
+      const redirectUrl = `${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?whId=${warehouseId}` +
         (fulfillShortageFor ? `&fulfillShortageFor=${fulfillShortageFor}` : '');
       router.push(redirectUrl);
     } catch (err) {

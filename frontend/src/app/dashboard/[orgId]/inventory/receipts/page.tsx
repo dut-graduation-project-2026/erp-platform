@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { getWarehouses, getInventoryDocuments } from '@/features/inventory/services/inventoryService';
 import { Warehouse, InventoryDocument } from '@/features/inventory/types';
-import { DOCUMENT_TYPE, DOCUMENT_STATUS } from '@/config/constants';
+import { DOCUMENT_TYPE, DOCUMENT_STATUS, APP_ROUTES } from '@/config/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, RefreshCw, Eye, Calendar, Package } from 'lucide-react';
@@ -177,7 +177,7 @@ export default function ReceiptsPage() {
                   return (
                     <tr 
                       key={doc.id} 
-                      onClick={() => router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}?warehouseId=${selectedWarehouseId}`)}
+                      onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?warehouseId=${selectedWarehouseId}`)}
                       className="border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f0f4ff] transition-colors cursor-pointer group"
                     >
                       <td className="py-3.5 px-4 font-mono text-[13px] font-[700] text-[#0066cc] group-hover:underline">
@@ -215,7 +215,7 @@ export default function ReceiptsPage() {
                       </td>
                       <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
                         <Button 
-                          onClick={() => router.push(`/dashboard/${orgId}/inventory/documents/${doc.id}?warehouseId=${selectedWarehouseId}`)}
+                          onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?warehouseId=${selectedWarehouseId}`)}
                           variant="ghost" 
                           className="h-8 px-2 text-[#64748b] hover:bg-[#f5f5f5] hover:text-[#242424]"
                         >

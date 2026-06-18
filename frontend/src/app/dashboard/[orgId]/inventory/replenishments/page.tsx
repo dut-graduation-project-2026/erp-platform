@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { RefreshCw, Boxes, Calendar, FileText, User, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function ReplenishmentsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -190,7 +191,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
                   return (
                     <tr 
                       key={req.id} 
-                      onClick={() => router.push(`/dashboard/${orgId}/inventory/documents/${req.inventoryDocumentId}?whId=${req.warehouseId}`)}
+                      onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, req.inventoryDocumentId)}?whId=${req.warehouseId}`)}
                       className="border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f0f4ff] transition-colors cursor-pointer group"
                     >
                       <td className="py-3.5 px-4 font-mono text-[12px] text-[#898989]">
@@ -208,7 +209,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
                       <td className="py-3.5 px-4 text-[13px] text-[#4a4a4a] font-medium" onClick={(e) => e.stopPropagation()}>
                         {req.orderNumber && req.referenceId ? (
                           <Link 
-                            href={`/dashboard/${orgId}/sales/orders/${req.referenceId}`}
+                            href={APP_ROUTES.SALES.ORDER_DETAIL(orgId, req.referenceId)}
                             className="inline-flex items-center justify-center min-w-[110px] text-center px-2 py-0.5 rounded-[4px] text-[11px] font-[600] uppercase bg-[#e8f4fd] text-[#1b75bb] border border-[#d0e8fc] hover:bg-[#d0e8fc] hover:text-[#004499] transition-colors"
                           >
                             {req.orderNumber}

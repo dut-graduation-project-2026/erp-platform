@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/useToast';
 import { useAuthStore } from '@/store/use-auth-store';
 import { getUserPermissions } from '@/services/mockPermissions';
 import { toast } from 'sonner';
+import { APP_ROUTES } from '@/config/constants';
 
 interface UseSelectOrgReturn {
   loading: boolean;
@@ -64,7 +65,7 @@ export const useSelectOrg = (): UseSelectOrgReturn => {
 
       // 🔵 BƯỚC 3.5: Điều hướng vào Dashboard chính
       // Sử dụng dynamic route /(dashboard)/[orgId]
-      const dashboardPath = `/dashboard/${orgId}`;
+      const dashboardPath = APP_ROUTES.DASHBOARD(orgId);
       
       toast.success(`Switched to organization: ${orgId}`);
       router.push(dashboardPath);

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
 import { PERMISSIONS } from '@/config/permissions';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function CrmLayout({
   children,
@@ -17,7 +18,7 @@ export default function CrmLayout({
 }) {
   const pathname = usePathname();
   const { orgId } = use(params);
-  const basePath = `/dashboard/${orgId}/crm`;
+  const basePath = APP_ROUTES.CRM.DASHBOARD(orgId);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
