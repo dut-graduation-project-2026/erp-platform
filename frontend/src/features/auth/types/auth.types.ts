@@ -12,12 +12,12 @@ import { z } from 'zod';
 export const loginSchema = z.object({
   email: z
     .string()
-    .min(1, 'Email không được để trống')
-    .email('Email không đúng định dạng (ví dụ: user@company.com)'),
+    .min(1, 'Email cannot be empty')
+    .email('Email is invalid (example: user@company.com)'),
   password: z
     .string()
-    .min(1, 'Mật khẩu không được để trống')
-    .min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+    .min(1, 'Password cannot be empty')
+    .min(6, 'Password must be at least 6 characters long'),
   rememberMe: z.boolean(),
 });
 

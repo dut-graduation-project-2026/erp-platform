@@ -36,20 +36,20 @@ export function RegisterPaymentModal({
 
   const handleSubmit = async () => {
     const paymentAmount = parseFloat(amount);
-    
+
     if (isNaN(paymentAmount) || paymentAmount <= 0) {
       setError('Amount must be greater than 0');
       return;
     }
-    
+
     if (paymentAmount > remainingBalance) {
-      setError(`Amount cannot exceed the remaining balance (₫${remainingBalance.toLocaleString()})`);
+      setError(`Amount cannot exceed the remaining balance ($${remainingBalance.toLocaleString()})`);
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
-    
+
     try {
       await onConfirm(paymentAmount);
       onClose();
@@ -66,18 +66,18 @@ export function RegisterPaymentModal({
         <DialogHeader>
           <DialogTitle className="text-[18px] font-[600] text-[#242424]">Register Payment</DialogTitle>
         </DialogHeader>
-        
+
         <div className="py-4 space-y-4">
           <div className="bg-[#f8f8f8] p-3 rounded-[4px] border border-[#e0e0e0]">
             <div className="flex justify-between text-[13px] mb-1">
               <span className="text-[#898989]">Remaining Balance:</span>
-              <span className="font-semibold text-[#dc3545]">₫{remainingBalance.toLocaleString()}</span>
+              <span className="font-semibold text-[#dc3545]">${remainingBalance.toLocaleString()}</span>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex justify-between items-end">
-              <label className="text-[13px] font-[600] text-[#242424]">Payment Amount (₫)</label>
+              <label className="text-[13px] font-[600] text-[#242424]">Payment Amount ($)</label>
               <button
                 type="button"
                 onClick={() => {

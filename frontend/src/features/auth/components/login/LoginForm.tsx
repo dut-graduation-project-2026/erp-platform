@@ -331,7 +331,7 @@ const LoginForm = ({
                 Logging in...
               </span>
             ) : (
-              'Đăng nhập'
+              'Login'
             )}
           </Button>
 

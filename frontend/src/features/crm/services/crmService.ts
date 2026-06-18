@@ -103,10 +103,10 @@ export interface LeadStageCount {
 
 export interface PipelineStageSummary {
   stage: string;
-  count: number;
-  revenue: number;
+  leadCount: number;
+  totalExpectedRevenue: number;
   weightedRevenue: number;
-  avgProbability: number;
+  averageProbability: number;
 }
 
 export const getLeadStageFunnel = async (

@@ -45,20 +45,20 @@ export default function CrmPipelinePage({ params }: { params: Promise<{ orgId: s
         <div>
           <h1 className="text-[24px] font-[600] text-[#242424]">Pipeline Dashboard</h1>
         </div>
-        
+
         <div className="flex space-x-4 items-center">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
-            <Input 
-              placeholder="Search leads..." 
+            <Input
+              placeholder="Search leads..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 h-10 w-[200px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
+              className="pl-9 h-10 w-[200px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
             />
           </div>
 
           {hasPermission(PERMISSIONS.LEADS.CREATE) && (
-            <Button 
+            <Button
               onClick={() => router.push(`/dashboard/${orgId}/crm/leads/new`)}
               className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
             >
@@ -68,19 +68,19 @@ export default function CrmPipelinePage({ params }: { params: Promise<{ orgId: s
 
           {/* Metric Ribbon */}
           <div className="flex space-x-4 text-[14px] bg-white px-4 py-2 shadow-[0px_1px_3px_rgba(0,0,0,0.12)] rounded-[4px] border border-[#e0e0e0]">
-             <div className="flex flex-col">
-                <span className="text-[#898989] text-[12px] uppercase tracking-wide font-semibold">Expected Revenue</span> 
-                <span className="font-[600] text-[#242424]">₫{totalRevenue.toLocaleString()}</span>
-             </div>
-             <div className="w-[1px] bg-[#e0e0e0] my-1"></div>
-             <div className="flex flex-col">
-                <span className="text-[#898989] text-[12px] uppercase tracking-wide font-semibold">Active Leads</span> 
-                <span className="font-[600] text-[#242424]">{filteredLeads.length}</span>
-             </div>
+            <div className="flex flex-col">
+              <span className="text-[#898989] text-[12px] uppercase tracking-wide font-semibold">Expected Revenue</span>
+              <span className="font-[600] text-[#242424]">${totalRevenue.toLocaleString()}</span>
+            </div>
+            <div className="w-[1px] bg-[#e0e0e0] my-1"></div>
+            <div className="flex flex-col">
+              <span className="text-[#898989] text-[12px] uppercase tracking-wide font-semibold">Active Leads</span>
+              <span className="font-[600] text-[#242424]">{filteredLeads.length}</span>
+            </div>
           </div>
         </div>
       </div>
-      
+
       <div className="flex-1 min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center h-full text-[#898989]">Loading Pipeline...</div>

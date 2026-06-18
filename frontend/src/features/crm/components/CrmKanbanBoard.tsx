@@ -84,8 +84,8 @@ export function CrmKanbanBoard({ leads: initialLeads, orgId }: Props) {
         const colTotal = colLeads.reduce((sum, l) => sum + (l.expectedRevenue || 0), 0);
 
         return (
-          <div 
-            key={col.id} 
+          <div
+            key={col.id}
             className="flex flex-col w-[300px] shrink-0 bg-[#f8f8f8] rounded-[8px]"
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, col.id)}
@@ -98,14 +98,14 @@ export function CrmKanbanBoard({ leads: initialLeads, orgId }: Props) {
                 </span>
               </div>
               <div className="text-sm text-[#898989]">
-                ₫{colTotal.toLocaleString()}
+                ${colTotal.toLocaleString()}
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-2 space-y-3 min-h-[150px]">
               {colLeads.map((lead) => (
-                <div 
-                  key={lead.id} 
+                <div
+                  key={lead.id}
                   draggable={hasPermission(PERMISSIONS.LEADS.WRITE)}
                   onDragStart={(e) => handleDragStart(e, lead.id)}
                   onDragEnd={handleDragEnd}
@@ -126,9 +126,9 @@ export function CrmKanbanBoard({ leads: initialLeads, orgId }: Props) {
                       </span>
                     ) : null}
                   </div>
-                  
+
                   <div className="text-[#242424] text-[13px] font-medium mb-3">
-                    ₫{lead.expectedRevenue?.toLocaleString() || 0}
+                    ${lead.expectedRevenue?.toLocaleString() || 0}
                   </div>
 
                   <div className="flex justify-between items-center text-[#898989] text-xs">

@@ -52,13 +52,13 @@ export const useRegister = (): UseRegisterReturn => {
         const redirectParam = searchParams.get('redirect');
         const redirectPath = redirectParam || getRedirectPath(user as any);
 
-        toast.success(`Đăng ký tài khoản thành công! Chào mừng, ${user.firstName}!`, {
+        toast.success(`Register successfully! Welcome, ${user.firstName}!`, {
           duration: 2000,
         });
 
         router.push(redirectPath);
       } catch (err: any) {
-        const errMsg = err?.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+        const errMsg = err?.response?.data?.message || 'Register failed. Please try again.';
         setServerError(errMsg);
       } finally {
         setLoading(false);

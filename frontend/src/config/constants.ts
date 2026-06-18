@@ -82,7 +82,7 @@ export const DATE_FORMAT = {
 
 export const CURRENCY = {
   DEFAULT: "VND",
-  SYMBOL: "₫",
+  SYMBOL: "$",
 }
 
 export const PERMISSIONS = {
@@ -213,3 +213,33 @@ export const COGS_METHOD = {
   AVERAGE: "AVERAGE",
 } as const;
 export type CogsMethod = typeof COGS_METHOD[keyof typeof COGS_METHOD];
+
+// ─── CLIENT APP ROUTE HELPERS ──────────────────────────────────────────────
+export const APP_ROUTES = {
+  DASHBOARD: (orgId: string) => `/dashboard/${orgId}`,
+  CRM: {
+    LEADS: (orgId: string) => `/dashboard/${orgId}/crm/leads`,
+    REPORTING: (orgId: string) => `/dashboard/${orgId}/crm/reporting`,
+  },
+  SALES: {
+    QUOTATIONS: (orgId: string) => `/dashboard/${orgId}/sales/quotations`,
+    QUOTATION_DETAIL: (orgId: string, id: string) => `/dashboard/${orgId}/sales/quotations/${id}`,
+    ORDERS: (orgId: string) => `/dashboard/${orgId}/sales/orders`,
+    ORDER_DETAIL: (orgId: string, id: string) => `/dashboard/${orgId}/sales/orders/${id}`,
+    INVOICES: (orgId: string) => `/dashboard/${orgId}/sales/invoices`,
+    INVOICE_DETAIL: (orgId: string, id: string) => `/dashboard/${orgId}/sales/invoices/${id}`,
+    INVOICE_PRINT: (orgId: string, id: string) => `/dashboard/${orgId}/sales/invoices/${id}/print`,
+  },
+  INVENTORY: {
+    DASHBOARD: (orgId: string) => `/dashboard/${orgId}/inventory`,
+    WAREHOUSES: (orgId: string) => `/dashboard/${orgId}/inventory/warehouses`,
+    DOCUMENTS: (orgId: string) => `/dashboard/${orgId}/inventory/documents`,
+    REPLENISHMENTS: (orgId: string) => `/dashboard/${orgId}/inventory/replenishments`,
+  },
+  ADMINISTRATION: {
+    ROLES: (orgId: string) => `/dashboard/${orgId}/administration?tab=rbac`,
+    ROLE_DETAIL: (orgId: string, roleId: string) => `/dashboard/${orgId}/roles/${roleId}`,
+    USERS: (orgId: string) => `/dashboard/${orgId}/administration?tab=users`,
+    SETTINGS: (orgId: string) => `/dashboard/${orgId}/administration?tab=settings`,
+  }
+};

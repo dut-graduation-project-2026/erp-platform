@@ -127,8 +127,7 @@ export default function RoleFormPage() {
             </h1>
           </div>
           
-          <div className="flex items-center gap-4">
-            {/* Status Ribbons */}
+          {/* <div className="flex items-center gap-4">
             {!isNew && (
               <div className="hidden sm:flex bg-[#f8f8f8] rounded-[20px] p-1 text-[12px] font-semibold">
                 <div className="px-3 py-1 text-[#898989]">Draft</div>
@@ -136,7 +135,7 @@ export default function RoleFormPage() {
                 <div className="px-3 py-1 text-[#898989]">Suspended</div>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* Main Content Layout */}
@@ -218,7 +217,7 @@ export default function RoleFormPage() {
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead>
                       <tr className="bg-[#f8f8f8] border-b border-[#e0e0e0]">
-                        <th className="py-3 px-6 text-[13px] font-semibold text-[#242424] w-[250px]">Phân hệ / Quyền hạn</th>
+                        <th className="py-3 px-6 text-[13px] font-semibold text-[#242424] w-[250px]">Module / Permission</th>
                         {BACKEND_ACTIONS.map((action) => (
                           <th key={action.key} className="py-3 px-4 text-[13px] font-semibold text-[#242424] text-center w-[120px]">
                             {action.label}

@@ -23,7 +23,7 @@ interface Props {
 export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
   const router = useRouter();
   const { hasPermission } = usePermissions();
-  
+
   const [formData, setFormData] = useState<Partial<CreateCrmLeadRequest>>({
     name: lead?.name || '',
     taxCode: (lead as any)?.taxCode || '',
@@ -46,7 +46,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
   const [newCustomer, setNewCustomer] = useState<any>({ name: '', type: 'INDIVIDUAL', code: '', email: '', phone: '', address: '', taxCode: '', contacts: [] });
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<any[]>([]);
-  
+
   useEffect(() => {
     // Load Sale Teams
     getSaleTeams(orgId, { limit: 100 })
@@ -70,7 +70,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
         .catch(err => console.error("Failed to load initial team members", err));
     }
   }, [orgId]);
-  
+
   // Chatter state
   const [notes, setNotes] = useState<{ id: string; author: string; text: string; time: string; color: string }[]>([
     { id: '1', author: 'Mitchell Admin', text: 'Had a great discovery call. They are highly interested in the Enterprise Licensing package for 500 users.', time: '2 hours ago', color: '#0066cc' },
@@ -106,12 +106,12 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
     setIsSaving(true);
     try {
       if (isNew) {
-         const res = await createLead(orgId, formData as CreateCrmLeadRequest);
-         alert("Lead created successfully!");
-         router.push(`/dashboard/${orgId}/crm/leads/${res.id}`);
+        const res = await createLead(orgId, formData as CreateCrmLeadRequest);
+        alert("Lead created successfully!");
+        router.push(`/dashboard/${orgId}/crm/leads/${res.id}`);
       } else if (lead?.id) {
-         await updateLead(orgId, lead.id, formData as CreateCrmLeadRequest);
-         alert("Lead updated successfully!");
+        await updateLead(orgId, lead.id, formData as CreateCrmLeadRequest);
+        alert("Lead updated successfully!");
       }
     } catch (e) {
       console.error(e);
@@ -123,7 +123,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
 
   const handlePostNote = () => {
     if (!newNote.trim()) return;
-    
+
     const note = {
       id: Date.now().toString(),
       author: 'You (Current User)',
@@ -131,7 +131,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
       time: 'Just now',
       color: '#28a745'
     };
-    
+
     setNotes([note, ...notes]);
     setNewNote('');
     setIsLogging(false);
@@ -141,244 +141,244 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
     <div className="h-full flex flex-col font-['Segoe_UI'] bg-white">
       <div className="flex justify-between items-center px-6 py-4 border-b border-[#e0e0e0] bg-[#f8f8f8]">
         <div>
-           <h1 className="text-[24px] font-[700] text-[#242424] leading-tight">
-             {lead ? lead.name : 'New Opportunity'}
-           </h1>
-           {lead?.partner?.name && (
-             <div className="text-[14px] text-[#0066cc] flex items-center mt-1">
-               <Building className="w-4 h-4 mr-1" /> {lead.partner.name}
-             </div>
-           )}
+          <h1 className="text-[24px] font-[700] text-[#242424] leading-tight">
+            {lead ? lead.name : 'New Opportunity'}
+          </h1>
+          {lead?.partner?.name && (
+            <div className="text-[14px] text-[#0066cc] flex items-center mt-1">
+              <Building className="w-4 h-4 mr-1" /> {lead.partner.name}
+            </div>
+          )}
         </div>
         <div className="flex space-x-2">
-            {!isNew && (
-              <Button 
-                variant="outline" 
-                className="border-[#0066cc] text-[#0066cc] hover:bg-[#f0f4ff] h-10 px-4 rounded-[4px] font-[600]"
-                onClick={() => {
-                  if (!formData.partnerId) {
-                    toast.error('You must link a Customer/Partner to this lead and save before converting to an order.');
-                    return;
-                  }
-                  router.push(`/dashboard/${orgId}/sales/quotations/new?leadId=${lead?.id}`);
-                }}
-              >
-                Convert to Order
-              </Button>
-            )}
-            <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={() => router.push(`/dashboard/${orgId}/crm`)}>
-              Cancel
+          {!isNew && (
+            <Button
+              variant="outline"
+              className="border-[#0066cc] text-[#0066cc] hover:bg-[#f0f4ff] h-10 px-4 rounded-[4px] font-[600]"
+              onClick={() => {
+                if (!formData.partnerId) {
+                  toast.error('You must link a Customer/Partner to this lead and save before converting to an order.');
+                  return;
+                }
+                router.push(`/dashboard/${orgId}/sales/quotations/new?leadId=${lead?.id}`);
+              }}
+            >
+              Convert to Order
             </Button>
-             {(isNew ? hasPermission(PERMISSIONS.LEADS.CREATE) : hasPermission(PERMISSIONS.LEADS.WRITE)) && (
-              <Button 
-                onClick={handleSave} 
-                disabled={isSaving}
-                className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </Button>
-            )}
-          </div>
-       </div>
+          )}
+          <Button variant="outline" className="border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] h-10 px-4 rounded-[4px] font-[600]" onClick={() => router.push(`/dashboard/${orgId}/crm`)}>
+            Cancel
+          </Button>
+          {(isNew ? hasPermission(PERMISSIONS.LEADS.CREATE) : hasPermission(PERMISSIONS.LEADS.WRITE)) && (
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px] font-[600]"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          )}
+        </div>
+      </div>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="w-3/5 overflow-y-auto p-6 border-r border-[#e0e0e0]">
-           <div className="max-w-2xl space-y-6">
-              
+          <div className="max-w-2xl space-y-6">
+
+            <div>
+              <label className="block text-[14px] font-[600] text-[#242424] mb-1">Opportunity Name *</label>
+              <Input
+                value={formData.name || ''}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Opportunity Name *</label>
-                <Input 
-                  value={formData.name || ''}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
-                />
+                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sale Team *</label>
+                <select
+                  value={formData.saleTeamId || ''}
+                  onChange={async (e) => {
+                    const newTeamId = e.target.value;
+                    if (!newTeamId) {
+                      setSelectedTeamMembers([]);
+                      setFormData({ ...formData, saleTeamId: '', salePersonId: '' });
+                      return;
+                    }
+                    try {
+                      const teamInfo = await getSaleTeamById(orgId, newTeamId);
+                      const members = teamInfo.members || [];
+                      setSelectedTeamMembers(members);
+                      const isMember = members.some((m: any) => m.id === formData.salePersonId);
+                      setFormData({
+                        ...formData,
+                        saleTeamId: newTeamId,
+                        salePersonId: isMember ? formData.salePersonId : ''
+                      });
+                    } catch (err) {
+                      console.error("Failed to fetch team members", err);
+                    }
+                  }}
+                  className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
+                >
+                  <option value="">Select Sale Team...</option>
+                  {saleTeams.map(team => (
+                    <option key={team.id} value={team.id}>{team.name}</option>
+                  ))}
+                </select>
               </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                 <div>
-                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sale Team *</label>
-                   <select
-                     value={formData.saleTeamId || ''}
-                     onChange={async (e) => {
-                       const newTeamId = e.target.value;
-                       if (!newTeamId) {
-                         setSelectedTeamMembers([]);
-                         setFormData({ ...formData, saleTeamId: '', salePersonId: '' });
-                         return;
-                       }
-                       try {
-                         const teamInfo = await getSaleTeamById(orgId, newTeamId);
-                         const members = teamInfo.members || [];
-                         setSelectedTeamMembers(members);
-                         const isMember = members.some((m: any) => m.id === formData.salePersonId);
-                         setFormData({
-                           ...formData,
-                           saleTeamId: newTeamId,
-                           salePersonId: isMember ? formData.salePersonId : ''
-                         });
-                       } catch (err) {
-                         console.error("Failed to fetch team members", err);
-                       }
-                     }}
-                     className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
-                   >
-                     <option value="">Select Sale Team...</option>
-                     {saleTeams.map(team => (
-                       <option key={team.id} value={team.id}>{team.name}</option>
-                     ))}
-                   </select>
-                 </div>
-                 <div>
-                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Salesperson</label>
-                   <select
-                     value={formData.salePersonId || ''}
-                     onChange={e => setFormData({...formData, salePersonId: e.target.value || undefined})}
-                     className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
-                   >
-                     <option value="">Select Salesperson...</option>
-                     {selectedTeamMembers.map((u: any) => (
-                       <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.email})</option>
-                     ))}
-                   </select>
-                 </div>
-               </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Expected Revenue (₫) *</label>
-                  <Input 
-                    type="number"
-                    value={formData.expectedRevenue || 0}
-                    onChange={e => setFormData({...formData, expectedRevenue: parseFloat(e.target.value) || 0})}
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Probability (%) *</label>
-                  <Input 
-                    type="number"
-                    value={formData.probability || 0}
-                    onChange={e => setFormData({...formData, probability: parseFloat(e.target.value) || 0})}
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-[14px] font-[600] text-[#242424]">Customer / Partner</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewCustomer({ name: '', type: 'INDIVIDUAL', code: `CUST-${Date.now().toString().slice(-6)}`, email: '', phone: '', address: '', taxCode: '', contacts: [] });
-                        setIsNewCustomerModalOpen(true);
-                      }}
-                      className="text-[12px] text-[#0066cc] hover:underline font-[600]"
-                    >
-                      + Create new customer
-                    </button>
-                  </div>
-                  <select
-                    value={formData.partnerId || ''}
-                    onChange={e => setFormData({...formData, partnerId: e.target.value || undefined})}
-                    className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
-                  >
-                    <option value="">Select Partner...</option>
-                    {partners.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Tax Code</label>
-                  <Input 
-                    value={formData.taxCode || ''}
-                    onChange={e => setFormData({...formData, taxCode: e.target.value})}
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Email</label>
-                  <Input 
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[14px] font-[600] text-[#242424] mb-1">Phone</label>
-                  <Input 
-                    value={formData.phone || ''}
-                    onChange={e => setFormData({...formData, phone: e.target.value})}
-                    className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
-                  />
-                </div>
-              </div>
-
               <div>
-                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Address</label>
-                <AddressInput 
-                  value={formData.address || ''}
-                  onChange={val => setFormData({...formData, address: val})}
-                  className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Internal Notes</label>
-                <Textarea 
-                  placeholder="Add your notes here..."
-                  value={formData.notes || ''}
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
-                  className="min-h-[120px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 resize-y"
-                />
-                <span className="text-[12px] text-[#898989] mt-1 block">These notes are only visible to internal employees.</span>
+                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Salesperson</label>
+                <select
+                  value={formData.salePersonId || ''}
+                  onChange={e => setFormData({ ...formData, salePersonId: e.target.value || undefined })}
+                  className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
+                >
+                  <option value="">Select Salesperson...</option>
+                  {selectedTeamMembers.map((u: any) => (
+                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.email})</option>
+                  ))}
+                </select>
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Expected Revenue ($) *</label>
+                <Input
+                  type="number"
+                  value={formData.expectedRevenue || 0}
+                  onChange={e => setFormData({ ...formData, expectedRevenue: parseFloat(e.target.value) || 0 })}
+                  className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Probability (%) *</label>
+                <Input
+                  type="number"
+                  value={formData.probability || 0}
+                  onChange={e => setFormData({ ...formData, probability: parseFloat(e.target.value) || 0 })}
+                  className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-[14px] font-[600] text-[#242424]">Customer / Partner</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewCustomer({ name: '', type: 'INDIVIDUAL', code: `CUST-${Date.now().toString().slice(-6)}`, email: '', phone: '', address: '', taxCode: '', contacts: [] });
+                      setIsNewCustomerModalOpen(true);
+                    }}
+                    className="text-[12px] text-[#0066cc] hover:underline font-[600]"
+                  >
+                    + Create new customer
+                  </button>
+                </div>
+                <select
+                  value={formData.partnerId || ''}
+                  onChange={e => setFormData({ ...formData, partnerId: e.target.value || undefined })}
+                  className="h-10 w-full border border-[#d0d0d0] rounded-[4px] px-3 bg-white focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 text-[14px]"
+                >
+                  <option value="">Select Partner...</option>
+                  {partners.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Tax Code</label>
+                <Input
+                  value={formData.taxCode || ''}
+                  onChange={e => setFormData({ ...formData, taxCode: e.target.value })}
+                  className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Email</label>
+                <Input
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
+                />
+              </div>
+              <div>
+                <label className="block text-[14px] font-[600] text-[#242424] mb-1">Phone</label>
+                <Input
+                  value={formData.phone || ''}
+                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[14px] font-[600] text-[#242424] mb-1">Address</label>
+              <AddressInput
+                value={formData.address || ''}
+                onChange={val => setFormData({ ...formData, address: val })}
+                className="h-10 border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[14px] font-[600] text-[#242424] mb-1">Internal Notes</label>
+              <Textarea
+                placeholder="Add your notes here..."
+                value={formData.notes || ''}
+                onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                className="min-h-[120px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] focus-visible:border-2 resize-y"
+              />
+              <span className="text-[12px] text-[#898989] mt-1 block">These notes are only visible to internal employees.</span>
+            </div>
+          </div>
         </div>
 
         <div className="w-2/5 flex flex-col bg-[#f8f8f8]">
           <div className="p-4 border-b border-[#e0e0e0] flex items-center space-x-2 bg-white shrink-0">
-             <Button 
-               variant="ghost" 
-               className={cn("h-8 px-3 text-[13px] font-[600]", isLogging ? "bg-[#0066cc] text-white hover:bg-[#004499] hover:text-white" : "text-[#0066cc] hover:bg-[#f0f4ff]")}
-               onClick={() => setIsLogging(!isLogging)}
-             >
-               <MessageSquare className="w-4 h-4 mr-2" /> Log Note
-             </Button>
-             <Button variant="ghost" className="text-[#898989] hover:text-[#242424] h-8 px-3 text-[13px]">
-               <Mail className="w-4 h-4 mr-2" /> Send Email
-             </Button>
-             <Button variant="ghost" className="text-[#898989] hover:text-[#242424] h-8 px-3 text-[13px]">
-               <Phone className="w-4 h-4 mr-2" /> Call
-             </Button>
+            <Button
+              variant="ghost"
+              className={cn("h-8 px-3 text-[13px] font-[600]", isLogging ? "bg-[#0066cc] text-white hover:bg-[#004499] hover:text-white" : "text-[#0066cc] hover:bg-[#f0f4ff]")}
+              onClick={() => setIsLogging(!isLogging)}
+            >
+              <MessageSquare className="w-4 h-4 mr-2" /> Log Note
+            </Button>
+            <Button variant="ghost" className="text-[#898989] hover:text-[#242424] h-8 px-3 text-[13px]">
+              <Mail className="w-4 h-4 mr-2" /> Send Email
+            </Button>
+            <Button variant="ghost" className="text-[#898989] hover:text-[#242424] h-8 px-3 text-[13px]">
+              <Phone className="w-4 h-4 mr-2" /> Call
+            </Button>
           </div>
-          
+
           {isLogging && (
             <div className="p-4 bg-white border-b border-[#e0e0e0]">
-               <Textarea 
-                 autoFocus
-                 placeholder="Log a note..."
-                 value={newNote}
-                 onChange={e => setNewNote(e.target.value)}
-                 className="min-h-[80px] text-[13px] mb-2"
-               />
-               <div className="flex justify-end space-x-2">
-                 <Button variant="outline" size="sm" onClick={() => setIsLogging(false)}>Cancel</Button>
-                 <Button className="bg-[#0066cc] text-white" size="sm" onClick={handlePostNote}>Log</Button>
-               </div>
+              <Textarea
+                autoFocus
+                placeholder="Log a note..."
+                value={newNote}
+                onChange={e => setNewNote(e.target.value)}
+                className="min-h-[80px] text-[13px] mb-2"
+              />
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" size="sm" onClick={() => setIsLogging(false)}>Cancel</Button>
+                <Button className="bg-[#0066cc] text-white" size="sm" onClick={handlePostNote}>Log</Button>
+              </div>
             </div>
           )}
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {notes.map(note => (
               <div key={note.id} className="relative pl-6 border-l-2 border-[#e0e0e0]">
-                <div 
+                <div
                   className="absolute w-3 h-3 rounded-full -left-[7px] top-1 border-2 border-[#f8f8f8]"
                   style={{ backgroundColor: note.color }}
                 ></div>
@@ -387,9 +387,9 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
                   <span className="text-[12px] text-[#898989]">{note.time}</span>
                 </div>
                 {note.author === 'System' ? (
-                   <p className="text-[13px] text-[#898989] italic">
-                     {note.text}
-                   </p>
+                  <p className="text-[13px] text-[#898989] italic">
+                    {note.text}
+                  </p>
                 ) : (
                   <p className="text-[13px] text-[#242424] bg-white p-3 border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] whitespace-pre-wrap">
                     {note.text}
@@ -411,7 +411,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            
+
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               <div>
                 <label className="block text-[13px] font-[600] text-[#242424] mb-1">Name *</label>
@@ -488,14 +488,14 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
             </div>
 
             <div className="px-6 py-4 bg-[#f8f8f8] border-t border-[#e0e0e0] flex justify-end space-x-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsNewCustomerModalOpen(false)}
                 className="h-9 px-4 rounded-[4px]"
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 className="bg-[#0066cc] hover:bg-[#004499] text-white h-9 px-4 rounded-[4px]"
                 disabled={isSavingCustomer}
                 onClick={handleCreateCustomer}

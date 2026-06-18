@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { RegisterPaymentModal } from '@/features/sales/components/RegisterPaymentModal';
 
 import { PERMISSIONS } from '@/config/permissions';
+import { APP_ROUTES } from '@/config/constants';
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId: string, id: string }> }) {
   const router = useRouter();
@@ -87,7 +88,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
       {/* Breadcrumb bar */}
       <div className="bg-white border-b border-[#e0e0e0] px-6 h-12 flex items-center shrink-0 justify-between">
         <div className="flex items-center text-[14px]">
-          <Link href={`/dashboard/${orgId}/sales/invoices`} className="text-[#898989] hover:text-[#242424]">
+          <Link href={APP_ROUTES.SALES.INVOICES(orgId)} className="text-[#898989] hover:text-[#242424]">
             Invoices
           </Link>
           <ChevronRight className="w-4 h-4 text-[#898989] mx-2" />
@@ -116,7 +117,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
           )}
           {invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED' && (
             <Button asChild variant="outline" className="border-[#0066cc] text-[#0066cc] hover:bg-[#f0f4ff] h-10 px-4 rounded-[4px]">
-              <Link href={`/dashboard/${orgId}/sales/invoices/${id}/print`} target="_blank" rel="noopener noreferrer">
+              <Link href={APP_ROUTES.SALES.INVOICE_PRINT(orgId, id)} target="_blank" rel="noopener noreferrer">
                 <Printer className="w-4 h-4 mr-2" /> Print Invoice
               </Link>
             </Button>
@@ -154,7 +155,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
                   <div>
                     Source Document:{" "}
                     <Link 
-                      href={`/dashboard/${orgId}/sales/orders/${invoice.saleOrder.id}`} 
+                      href={APP_ROUTES.SALES.ORDER_DETAIL(orgId, invoice.saleOrder.id)} 
                       className="text-[#0066cc] hover:underline font-medium"
                     >
                       {invoice.saleOrder.orderNumber || invoice.saleOrder.code}

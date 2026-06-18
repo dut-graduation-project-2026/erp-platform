@@ -312,10 +312,10 @@ export function SaleOrderForm({ order, orgId }: Props) {
       {/* Main scrolling content area */}
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          
+
           {/* Left: Odoo-style central document sheet (2/3 width) */}
           <div className="lg:col-span-2 bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_4px_16px_rgba(0,0,0,0.05)] p-8 md:p-12">
-            
+
             {/* Header block inside sheet */}
             <div className="mb-8">
               <span className="text-[12px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">
@@ -439,7 +439,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
                           <option value="">None</option>
                           {taxes.map((t) => (
                             <option key={t.id} value={t.id}>
-                              {t.name} ({t.amount}{t.computation === 'PERCENTAGE' ? '%' : '₫'})
+                              {t.name} ({t.amount}{t.computation === 'PERCENTAGE' ? '%' : '$'})
                             </option>
                           ))}
                         </select>
@@ -463,7 +463,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
                         />
                       </td>
                       <td className="py-2 pl-4 text-right font-mono font-[600] text-[#0066cc]">
-                        ₫{(line.quantity * line.unitPrice).toLocaleString()}
+                        ${(line.quantity * line.unitPrice).toLocaleString()}
                       </td>
                       {localStatus === 'DRAFT' && (
                         <td className="py-2 pl-2 text-right">
@@ -492,16 +492,16 @@ export function SaleOrderForm({ order, orgId }: Props) {
               <div className="w-full max-w-[320px] space-y-2 text-[14px]">
                 <div className="flex justify-between">
                   <span className="text-[#898989]">Untaxed Amount</span>
-                  <span className="font-mono text-[#242424]">₫{netTotal.toLocaleString()}</span>
+                  <span className="font-mono text-[#242424]">${netTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between border-b border-dashed border-[#e0e0e0] pb-2">
                   <span className="text-[#898989]">Taxes</span>
-                  <span className="font-mono text-[#242424]">₫{taxTotal.toLocaleString()}</span>
+                  <span className="font-mono text-[#242424]">${taxTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="font-[700] text-[#111111] text-[16px]">Total</span>
                   <span className="font-[700] text-[#0066cc] text-[20px] font-mono">
-                    ₫{grandTotal.toLocaleString()}
+                    ${grandTotal.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -603,7 +603,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
   const router = useRouter();
 
   const formatCurrency = (val: number | undefined) => {
-    return `₫${Number(val ?? 0).toLocaleString()}`;
+    return `$${Number(val ?? 0).toLocaleString()}`;
   };
 
   const formatDate = (dateStr: string | undefined) => {
@@ -630,58 +630,58 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
       <div className="bg-white border-b border-[#e0e0e0] h-12 px-6 flex justify-between items-center shrink-0">
         {/* Left: Action buttons */}
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            className="border-[#d0d0d0] text-[#242424] h-8 px-3 text-[13px] rounded-[4px] bg-white hover:bg-[#f8f8f8]" 
+          <Button
+            variant="outline"
+            className="border-[#d0d0d0] text-[#242424] h-8 px-3 text-[13px] rounded-[4px] bg-white hover:bg-[#f8f8f8]"
             onClick={() => router.push(`/dashboard/${orgId}/sales/orders`)}
           >
             Back to List
           </Button>
           {/* Action buttons */}
           {canWrite && localStatus !== 'COMPLETED' && localStatus !== 'CANCELLED' && (
-            <Button 
-              variant="outline" 
-              className="border-[#dc3545] text-[#dc3545] hover:bg-[#fdf2f2] h-8 px-3 text-[13px] rounded-[4px] flex items-center" 
+            <Button
+              variant="outline"
+              className="border-[#dc3545] text-[#dc3545] hover:bg-[#fdf2f2] h-8 px-3 text-[13px] rounded-[4px] flex items-center"
               onClick={handleCancel}
             >
               <XCircle className="w-4 h-4 mr-1.5" /> Cancel
             </Button>
           )}
           {canWrite && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && !order.invoiceId && (
-            <Button 
-              className="bg-[#28a745] hover:bg-[#218838] text-white h-8 px-3 text-[13px] rounded-[4px] flex items-center" 
+            <Button
+              className="bg-[#28a745] hover:bg-[#218838] text-white h-8 px-3 text-[13px] rounded-[4px] flex items-center"
               onClick={handleCreateInvoice}
             >
               <Receipt className="w-4 h-4 mr-1.5" /> Create Invoice
             </Button>
           )}
         </div>
-        
+
         {/* Right: Status steps (Odoo style) */}
         <div className="flex items-center text-[12px] font-[600] text-[#898989]">
           <div className={cn(
-            "px-3 py-1 flex items-center", 
+            "px-3 py-1 flex items-center",
             localStatus === 'DRAFT' ? "text-[#0066cc] bg-[#f0f4ff] rounded-[2px]" : ""
           )}>
             Draft
           </div>
           <span className="mx-1 text-[#e0e0e0]">—</span>
           <div className={cn(
-            "px-3 py-1 flex items-center", 
+            "px-3 py-1 flex items-center",
             localStatus === 'CONFIRMED' ? "text-[#0066cc] bg-[#f0f4ff] rounded-[2px]" : ""
           )}>
             Pending Fulfillment
           </div>
           <span className="mx-1 text-[#e0e0e0]">—</span>
           <div className={cn(
-            "px-3 py-1 flex items-center", 
+            "px-3 py-1 flex items-center",
             (localStatus === 'WAITING_FOR_STOCK' || localStatus === 'SENT') ? "text-[#0066cc] bg-[#f0f4ff] rounded-[2px]" : ""
           )}>
             Processing
           </div>
           <span className="mx-1 text-[#e0e0e0]">—</span>
           <div className={cn(
-            "px-3 py-1 flex items-center", 
+            "px-3 py-1 flex items-center",
             localStatus === 'COMPLETED' ? "text-[#28a745] bg-[#eafaf1] rounded-[2px]" : ""
           )}>
             Completed
@@ -700,10 +700,10 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
       {/* Main scrolling content area */}
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          
+
           {/* Left: Odoo-style central document sheet (2/3 width) */}
           <div className="lg:col-span-2 bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_4px_16px_rgba(0,0,0,0.05)] p-8 md:p-12">
-            
+
             {/* Header block inside sheet */}
             <div className="mb-8">
               <span className="text-[12px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">
@@ -721,7 +721,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
 
             {/* Key-Value Form Fields in 2 columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 pb-8 border-b border-[#e0e0e0]">
-              
+
               {/* Left Column: Customer Details */}
               <div className="space-y-2">
                 <div className="flex text-[14px]">
@@ -790,7 +790,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
                     <span className="w-32 shrink-0 text-[#166534] font-[600] flex items-center">
                       <Receipt className="w-4 h-4 mr-1.5 text-[#15803d]" /> Invoice
                     </span>
-                    <Link 
+                    <Link
                       href={`/dashboard/${orgId}/sales/invoices/${order.invoiceId}`}
                       className="text-[#15803d] font-[600] underline hover:text-[#166534]"
                     >
@@ -895,7 +895,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
                   ))}
                 </tbody>
               </table>
-              
+
               {/* Totals Section */}
               <div className="mt-6 flex justify-end">
                 <div className="w-full max-w-[320px] space-y-2 text-[14px]">
