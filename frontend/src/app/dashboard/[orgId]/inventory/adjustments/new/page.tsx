@@ -222,7 +222,7 @@ export default function NewAdjustmentPage({
                 ) : (
                   items.map((item, idx) => (
                     <tr key={idx} className="border-b border-[#f5f5f5] last:border-0">
-                      <td className="py-3 pr-4">
+                      <td className="py-3 pr-4 align-top">
                         <select
                           value={item.productId}
                           onChange={(e) => handleItemChange(idx, 'productId', e.target.value)}
@@ -234,7 +234,7 @@ export default function NewAdjustmentPage({
                           ))}
                         </select>
                       </td>
-                      <td className="py-3 pr-4">
+                      <td className="py-3 pr-4 align-top">
                         <Input 
                           type="number"
                           value={item.quantity}
@@ -244,12 +244,12 @@ export default function NewAdjustmentPage({
                         />
                         <span className="text-[10px] text-[#898989] mt-1 block">Negative for missing stock, positive for extra stock.</span>
                       </td>
-                      <td className="py-3 text-center align-top pt-3">
+                      <td className="py-3 text-center align-top">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleRemoveItem(idx)}
-                          className="text-[#dc3545] hover:bg-[#fff0f0] h-8 w-8"
+                          className="text-[#dc3545] hover:bg-[#fff0f0] h-9 w-9"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

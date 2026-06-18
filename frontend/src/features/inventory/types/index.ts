@@ -73,6 +73,7 @@ export interface Warehouse {
   organization?: Organization;
   manager?: UserBaseResponse;
   staff?: UserBaseResponse[];
+  staffCount?: number;
 }
 
 export interface InventoryBalance {
