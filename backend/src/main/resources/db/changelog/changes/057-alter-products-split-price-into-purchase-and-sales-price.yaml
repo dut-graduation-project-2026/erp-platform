@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 057-alter-products-split-price-into-purchase-and-sales-price
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: purchase_price
+                  type: NUMERIC(15, 2)
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: sales_price
+                  type: NUMERIC(15, 2)
+        - sql:
+            sql: >-
+              UPDATE products SET purchase_price = price, sales_price = price;
+        - addNotNullConstraint:
+            tableName: products
+            columnName: purchase_price
+            columnDataType: NUMERIC(15, 2)
+        - addNotNullConstraint:
+            tableName: products
+            columnName: sales_price
+            columnDataType: NUMERIC(15, 2)
+        - dropColumn:
+            tableName: products
+            columnName: price

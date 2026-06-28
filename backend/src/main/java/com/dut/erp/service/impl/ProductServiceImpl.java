@@ -106,7 +106,8 @@ public class ProductServiceImpl implements ProductService {
             .category(category)
             .name(request.name())
             .sku(request.sku().trim().toUpperCase())
-            .price(request.price())
+            .purchasePrice(request.purchasePrice())
+            .salesPrice(request.salesPrice())
             .description(request.description())
             .image(request.image())
             .build();
@@ -146,7 +147,8 @@ public class ProductServiceImpl implements ProductService {
 
     product.setName(request.name());
     product.setSku(request.sku().trim().toUpperCase());
-    product.setPrice(request.price());
+    product.setPurchasePrice(request.purchasePrice());
+    product.setSalesPrice(request.salesPrice());
     product.setDescription(request.description());
     product.setCategory(category);
     product.setImage(request.image());

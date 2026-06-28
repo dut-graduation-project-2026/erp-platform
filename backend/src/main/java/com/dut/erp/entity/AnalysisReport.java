@@ -10,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -20,14 +19,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
-import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "products")
+@Table(name = "analysis_reports")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,47 +32,22 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @EntityListeners(AuditingEntityListener.class)
-public class Product {
+public class AnalysisReport {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   @Column(name = "id", nullable = false, updatable = false)
   UUID id;
 
-  @Column(name = "name", nullable = false, length = 255)
-  String name;
-
-  @Column(name = "sku", nullable = false, length = 100)
-  String sku;
-
-  @Column(name = "purchase_price", nullable = false, precision = 15, scale = 2)
-  BigDecimal purchasePrice;
-
-  @Column(name = "sales_price", nullable = false, precision = 15, scale = 2)
-  BigDecimal salesPrice;
-
-  @Column(name = "description", columnDefinition = "TEXT")
-  String description;
-
-  @Column(name = "is_archived", nullable = false)
-  @Builder.Default
-  boolean isArchived = false;
-
-  @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
-  @Column(name = "cogs_method", nullable = false, length = 50)
-  @Builder.Default
-  com.dut.erp.enums.CogsMethod cogsMethod = com.dut.erp.enums.CogsMethod.FIFO;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "organization_id", nullable = false)
   Organization organization;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "category_id", nullable = false)
-  ProductCategory category;
+  @Column(name = "analysis_type", nullable = false, length = 100)
+  String analysisType;
 
-  @Column(name = "image", length = 512)
-  String image;
+  @Column(name = "result_json", nullable = false, columnDefinition = "TEXT")
+  String resultJson;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)
@@ -84,14 +56,4 @@ public class Product {
   @LastModifiedDate
   @Column(name = "updated_at")
   Instant updatedAt;
-
-  @CreatedBy
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "created_by", updatable = false)
-  User createdBy;
-
-  @LastModifiedBy
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "updated_by")
-  User updatedBy;
 }

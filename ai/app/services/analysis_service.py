@@ -2,11 +2,18 @@ import json
 import datetime
 import asyncio
 import math
-from ..integrations.erp_clients import erp_client, ERPClient
+import pandas as pd
+import numpy as np
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from pmdarima import auto_arima
+import warnings
+from sklearn.metrics import mean_absolute_error
+
+
 from ..integrations.openai_clients import openai_client
-from ..schemas.sample_response import (
-    UserAnalysisResponse,
-    SalesAnalysisResponse,
+from ..schemas.responses import (
     SalesForecastResponse,
     ForecastPoint,
     InventoryAnalysisResponse,
@@ -19,204 +26,329 @@ from ..schemas.sample_response import (
     ReorderRecommendationLLMResponse,
     ReorderItemLLM
 )
-from ..tools import order_tools, user_tools, inventory_tools
-from ..tools.tools import AVAILABLE_TOOLS
 
-# In-memory cache to optimize performance and prevent repeated DB queries
-_analysis_cache = {}
+warnings.filterwarnings('ignore')
+
 
 class AnalysisService:
-    def __init__(self, erp_client: ERPClient):
-        self.erp_client = erp_client
+    def __init__(self):
         self.openai_client = openai_client
 
-    async def _run_tool_calling_loop(
-        self, prompt: str, tools: list, final_response_format: type
-    ):
-        messages = [{"role": "user", "content": prompt}]
+    def _validate_time_series(self, ts: pd.Series, min_non_zero_days: int = 7) -> tuple:
+        """
+        Kiểm tra tính hợp lệ của chuỗi thời gian.
+        
+        Args:
+            ts: Pandas Series chứa dữ liệu thời gian
+            min_non_zero_days: Số ngày tối thiểu có giao dịch
+            
+        Returns:
+            (is_valid, non_zero_days, std_dev)
+        """
+        non_zero_days = (ts > 0).sum()
+        std_dev = ts.std()
+        is_valid = non_zero_days >= min_non_zero_days and std_dev > 0
+        
+        return is_valid, non_zero_days, std_dev
 
-        while True:
-            response = await self.openai_client.chat(
-                messages=messages, tools=tools if tools else None
+    def _fit_sarima_params(self, train: pd.Series) -> tuple:
+        """
+        Tìm tham số ARIMA(p,d,q) không seasonal bằng auto_arima.
+        Seasonal bị tắt vì lượng dữ liệu (~25 tuần) chưa đủ để học mùa vụ tin cậy.
+
+        Returns:
+            (order, seasonal_order, success)
+        """
+        try:
+            model = auto_arima(
+                train,
+                seasonal=False,          # không seasonal
+                max_p=3, max_q=3,
+                max_d=2,
+                error_action="ignore",
+                suppress_warnings=True,
+                stepwise=True
+            )
+            order = model.order
+            seasonal_order = (0, 0, 0, 0)  # không có thành phần seasonal
+            print(f"[DEBUG] ARIMA params selected: ARIMA{order} AIC={model.aic():.2f}")
+            return order, seasonal_order, True
+        except Exception as e:
+            print(f"[DEBUG] auto_arima failed: {e}")
+            return None, None, False
+
+    def _walk_forward_arima(
+        self, ts: pd.Series, initial_split: int, n_steps: int,
+        order: tuple, seasonal_order: tuple
+    ) -> float:
+        """
+        Walk-forward (expanding-window) validation cho ARIMA.
+        T\u1ea1i m\u1ed7i b\u01b0\u1edbc t, train tr\u00ean ts[:initial_split+t], d\u1ef1 b\u00e1o 1 b\u01b0\u1edbc, \u0111o l\u01b0\u1eddng abs error.
+        ARIMA params (order, seasonal_order) \u0111\u01b0\u1ee3c gi\u1eef c\u1ed1 \u0111\u1ecbnh (fitted m\u1ed9t l\u1ea7n tr\u01b0\u1edbc khi v\u00f2ng l\u1eb7p).
+
+        Returns: mean MAE qua n_steps b\u01b0\u1edbc.
+        """
+        errors = []
+        for step in range(n_steps):
+            train_wf = ts.iloc[:initial_split + step]
+            actual   = float(ts.iloc[initial_split + step])
+            try:
+                m = SARIMAX(
+                    train_wf,
+                    order=order,
+                    seasonal_order=seasonal_order,
+                    enforce_stationarity=False,
+                    enforce_invertibility=False
+                )
+                r = m.fit(disp=False, maxiter=200)
+                pred = max(0.0, float(r.forecast(steps=1)[0]))
+                errors.append(abs(actual - pred))
+            except Exception as e:
+                print(f"[DEBUG] ARIMA WF step {step} failed: {e}")
+                errors.append(float("inf"))
+
+        mae = float(np.mean(errors)) if errors else float("inf")
+        print(f"[DEBUG] ARIMA{order} WF-MAE (avg {n_steps} steps) = {mae:.4f}")
+        return mae
+
+    def _walk_forward_ets(
+        self, ts: pd.Series, initial_split: int, n_steps: int, cfg: dict
+    ) -> float:
+        """
+        Walk-forward (expanding-window) validation cho m\u1ed9t c\u1ea5u h\u00ecnh ETS.
+        T\u1ea1i m\u1ed7i b\u01b0\u1edbc t, refit ExponentialSmoothing tr\u00ean ts[:initial_split+t],
+        d\u1ef1 b\u00e1o 1 b\u01b0\u1edbc, \u0111o l\u01b0\u1eddng abs error.
+
+        Returns: mean MAE qua n_steps b\u01b0\u1edbc.
+        """
+        errors = []
+        for step in range(n_steps):
+            train_wf = ts.iloc[:initial_split + step]
+            actual   = float(ts.iloc[initial_split + step])
+            try:
+                kwargs = {
+                    "trend": cfg["trend"],
+                    "seasonal": cfg["seasonal"],
+                    "initialization_method": "estimated",
+                }
+                if cfg["trend"] is not None:
+                    kwargs["damped_trend"] = cfg["damped_trend"]
+                hw = ExponentialSmoothing(train_wf, **kwargs).fit(optimized=True)
+                pred = max(0.0, float(hw.forecast(steps=1)[0]))
+                errors.append(abs(actual - pred))
+            except Exception as e:
+                print(f"[DEBUG] ETS {cfg['label']} WF step {step} failed: {e}")
+                errors.append(float("inf"))
+
+        mae = float(np.mean(errors)) if errors else float("inf")
+        print(f"[DEBUG] ETS {cfg['label']} WF-MAE (avg {n_steps} steps) = {mae:.4f}")
+        return mae
+
+    def _select_best_forecast(self, ts: pd.Series, val_size: int = 4, periods: int = 4) -> tuple:
+        """
+        Ch\u1ecdn model t\u1ed1t nh\u1ea5t gi\u1eefa ARIMA v\u00e0 ETS b\u1eb1ng Walk-forward Validation.
+
+        Ph\u01b0\u01a1ng ph\u00e1p:
+          - initial_split = len(ts) - val_size
+          - V\u1edbi m\u1ed7i step t \u2208 [0, val_size):
+              \u2022 Train tr\u00ean ts[:initial_split + t]   (expanding window)
+              \u2022 D\u1ef1 b\u00e1o ts[initial_split + t]        (1 b\u01b0\u1edbc ti\u1ebfp theo)
+              \u2022 Ghi l\u1ea1i |actual \u2212 pred|
+          - MAE trung b\u00ecnh qua val_size b\u01b0\u1edbc l\u00e0 ti\u00eau ch\u00ed ch\u1ecdn model.
+          - Model th\u1eafng \u0111\u01b0\u1ee3c retrain tr\u00ean to\u00e0n b\u1ed9 ts \u0111\u1ec3 t\u1ea1o forecast cu\u1ed1i.
+
+        Args:
+            ts:       Weekly time series (pd.Series)
+            val_size: S\u1ed1 b\u01b0\u1edbc walk-forward (= forecast horizon = 4 tu\u1ea7n)
+            periods:  S\u1ed1 b\u01b0\u1edbc d\u1ef1 b\u00e1o cu\u1ed1i c\u00f9ng
+
+        Returns:
+            (forecast_values, model_info_str)
+        """
+        is_valid, non_zero, std_dev = self._validate_time_series(ts)
+        if not is_valid or len(ts) < val_size + 8:
+            print(f"[WARNING] Series too short/invalid. len={len(ts)}, non_zero={non_zero}")
+            mean_val = max(0.0, float(ts.mean())) if len(ts) > 0 else 0.0
+            return [mean_val] * periods, "Naive Mean"
+
+        initial_split = len(ts) - val_size   # training window grows from here
+        train_initial = ts.iloc[:initial_split]
+
+        # ── ARIMA: t\u00ecm params m\u1ed9t l\u1ea7n, d\u00f9ng c\u1ed1 \u0111\u1ecbnh trong walk-forward ──
+        arima_wf_mae  = float("inf")
+        arima_order   = None
+        arima_s_order = None
+
+        order, seasonal_order, arima_ok = self._fit_sarima_params(train_initial)
+        if arima_ok:
+            arima_order   = order
+            arima_s_order = seasonal_order
+            arima_wf_mae  = self._walk_forward_arima(
+                ts, initial_split, val_size, order, seasonal_order
             )
 
-            message = response.choices[0].message
-            messages.append(message)
+        # ── ETS: th\u1eed t\u1ea5t c\u1ea3 configs, ch\u1ecdn config c\u00f3 walk-forward MAE th\u1ea5p nh\u1ea5t ──
+        ets_configs = [
+            {"trend": "add", "damped_trend": False, "seasonal": None, "label": "Holt-Linear", "sp": None},
+            {"trend": "add", "damped_trend": True,  "seasonal": None, "label": "Holt-Damped", "sp": None},
+            {"trend": None,  "damped_trend": False, "seasonal": None, "label": "SES",         "sp": None},
+        ]
 
-            if not message.tool_calls:
-                break
+        best_ets_mae = float("inf")
+        best_ets_cfg = None
+        for cfg in ets_configs:
+            mae = self._walk_forward_ets(ts, initial_split, val_size, cfg)
+            if mae < best_ets_mae:
+                best_ets_mae = mae
+                best_ets_cfg = cfg
 
-            async def execute_tool(tool_call):
-                tool_name = tool_call.function.name
-                tool_args = json.loads(tool_call.function.arguments)
+        print(
+            f"[MODEL SELECTION] ARIMA WF-MAE={arima_wf_mae:.4f} | "
+            f"Best ETS ({best_ets_cfg['label'] if best_ets_cfg else 'none'}) WF-MAE={best_ets_mae:.4f}"
+        )
 
-                if tool_name in AVAILABLE_TOOLS:
-                    result = await AVAILABLE_TOOLS[tool_name](**tool_args)
-                else:
-                    result = f"Error: Unknown tool {tool_name}"
+        # ── Retrain th\u1eafng tr\u00ean to\u00e0n b\u1ed9 ts ──
+        if arima_ok and arima_wf_mae <= best_ets_mae:
+            try:
+                m_full = SARIMAX(
+                    ts,
+                    order=arima_order,
+                    seasonal_order=arima_s_order,
+                    enforce_stationarity=False,
+                    enforce_invertibility=False
+                )
+                r_full = m_full.fit(disp=False, maxiter=200)
+                future = r_full.forecast(steps=periods)
+                forecast_values = [max(0.0, float(v)) for v in future.values]
+                model_info = f"ARIMA{arima_order}"
+                print(f"[MODEL SELECTION] \u2192 Chosen: {model_info} (WF-MAE={arima_wf_mae:.4f})")
+                return forecast_values, model_info
+            except Exception as e:
+                print(f"[ERROR] ARIMA final forecast failed: {e}")
+                # fall through to ETS
 
-                return {
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": str(result)
+        if best_ets_cfg is not None:
+            try:
+                kwargs_full = {
+                    "trend": best_ets_cfg["trend"],
+                    "seasonal": None,
+                    "initialization_method": "estimated",
                 }
+                if best_ets_cfg["trend"] is not None:
+                    kwargs_full["damped_trend"] = best_ets_cfg["damped_trend"]
+                hw_full = ExponentialSmoothing(ts, **kwargs_full).fit(optimized=True)
+                future  = hw_full.forecast(steps=periods)
+                forecast_values = [max(0.0, float(v)) for v in future.values]
+                model_info = best_ets_cfg["label"]
+                print(f"[MODEL SELECTION] \u2192 Chosen: {model_info} (WF-MAE={best_ets_mae:.4f})")
+                return forecast_values, model_info
+            except Exception as e:
+                print(f"[ERROR] ETS final forecast failed: {e}")
 
-            # Run all tools in parallel for speed
-            tool_results = await asyncio.gather(*(execute_tool(tc) for tc in message.tool_calls))
-            messages.extend(tool_results)
+        # C\u1ea3 hai th\u1ea5t b\u1ea1i \u2192 Naive rolling mean 4 tu\u1ea7n
+        print("[MODEL SELECTION] \u2192 Both models failed. Using Naive 4-week rolling mean.")
+        mean_val = max(0.0, float(ts.tail(4).mean()) if len(ts) >= 4 else float(ts.mean()))
+        return [mean_val] * periods, "Naive 4-Week Rolling Mean"
 
-        messages.append(
-            {
-                "role": "user",
-                "content": "Based on the gathered data above, synthesize and return the analysis results in the requested format. Note: Any text fields (such as summary, insights, notes, recommendations, etc.) MUST be written in English.",
-            }
-        )
 
-        final_response = await self.openai_client.chat(
-            messages=messages, response_format=final_response_format
-        )
+    async def analyze_sales_forecast(self, organization_id: str, history: list) -> SalesForecastResponse:
+        """
+        Dự báo doanh số 4 tuần tiếp theo sử dụng cỗi thời gian theo tuần (Weekly ETS / ARIMA).
+        Dữ liệu thô (daily) được gộp theo tuần (W-MON), sau đó mô hình được đánh giá
+        trên cùng tập validation 4 tuần trước khi chọn model tối ưu.
+        """
+        print(f"[DEBUG] analyze_sales_forecast received history size: {len(history)}")
 
-        return final_response.choices[0].message.parsed
-
-    async def analyze_users_of_organization(self, organization_id: str):
-        prompt = (
-            f"Analyze the personnel structure of the organization with ID: {organization_id}. "
-            f"You can use the get_organization_users tool to retrieve the list of users."
-        )
-        return await self._run_tool_calling_loop(
-            prompt=prompt,
-            tools=[user_tools.GET_ORGANIZATION_USERS_TOOL],
-            final_response_format=UserAnalysisResponse,
-        )
-
-    async def analyze_sales_of_last_month(self, organization_id: str):
-        end_date = datetime.datetime.now(datetime.timezone.utc)
-        start_date = end_date - datetime.timedelta(days=30)
-
-        start_date_str = start_date.isoformat().replace("+00:00", "Z")
-        end_date_str = end_date.isoformat().replace("+00:00", "Z")
-
-        prompt = (
-            f"Analyze the sales status and volume in the last 30 days for the organization with ID: {organization_id}.\n"
-            f"Timeframe: from {start_date_str} to {end_date_str}.\n"
-            f"You can use the get_organization_orders tool to get the orders within this timeframe, "
-            f"and get_order_details to retrieve the details of each order (including products and quantities) for calculations. "
-            f"Note: Only calculate sales volume from orders with confirmed, delivering, or completed status (ignore DRAFT or CANCELLED orders)."
-        )
-
-        return await self._run_tool_calling_loop(
-            prompt=prompt,
-            tools=[
-                order_tools.GET_ORGANIZATION_ORDERS_TOOL,
-                order_tools.GET_ORDER_DETAILS_TOOL,
-            ],
-            final_response_format=SalesAnalysisResponse,
-        )
-
-    async def analyze_sales_forecast(self, organization_id: str, period: str = "30d") -> SalesForecastResponse:
-        """Dự báo doanh số 30 ngày tiếp theo bằng thuật toán tuyến tính kết hợp Moving Average + Nhận xét từ LLM."""
-        cache_key = f"{organization_id}_sales_forecast"
-        # Trả về từ cache nếu có
-        if cache_key in _analysis_cache:
-            return _analysis_cache[cache_key]
-
-        # Lấy đơn hàng trong 90 ngày để có đủ dữ liệu dự báo
-        end_date = datetime.datetime.now(datetime.timezone.utc)
-        start_date = end_date - datetime.timedelta(days=90)
-        start_date_str = start_date.isoformat().replace("+00:00", "Z")
-        end_date_str = end_date.isoformat().replace("+00:00", "Z")
-
-        orders_text = await order_tools.get_organization_orders(organization_id, start_date_str, end_date_str)
-        try:
-            orders_data = json.loads(orders_text)
-            orders_list = orders_data.get("data", [])
-        except Exception:
-            orders_list = []
-
-        # Chỉ lấy đơn hàng hợp lệ
-        valid_orders = [o for o in orders_list if o.get("status") not in ["DRAFT", "CANCELLED"]]
-
-        # Nhóm doanh thu theo ngày
+        # --- Bước 1: Thu thập doanh thu theo ngày trong 180 ngày gần nhất ---
+        end_date = datetime.datetime.now()
         daily_revenue = {}
-        for day_idx in range(90):
-            d = (end_date - datetime.timedelta(days=day_idx)).strftime("%Y-%m-%d")
-            daily_revenue[d] = 0.0
+        for day_idx in range(180):
+            d_str = (end_date - datetime.timedelta(days=day_idx)).strftime("%Y-%m-%d")
+            daily_revenue[d_str] = 0.0
 
-        for o in valid_orders:
-            # Lấy ngày tạo
-            created_at_str = o.get("createdAt") or o.get("deliveryDate")
-            if created_at_str:
-                d = created_at_str.split("T")[0]
-                if d in daily_revenue:
-                    daily_revenue[d] += float(o.get("totalAmount") or 0.0)
+        for row in history:
+            d = row.get("date")
+            if d:
+                d_str = d.replace("T", " ").split(" ")[0]
+                if d_str in daily_revenue:
+                    daily_revenue[d_str] += float(row.get("revenue") or 0.0)
 
-        # Chuyển thành danh sách sắp xếp theo thời gian
+        non_zero_days = sum(1 for v in daily_revenue.values() if v > 0.0)
+        print(f"[DEBUG] Found {non_zero_days} non-zero sales days in the last 180 days.")
+
+        # --- Bước 2: Tạo chuỗi thời gian daily, sau đó resample sang weekly ---
         sorted_dates = sorted(daily_revenue.keys())
         y_hist = [daily_revenue[d] for d in sorted_dates]
-        x_hist = list(range(len(y_hist)))
 
-        # Tính toán hồi quy tuyến tính: y = m * x + c
-        n = len(x_hist)
-        if n >= 2:
-            sum_x = sum(x_hist)
-            sum_y = sum(y_hist)
-            sum_xx = sum(x*x for x in x_hist)
-            sum_xy = sum(x*y for x, y in zip(x_hist, y_hist))
-            
-            denom = (n * sum_xx - sum_x**2)
-            slope = (n * sum_xy - sum_x * sum_y) / denom if denom != 0 else 0.0
-            intercept = (sum_y - slope * sum_x) / n
-        else:
-            slope = 0.0
-            intercept = 0.0
+        df_daily = pd.DataFrame({"revenue": y_hist}, index=pd.to_datetime(sorted_dates))
+        df_daily = df_daily.asfreq("D", fill_value=0.0)
+        daily_ts = df_daily["revenue"]
 
-        # Dự báo 30 ngày tiếp theo
+        # Gộp theo tuần bắt đầu Tứ Hai (W-MON), label = ngày đầu tuần
+        weekly_ts = daily_ts.resample("W-MON", closed="left", label="left").sum()
+
+        # Loại bỏ tuần hiện tại nếu chưa kết thúc (chưa đủ 7 ngày)
+        today = pd.Timestamp.now(tz=None).normalize()
+        current_week_start = today - pd.Timedelta(days=today.weekday())
+        if len(weekly_ts) > 0 and weekly_ts.index[-1] >= current_week_start:
+            weekly_ts = weekly_ts.iloc[:-1]
+
+        num_weeks = len(weekly_ts)
+        print(f"[DEBUG] Weekly series: {num_weeks} complete weeks available.")
+
+        # --- Bước 3: Lấy 12 tuần lịch sử gần nhất làm forecast_points ---
         forecast_points = []
-        forecast_revenue_total = 0.0
-
-        # Thêm 30 điểm lịch sử gần nhất vào kết quả
-        for idx in range(max(0, n - 30), n):
-            d = sorted_dates[idx]
+        for idx in range(max(0, num_weeks - 12), num_weeks):
             forecast_points.append(
                 ForecastPoint(
-                    date=d,
-                    historical_revenue=y_hist[idx],
-                    predicted_revenue=y_hist[idx]
+                    date=weekly_ts.index[idx].strftime("%Y-%m-%d"),
+                    historical_revenue=float(weekly_ts.values[idx]),
+                    predicted_revenue=float(weekly_ts.values[idx])
                 )
             )
 
-        # Sinh 30 điểm dự báo tiếp theo
-        last_date = datetime.datetime.strptime(sorted_dates[-1], "%Y-%m-%d") if sorted_dates else datetime.datetime.now()
-        for i in range(1, 31):
-            next_day = last_date + datetime.timedelta(days=i)
-            next_day_str = next_day.strftime("%Y-%m-%d")
-            # Dự báo tuyến tính
-            pred_y = max(0.0, slope * (n + i) + intercept)
-            # Thêm yếu tố nhiễu nhẹ / sóng tuần
-            weekday = next_day.weekday()
-            seasonality = 1.0 + (0.1 if weekday < 5 else -0.2)  # Cuối tuần ít bán hơn
-            pred_y *= seasonality
+        # --- Bước 4: Dự báo 4 tuần tiếp theo ---
+        # Đánh giá ARIMA và ETS (Holt-Winters) trên cùng validation set 4 tuần
+        forecast_revenue_total = 0.0
+        forecast_values, model_info_str = self._select_best_forecast(
+            weekly_ts, val_size=4, periods=4
+        )
+        print(f"[INFO] Selected model: {model_info_str}")
+
+        last_week_start = weekly_ts.index[-1]
+        for i, pred_val in enumerate(forecast_values, 1):
+            pred_y = float(pred_val)
+            forecast_date = last_week_start + datetime.timedelta(weeks=i)
 
             forecast_revenue_total += pred_y
             forecast_points.append(
                 ForecastPoint(
-                    date=next_day_str,
+                    date=forecast_date.strftime("%Y-%m-%d"),
                     historical_revenue=None,
                     predicted_revenue=round(pred_y, 2)
                 )
             )
 
-        # Invoke LLM to write analysis comments based on summary data
+        # --- Bước 5: LLM tạo tóm tắt nhận xét ---
+        hist_total = float(weekly_ts.sum())
+        hist_weekly_avg = hist_total / num_weeks if num_weeks > 0 else 0.0
+        forecast_weekly_avg = forecast_revenue_total / 4.0
+
         prompt = (
-            f"Here is the summary of the sales forecast for the next 30 days of the organization {organization_id}:\n"
-            f"- Total actual revenue over the last 90 days: {sum(y_hist):,.2f} USD\n"
-            f"- Forecasted total revenue for the next 30 days: {forecast_revenue_total:,.2f} USD\n"
-            f"- Daily trend slope (Linear Slope): {slope:,.2f} (positive indicates growth, negative indicates decline)\n"
-            f"Please write a brief comment report (about 3-4 sentences) pointing out the sales trend and proposing 3 recommendations to optimize the sales strategy. The entire report and recommendations must be in English."
+            f"Here is the weekly sales forecast summary for organization {organization_id}:\n"
+            f"- Historical period: Last {num_weeks} weeks (~180 days). "
+            f"Total revenue: {hist_total:,.2f} USD (Weekly Average: {hist_weekly_avg:,.2f} USD/week)\n"
+            f"- Forecast period: Next 4 weeks. "
+            f"Forecasted total revenue: {forecast_revenue_total:,.2f} USD (Weekly Average: {forecast_weekly_avg:,.2f} USD/week)\n"
+            f"Note: Compare the WEEKLY AVERAGES ({hist_weekly_avg:,.2f} vs {forecast_weekly_avg:,.2f} USD/week) "
+            f"to determine if the sales trend is growing or declining.\n"
+            f"Please write a brief business report (3-4 sentences) identifying the sales trend and "
+            f"suggesting 3 concrete recommendations to optimize sales strategy. "
+            f"Use plain English for employees. Do NOT mention model names, equations, or technical jargon."
         )
 
         messages = [
-            {"role": "system", "content": "You are an ERP enterprise financial analyst. Write concise, realistic, and professional comments in English."},
+            {"role": "system", "content": "You are an ERP enterprise financial analyst. Write concise, realistic, and professional comments in plain English for company employees. Avoid statistical or machine learning jargon."},
             {"role": "user", "content": prompt}
         ]
 
@@ -226,7 +358,7 @@ class AnalysisService:
         )
 
         llm_resp = response.choices[0].message.parsed
-        
+
         parsed_resp = SalesForecastResponse(
             summary=llm_resp.summary,
             forecast_30d_total_revenue=round(forecast_revenue_total, 2),
@@ -234,26 +366,14 @@ class AnalysisService:
             insights=llm_resp.insights
         )
 
-        # Lưu cache
-        _analysis_cache[cache_key] = parsed_resp
         return parsed_resp
 
-    async def analyze_inventory_abc_xyz(self, organization_id: str, force_refresh: bool = False) -> InventoryAnalysisResponse:
+    async def analyze_inventory_abc_xyz(
+        self, organization_id: str, warehouses: list, balances: list, sales: list, force_refresh: bool = False
+    ) -> InventoryAnalysisResponse:
         """Phân tích ma trận ABC-XYZ, tính toán ROP, EOQ động dựa trên lịch sử mua bán và lượng tồn kho thực tế."""
-        cache_key = f"{organization_id}_inventory_analysis"
-        if not force_refresh and cache_key in _analysis_cache:
-            return _analysis_cache[cache_key]
-
-        # 1. Lấy danh sách kho
-        warehouses_text = await inventory_tools.get_warehouses(organization_id)
-        try:
-            warehouses_data = json.loads(warehouses_text)
-            warehouses = warehouses_data.get("data", [])
-        except Exception:
-            warehouses = []
 
         if not warehouses:
-            # Trả về kết quả rỗng nếu không có kho hàng
             return InventoryAnalysisResponse(
                 summary="No warehouses found in the organization.",
                 abc_xyz_matrix=[],
@@ -261,85 +381,42 @@ class AnalysisService:
                 recommendations=["Please create a warehouse and import products to start the analysis."]
             )
 
-        # 2. Lấy số dư tồn kho từ tất cả các kho
-        balances_tasks = [inventory_tools.get_warehouse_balances(organization_id, wh["id"]) for wh in warehouses]
-        balances_responses = await asyncio.gather(*balances_tasks)
-
-        # Map lưu trữ tồn kho hiện tại theo productId (cộng dồn từ các kho) và thông tin kho cụ thể
+        # Map lưu trữ tồn kho hiện tại theo productId
         product_stock = {}
         product_names = {}
-        product_warehouse_map = {} # productId -> (warehouseId, warehouseName)
         
-        for wh, resp_text in zip(warehouses, balances_responses):
-            try:
-                resp_data = json.loads(resp_text)
-                balances_list = resp_data.get("data", [])
-            except Exception:
-                balances_list = []
+        for bal in balances:
+            prod_id = bal.get("productId")
+            prod_name = bal.get("productName")
+            qty = float(bal.get("quantity") or 0.0)
 
-            for bal in balances_list:
-                prod = bal.get("product")
-                if not prod:
-                    continue
-                prod_id = prod["id"]
-                prod_name = prod["name"]
-                qty = float(bal.get("quantity") or 0.0)
-
+            if prod_id:
                 product_stock[prod_id] = product_stock.get(prod_id, 0.0) + qty
-                product_names[prod_id] = prod_name
-                product_warehouse_map[prod_id] = (wh["id"], wh["name"])
+                if prod_name:
+                    product_names[prod_id] = prod_name
 
-        # Chuẩn hóa định dạng product_stock
-        norm_product_stock = product_stock
+        # Phân tích lượng bán của từng sản phẩm
+        product_daily_sales = {}
+        product_revenues = {}
 
+        for item in sales:
+            prod_id = item.get("productId")
+            prod_name = item.get("productName")
+            qty_sold = float(item.get("quantity") or 0.0)
+            price = float(item.get("price") or 0.0)
+            created_at_str = item.get("date") or datetime.datetime.now().isoformat()
+            date_str = created_at_str.split("T")[0]
 
-        # 3. Lấy dữ liệu bán hàng 90 ngày qua để tính toán nhu cầu động
-        end_date = datetime.datetime.now(datetime.timezone.utc)
-        start_date = end_date - datetime.timedelta(days=90)
-        start_date_str = start_date.isoformat().replace("+00:00", "Z")
-        end_date_str = end_date.isoformat().replace("+00:00", "Z")
+            if prod_id:
+                if prod_name:
+                    product_names[prod_id] = prod_name
+                product_revenues[prod_id] = product_revenues.get(prod_id, 0.0) + (qty_sold * price)
 
-        orders_text = await order_tools.get_organization_orders(organization_id, start_date_str, end_date_str)
-        try:
-            orders_data = json.loads(orders_text)
-            orders_list = orders_data.get("data", [])
-        except Exception:
-            orders_list = []
+                if prod_id not in product_daily_sales:
+                    product_daily_sales[prod_id] = {}
+                product_daily_sales[prod_id][date_str] = product_daily_sales[prod_id].get(date_str, 0.0) + qty_sold
 
-        valid_orders = [o for o in orders_list if o.get("status") not in ["DRAFT", "CANCELLED"]]
-
-        # Lấy chi tiết từng đơn hàng song song để tính doanh số theo sản phẩm
-        tasks = [order_tools.get_order_details(organization_id, o["id"]) for o in valid_orders]
-        details_responses = await asyncio.gather(*tasks)
-
-        # Phân tích lượng bán của từng sản phẩm theo từng ngày
-        product_daily_sales = {} # productId -> dict(date_str -> qty)
-        product_revenues = {}    # productId -> total revenue
-
-        for order_detail_text in details_responses:
-            try:
-                detail = json.loads(order_detail_text)
-                created_at_str = detail.get("createdAt") or datetime.datetime.now().isoformat()
-                date_str = created_at_str.split("T")[0]
-                
-                for item in detail.get("items", []):
-                    prod = item.get("product")
-                    if not prod:
-                        continue
-                    prod_id = prod["id"]
-                    qty_sold = float(item.get("quantity") or 0.0)
-                    price = float(item.get("unitPrice") or prod.get("price") or 0.0)
-
-                    product_names[prod_id] = prod["name"]
-                    product_revenues[prod_id] = product_revenues.get(prod_id, 0.0) + (qty_sold * price)
-
-                    if prod_id not in product_daily_sales:
-                        product_daily_sales[prod_id] = {}
-                    product_daily_sales[prod_id][date_str] = product_daily_sales[prod_id].get(date_str, 0.0) + qty_sold
-            except Exception:
-                continue
-
-        # 4. Tính toán thống kê động (ROP, EOQ, ABC, XYZ) cho từng sản phẩm
+        # Tính toán ABC-XYZ cho từng sản phẩm
         abc_xyz_matrix = []
         critical_count = 0
 
@@ -359,26 +436,24 @@ class AnalysisService:
             else:
                 abc_class[pid] = "C"
 
-        # Duyệt qua toàn bộ sản phẩm đang có tồn kho hoặc có doanh số để lập bảng
-        all_product_ids = set(norm_product_stock.keys()).union(product_names.keys())
+        all_product_ids = set(product_stock.keys()).union(product_names.keys())
+        end_date = datetime.datetime.now()
 
         for pid in all_product_ids:
             if not pid:
                 continue
-            name = product_names.get(pid, f"Sản phẩm {pid[:8]}")
-            curr_stock = norm_product_stock.get(pid, 0.0)
+            name = product_names.get(pid, f"Product {pid[:8]}")
+            curr_stock = product_stock.get(pid, 0.0)
 
             # Phân tích nhu cầu hàng ngày
             daily_sales_dict = product_daily_sales.get(pid, {})
-            # Điền các ngày không bán được là 0
             sales_values = [daily_sales_dict.get((end_date - datetime.timedelta(days=i)).strftime("%Y-%m-%d"), 0.0) for i in range(90)]
             
-            # Tính trung bình ngày (mu) và độ lệch chuẩn (sigma)
             mu = sum(sales_values) / 90.0
             variance = sum((x - mu) ** 2 for x in sales_values) / 90.0
             sigma = math.sqrt(variance)
 
-            # Tính toán phân loại XYZ dựa trên hệ số biến thiên CV = sigma / mu
+            # Phân loại XYZ
             cv = sigma / mu if mu > 0 else 9.9
             if cv < 0.3:
                 xyz = "X"
@@ -389,29 +464,23 @@ class AnalysisService:
 
             abc = abc_class.get(pid, "C")
 
-            # Công thức chuỗi cung ứng chuẩn:
-            # Lead Time (L) = 5 ngày
-            # Safety Stock (SS) = 1.65 * sigma * sqrt(L)
-            # ROP = (mu * L) + SS
+            # Tính ROP, EOQ, Safety Stock
             lead_time = 5.0
             safety_stock = 1.65 * sigma * math.sqrt(lead_time)
             
-            # Thiết lập biên an toàn tối thiểu
             if safety_stock < 2.0:
                 safety_stock = 5.0
             
             rop = (mu * lead_time) + safety_stock
             if rop < 5.0:
-                rop = 10.0 # Ngưỡng đặt hàng tối thiểu mặc định
+                rop = 10.0
 
-            # Lượng đặt tối ưu EOQ: sqrt(2 * D * S / H)
-            # Giả định Chi phí đặt S = 50, Chi phí giữ kho H = 2.0 hàng năm
             annual_demand = mu * 365.0
             eoq = math.sqrt((2 * annual_demand * 50.0) / 2.0) if annual_demand > 0 else 30.0
             if eoq < 10.0:
                 eoq = 30.0
 
-            # Xác định trạng thái cảnh báo
+            # Xác định trạng thái
             if curr_stock < rop * 0.5:
                 status = "CRITICAL"
                 critical_count += 1
@@ -433,18 +502,18 @@ class AnalysisService:
                 )
             )
 
-        # 5. Invoke LLM to generate overview analysis
+        # LLM tóm tắt
         critical_items = [item for item in abc_xyz_matrix if item.status in ["CRITICAL", "WARNING"]]
         summary_prompt = (
             f"Here is the summary of the organization's actual inventory data:\n"
             f"- Total analyzed items: {len(abc_xyz_matrix)}\n"
             f"- Number of products below reorder point (ROP) (needs restock): {len(critical_items)} (including {critical_count} at CRITICAL level)\n"
             f"- Representative shortage products: {', '.join([f'{x.productName} (Stock: {x.currentStock}/{x.rop} ROP)' for x in critical_items[:5]])}\n"
-            f"Please write a brief inventory analysis report (3-4 sentences) pointing out the risk of supply chain disruption and propose 3 solutions to improve inventory management. The entire analysis and recommendations must be in English."
+            f"Please write a brief inventory analysis report (3-4 sentences) pointing out the risk of supply chain disruption and propose 3 solutions to improve inventory management. Write in plain, clear English for warehouse staff."
         )
 
         messages = [
-            {"role": "system", "content": "You are a smart ERP logistics manager. Write professional comments in English."},
+            {"role": "system", "content": "You are a smart ERP logistics manager. Write professional comments in plain English for warehouse staff. Avoid complex statistics jargon."},
             {"role": "user", "content": summary_prompt}
         ]
 
@@ -462,58 +531,34 @@ class AnalysisService:
             recommendations=llm_resp.recommendations
         )
 
-        # Cập nhật cache
-        _analysis_cache[cache_key] = parsed_resp
         return parsed_resp
 
-    async def get_inventory_alerts(self, organization_id: str) -> list:
+    async def get_inventory_alerts(self, organization_id: str, warehouses: list, balances: list, sales: list) -> list:
         """Lấy nhanh các mặt hàng cảnh báo hết hàng."""
-        analysis = await self.analyze_inventory_abc_xyz(organization_id)
+        analysis = await self.analyze_inventory_abc_xyz(organization_id, warehouses, balances, sales)
         return [item for item in analysis.abc_xyz_matrix if item.status in ["CRITICAL", "WARNING"]]
 
-    async def get_reorder_recommendations(self, organization_id: str) -> ReorderRecommendationResponse:
-        """Đề xuất lượng nhập tối ưu (Reorder Recommendations) cho các sản phẩm dưới ROP."""
-        # Chạy phân tích để có số liệu ROP, EOQ và tồn thực tế
-        analysis = await self.analyze_inventory_abc_xyz(organization_id)
-        
-        # 1. Lấy danh sách kho để biết tên kho gán cho đề xuất
-        warehouses_text = await inventory_tools.get_warehouses(organization_id)
-        try:
-            warehouses_data = json.loads(warehouses_text)
-            warehouses = warehouses_data.get("data", [])
-        except Exception:
-            warehouses = []
+    async def get_reorder_recommendations(self, organization_id: str, warehouses: list, balances: list, sales: list) -> ReorderRecommendationResponse:
+        """Đề xuất lượng nhập tối ưu cho các sản phẩm dưới ROP."""
+        analysis = await self.analyze_inventory_abc_xyz(organization_id, warehouses, balances, sales)
         
         default_wh_id = warehouses[0]["id"] if warehouses else ""
         default_wh_name = warehouses[0]["name"] if warehouses else "Kho chính"
 
-        # Parallelize fetching warehouse balances to map products to warehouses
         product_wh_map = {}
-        async def fetch_and_map_wh(wh):
-            try:
-                bal_text = await inventory_tools.get_warehouse_balances(organization_id, wh["id"])
-                bal_data = json.loads(bal_text).get("data", [])
-                for b in bal_data:
-                    prod = b.get("product")
-                    if prod:
-                        product_wh_map[prod["id"]] = (wh["id"], wh["name"])
-            except Exception:
-                pass
-
-        if warehouses:
-            await asyncio.gather(*(fetch_and_map_wh(wh) for wh in warehouses))
+        for b in balances:
+            prod_id = b.get("productId")
+            wh_id = b.get("warehouseId")
+            wh_name = b.get("warehouseName")
+            if prod_id and wh_id:
+                product_wh_map[prod_id] = (wh_id, wh_name or "Kho chính")
 
         reorder_items = []
         for prod in analysis.abc_xyz_matrix:
             if prod.status in ["CRITICAL", "WARNING"]:
                 wh_id, wh_name = product_wh_map.get(prod.productId, (default_wh_id, default_wh_name))
-                
-                # Số lượng khuyên dùng nhập = lượng thiếu hụt đưa về ROP + lượng đặt tối ưu EOQ
                 recommended_qty = max(prod.eoq, (prod.rop - prod.currentStock) + prod.eoq)
-                
-                # Mức độ ưu tiên
                 urgency = "HIGH" if prod.status == "CRITICAL" or prod.abcClass == "A" else "MEDIUM"
-                
                 note = f"Actual stock ({prod.currentStock}) is below the ROP ({prod.rop}). Recommended to order {recommended_qty} units of product group {prod.abcClass}-{prod.xyzClass}."
 
                 reorder_items.append(
@@ -531,7 +576,6 @@ class AnalysisService:
                     )
                 )
 
-        # Use LLM to rewrite reorder reasons (notes) professionally for the top 5 most critical items
         if reorder_items:
             prod_class_map = {p.productId: (p.abcClass, p.xyzClass) for p in analysis.abc_xyz_matrix}
             llm_input_lines = []
@@ -542,21 +586,20 @@ class AnalysisService:
                 )
             
             prompt = (
-                "Please rewrite the restocking reason (notes) in professional English for the following list of warehouse recommendations. "
-                "Highlight the importance of the product based on its ABC-XYZ classification:\n"
+                "Please write a simple restocking reason (notes) in clear business English for the following list of warehouse recommendations. "
+                "State why we need to order more, highlighting the importance of the product based on its classification:\n"
                 + "\n".join(llm_input_lines)
             )
 
             messages = [
                 {
                     "role": "system",
-                    "content": "You are an AI supply chain assistant. Write extremely concise note fields (maximum 15 words) for each product in English, clearly stating the ROP reason/product group. Return the correct product ID.",
+                    "content": "You are an AI supply chain assistant. Write extremely concise note fields (maximum 15 words) for each product in plain English, clearly stating the reason they need restocking. Return the correct product ID.",
                 },
                 {"role": "user", "content": prompt}
             ]
 
             try:
-                # Tránh lỗi nếu LLM không phản hồi hoặc lỗi định dạng
                 response = await self.openai_client.chat(
                     messages=messages,
                     response_format=ReorderRecommendationLLMResponse
@@ -572,13 +615,16 @@ class AnalysisService:
 
         return ReorderRecommendationResponse(recommendations=reorder_items)
 
-    async def get_dashboard_summary(self, organization_id: str) -> DashboardSummaryResponse:
-        """Tạo Daily Brief tóm tắt nhanh tình trạng bán hàng và tồn kho cho giám đốc."""
-        # Lấy dữ liệu nhanh từ cache hoặc chạy tính toán nhẹ
+    async def get_dashboard_summary(self, organization_id: str, history: list, inventory_data: dict) -> DashboardSummaryResponse:
+        """Tạo Daily Brief tóm tắt nhanh tình trạng bán hàng và tồn kho."""
         try:
-            sales_task = self.analyze_sales_forecast(organization_id)
-            inv_task = self.analyze_inventory_abc_xyz(organization_id)
-            sales, inv = await asyncio.gather(sales_task, inv_task)
+            sales = await self.analyze_sales_forecast(organization_id, history)
+            
+            whs = inventory_data.get("warehouses", [])
+            bals = inventory_data.get("balances", [])
+            sles = inventory_data.get("sales", [])
+            
+            inv = await self.analyze_inventory_abc_xyz(organization_id, whs, bals, sles)
             
             critical_count = inv.critical_stock_count
             predicted_sales = sales.forecast_30d_total_revenue
@@ -587,14 +633,14 @@ class AnalysisService:
             predicted_sales = 0.0
 
         prompt = (
-            f"Please compose a Daily Brief in English, extremely concise (about 3 sentences), for the CEO:\n"
-            f"- Forecasted sales for the next 30 days: {predicted_sales:,.2f} USD\n"
+            f"Please compose a Daily Brief in clear business English, extremely concise (about 3 sentences), for the CEO:\n"
+            f"- Forecasted sales for the next 15 days: {predicted_sales:,.2f} USD\n"
             f"- Stock alerts: {critical_count} products are running low below the ROP.\n"
             f"Use an inspiring, concise tone, highlighting the immediate action to take today."
         )
 
         messages = [
-            {"role": "system", "content": "You are the CEO's executive AI assistant. Write a concise, polite summary focusing on immediate actions, written in English."},
+            {"role": "system", "content": "You are the CEO's executive AI assistant. Write a concise, polite summary focusing on immediate actions, written in clear business English."},
             {"role": "user", "content": prompt}
         ]
 
@@ -604,4 +650,5 @@ class AnalysisService:
         )
         return response.choices[0].message.parsed
 
-analysis_service = AnalysisService(erp_client)
+
+analysis_service = AnalysisService()

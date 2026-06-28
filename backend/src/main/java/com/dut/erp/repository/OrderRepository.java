@@ -261,4 +261,31 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   long countPendingFulfillmentOrders(@Param("organizationId") UUID organizationId);
 
   List<Order> findByOrganizationIdAndStatus(UUID organizationId, OrderStatus status);
+
+  @Query(
+      """
+      SELECT DATE(o.createdAt), COALESCE(SUM(o.totalAmount), 0)
+      FROM Order o
+      WHERE o.organization.id = :organizationId
+        AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
+        AND o.createdAt >= :startDate
+      GROUP BY DATE(o.createdAt)
+      ORDER BY DATE(o.createdAt) ASC
+      """)
+  List<Object[]> getDailyRevenue(
+      @Param("organizationId") UUID organizationId, @Param("startDate") Instant startDate);
+
+  @Query(
+      """
+      SELECT oi.product.id, oi.product.name, DATE(o.createdAt), SUM(oi.quantity), AVG(oi.unitPrice)
+      FROM OrderItem oi
+      JOIN oi.order o
+      WHERE o.organization.id = :organizationId
+        AND o.status IN (com.dut.erp.enums.OrderStatus.CONFIRMED, com.dut.erp.enums.OrderStatus.COMPLETED)
+        AND o.createdAt >= :startDate
+      GROUP BY oi.product.id, oi.product.name, DATE(o.createdAt)
+      """)
+  List<Object[]> getProductSalesHistory(
+      @Param("organizationId") UUID organizationId, @Param("startDate") Instant startDate);
 }
+

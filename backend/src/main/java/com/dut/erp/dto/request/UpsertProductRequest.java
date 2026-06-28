@@ -16,15 +16,24 @@ public record UpsertProductRequest(
         @Size(max = 100, message = "SKU cannot exceed 100 characters")
         String sku,
     String description,
-    @NotNull(message = "Price cannot be null")
-        @DecimalMin(value = "0.00", message = "Price must be greater than or equal to 0.00")
+    @NotNull(message = "Purchase price cannot be null")
+        @DecimalMin(value = "0.00", message = "Purchase price must be greater than or equal to 0.00")
         @Digits(
             integer = 13,
             fraction = 2,
             message =
-                "Price must be a valid decimal number with up to 13 integer digits and 2 decimal"
-                    + " places")
-        BigDecimal price,
+                "Purchase price must be a valid decimal number with up to 13 integer digits and 2"
+                    + " decimal places")
+        BigDecimal purchasePrice,
+    @NotNull(message = "Sales price cannot be null")
+        @DecimalMin(value = "0.00", message = "Sales price must be greater than or equal to 0.00")
+        @Digits(
+            integer = 13,
+            fraction = 2,
+            message =
+                "Sales price must be a valid decimal number with up to 13 integer digits and 2"
+                    + " decimal places")
+        BigDecimal salesPrice,
     @NotNull(message = "Product category ID is required")
         UUID categoryId,
     String image) {}

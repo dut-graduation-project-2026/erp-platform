@@ -62,7 +62,11 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
         categoryId: product.categoryId || product.category?.id || ''
       });
     } else {
-      setSelectedProduct({ name: '', sku: '', description: '', price: 0, isActive: true, categoryId: categories[0]?.id || '' });
+      setSelectedProduct({
+        name: '', sku: '', description: '',
+        salesPrice: 0, purchasePrice: 0,
+        isActive: true, categoryId: categories[0]?.id || ''
+      });
     }
     setIsModalOpen(true);
   };
@@ -168,18 +172,21 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                       )}
                     </div>
                     
-                    <div className="mt-auto flex justify-between items-end">
-                       <div>
-                          <span className="block text-[11px] text-[#898989] uppercase font-[600]">Sales Price</span>
-                          <span className="text-[14px] font-mono font-[700] text-[#0066cc]">${product.price?.toLocaleString()}</span>
-                       </div>
-                       <div className="text-right">
-                          <span className="block text-[11px] text-[#898989] uppercase font-[600]">Status</span>
-                          <span className={cn("text-[14px] font-mono font-[600]", product.isActive !== false ? "text-[#28a745]" : "text-[#dc3545]")}>
-                            {product.isActive !== false ? 'Active' : 'Inactive'}
-                          </span>
-                       </div>
-                    </div>
+                     <div className="mt-auto flex justify-between items-end">
+                        <div>
+                           <span className="block text-[11px] text-[#898989] uppercase font-[600]">Sales Price</span>
+                           <span className="text-[14px] font-mono font-[700] text-[#0066cc]">${product.salesPrice?.toLocaleString()}</span>
+                           <span className="block text-[11px] text-[#898989] uppercase font-[600] mt-1">Cost Price</span>
+                           <span className="text-[12px] font-mono font-[600] text-[#898989]">${product.purchasePrice?.toLocaleString()}</span>
+                        </div>
+                        <div className="text-right">
+                           <span className="block text-[11px] text-[#898989] uppercase font-[600]">Status</span>
+                           <span className={cn("text-[14px] font-mono font-[600]", product.isActive !== false ? "text-[#28a745]" : "text-[#dc3545]")}
+                           >
+                             {product.isActive !== false ? 'Active' : 'Inactive'}
+                           </span>
+                        </div>
+                     </div>
                  </div>
               </div>
             ))}
@@ -189,11 +196,12 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
             <table className="min-w-full divide-y divide-[#e0e0e0]">
               <thead className="bg-[#f8f8f8]">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Product</th>
-                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">SKU</th>
-                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Category</th>
-                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Sales Price</th>
-                  <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Status</th>
+                   <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Product</th>
+                   <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">SKU</th>
+                   <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Category</th>
+                   <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Sales Price</th>
+                   <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Cost Price</th>
+                   <th scope="col" className="px-6 py-3 text-left text-[12px] font-[600] text-[#242424] uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-[#e0e0e0]">
@@ -229,10 +237,13 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                         '-'
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-[13px] font-mono font-[700] text-[#0066cc]">
-                      ${product.price?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-[13px]">
+                     <td className="px-6 py-4 whitespace-nowrap text-[13px] font-mono font-[700] text-[#0066cc]">
+                       ${product.salesPrice?.toLocaleString()}
+                     </td>
+                     <td className="px-6 py-4 whitespace-nowrap text-[13px] font-mono text-[#898989]">
+                       ${product.purchasePrice?.toLocaleString()}
+                     </td>
+                     <td className="px-6 py-4 whitespace-nowrap text-[13px]">
                       <span className={cn(
                         "px-2 py-0.5 rounded-[4px] text-[11px] font-bold uppercase tracking-wider",
                         product.isActive !== false 
@@ -380,26 +391,38 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                  />
                </div>
 
+               {/* Category — full width */}
+               <div>
+                 <label className="block text-[14px] font-[600] text-[#242424] mb-1">Product Category <span className="text-red-500">*</span></label>
+                 <select
+                   value={selectedProduct.categoryId || ''}
+                   onChange={e => setSelectedProduct({...selectedProduct, categoryId: e.target.value})}
+                   className="w-full h-10 px-3 border border-[#d0d0d0] rounded-[4px] bg-white text-[14px] focus:outline-none focus:border-[#0066cc]"
+                 >
+                   <option value="" disabled>Select a category</option>
+                   {categories.map(cat => (
+                     <option key={cat.id} value={cat.id}>{cat.name}</option>
+                   ))}
+                 </select>
+               </div>
+
+               {/* Pricing — two columns */}
                <div className="grid grid-cols-2 gap-6">
                  <div>
-                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Product Category <span className="text-red-500">*</span></label>
-                   <select
-                     value={selectedProduct.categoryId || ''}
-                     onChange={e => setSelectedProduct({...selectedProduct, categoryId: e.target.value})}
-                     className="w-full h-10 px-3 border border-[#d0d0d0] rounded-[4px] bg-white text-[14px] focus:outline-none focus:border-[#0066cc]"
-                   >
-                     <option value="" disabled>Select a category</option>
-                     {categories.map(cat => (
-                       <option key={cat.id} value={cat.id}>{cat.name}</option>
-                     ))}
-                   </select>
+                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sales Price ($) <span className="text-red-500">*</span></label>
+                   <Input
+                     type="number"
+                     value={selectedProduct.salesPrice ?? 0}
+                     onChange={e => setSelectedProduct({...selectedProduct, salesPrice: Number(e.target.value)})}
+                     className="h-10 border-[#d0d0d0] rounded-[4px] font-mono focus-visible:ring-0 focus-visible:border-[#0066cc]"
+                   />
                  </div>
                  <div>
-                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sales Price ($)</label>
-                   <Input 
+                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Cost / Purchase Price ($) <span className="text-red-500">*</span></label>
+                   <Input
                      type="number"
-                     value={selectedProduct.price || 0}
-                     onChange={e => setSelectedProduct({...selectedProduct, price: Number(e.target.value)})}
+                     value={selectedProduct.purchasePrice ?? 0}
+                     onChange={e => setSelectedProduct({...selectedProduct, purchasePrice: Number(e.target.value)})}
                      className="h-10 border-[#d0d0d0] rounded-[4px] font-mono focus-visible:ring-0 focus-visible:border-[#0066cc]"
                    />
                  </div>

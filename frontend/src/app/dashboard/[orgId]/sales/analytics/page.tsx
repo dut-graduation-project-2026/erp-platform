@@ -242,26 +242,29 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
               </div>
               <div>
                 <h2 className="text-[15px] font-[700] text-[#242424] flex items-center gap-2">
-                  AI Sales Forecast Assistant (Actionable AI)
-                  <span className="text-[10px] bg-[#0066cc]/10 text-[#0066cc] px-2 py-0.5 rounded-[2px] font-bold uppercase tracking-wider">
-                    Gemma-31B-Reasoning
-                  </span>
+                  AI Sales Forecast Assistant
                 </h2>
                 <p className="text-[12px] text-[#898989]">Automatic sales trend analysis and market demand forecasting</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 self-end md:self-auto">
-              <Button 
-                onClick={() => setShowForecast(!showForecast)} 
-                variant={showForecast ? "default" : "outline"}
-                className={`h-9 px-4 rounded-[4px] font-[600] text-[12px] transition-all ${
-                  showForecast 
-                    ? "bg-[#0066cc] text-white hover:bg-[#0052a3]" 
-                    : "border-[#d0d0d0] text-[#242424] bg-white hover:bg-gray-50"
-                }`}
-              >
-                {showForecast ? "📊 View Actual Trend" : "🔮 Activate 30-Day AI Forecast"}
-              </Button>
+              {aiForecast.forecast_points && aiForecast.forecast_points.length > 0 ? (
+                <Button 
+                  onClick={() => setShowForecast(!showForecast)} 
+                  variant={showForecast ? "default" : "outline"}
+                  className={`h-9 px-4 rounded-[4px] font-[600] text-[12px] transition-all ${
+                    showForecast 
+                      ? "bg-[#0066cc] text-white hover:bg-[#0052a3]" 
+                      : "border-[#d0d0d0] text-[#242424] bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  {showForecast ? "📊 View Actual Trend" : "🔮 Activate 15-Day AI Forecast"}
+                </Button>
+              ) : (
+                <span className="text-[12px] text-[#fb8500] font-[600] bg-[#fb8500]/10 border border-[#fb8500]/20 px-3 py-1.5 rounded-[4px]">
+                  ⚠️ Forecast Unavailable
+                </span>
+              )}
             </div>
           </div>
           

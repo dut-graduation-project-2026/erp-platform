@@ -150,8 +150,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
             .inventoryDocument(docIn)
             .product(product)
             .quantity(item.quantity())
-            .unitCost(product.getPrice())
-            .valuation(item.quantity().multiply(product.getPrice()))
+            .unitCost(product.getPurchasePrice())
+            .valuation(item.quantity().multiply(product.getPurchasePrice()))
             .build());
       }
       docIn.setLines(linesIn);
@@ -177,8 +177,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
             .inventoryDocument(docOut)
             .product(product)
             .quantity(item.quantity())
-            .unitCost(product.getPrice())
-            .valuation(item.quantity().multiply(product.getPrice()))
+            .unitCost(product.getPurchasePrice())
+            .valuation(item.quantity().multiply(product.getPurchasePrice()))
             .build());
       }
       docOut.setLines(linesOut);
@@ -213,8 +213,8 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
               .inventoryDocument(doc)
               .product(product)
               .quantity(item.quantity())
-              .unitCost(product.getPrice())
-              .valuation(item.quantity().multiply(product.getPrice()))
+              .unitCost(product.getPurchasePrice())
+              .valuation(item.quantity().multiply(product.getPurchasePrice()))
               .build();
         })
         .collect(Collectors.toList());
@@ -261,7 +261,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
     List<InventoryDocumentLine> lines = new ArrayList<>();
     for (OrderItem item : order.getItems()) {
-      BigDecimal productPrice = item.getProduct().getPrice();
+      BigDecimal productPrice = item.getProduct().getPurchasePrice();
       lines.add(InventoryDocumentLine.builder()
           .inventoryDocument(doc)
           .product(item.getProduct())

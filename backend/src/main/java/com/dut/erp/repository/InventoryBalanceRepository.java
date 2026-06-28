@@ -16,7 +16,7 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
 
   @Query("""
       SELECT p.category.id, p.category.name,
-        COALESCE(SUM(ib.quantity * p.price), 0),
+        COALESCE(SUM(ib.quantity * p.purchasePrice), 0),
         COALESCE(SUM(ib.quantity), 0),
         COUNT(DISTINCT p.id)
       FROM InventoryBalance ib
@@ -25,7 +25,7 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
       WHERE w.organization.id = :orgId
         AND ib.quantity > 0
       GROUP BY p.category.id, p.category.name
-      ORDER BY COALESCE(SUM(ib.quantity * p.price), 0) DESC
+      ORDER BY COALESCE(SUM(ib.quantity * p.purchasePrice), 0) DESC
       """)
   List<Object[]> findAssetDistributionByCategory(@Param("orgId") UUID orgId);
 
@@ -90,4 +90,15 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
       @Param("productId") UUID productId, @Param("organizationId") UUID organizationId);
 
   Optional<InventoryBalance> findByWarehouseIdAndProductId(UUID warehouseId, UUID productId);
+
+  @Query(
+      """
+      SELECT ib FROM InventoryBalance ib
+      JOIN FETCH ib.warehouse w
+      JOIN FETCH ib.product p
+      WHERE w.organization.id = :organizationId
+      """)
+  List<InventoryBalance> findAllByOrganizationId(
+      @Param("organizationId") UUID organizationId);
 }
+

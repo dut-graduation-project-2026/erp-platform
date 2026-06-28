@@ -165,7 +165,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
           </h1>
           <span className="text-[14px] text-[#898989]">
             {activeTab === 'balances' && 'View current physical balances and check item availability'}
-            {activeTab === 'ai-analysis' && 'Inventory classification by value (ABC) and sales frequency (XYZ) powered by Gemma-31B-Reasoning'}
+            {activeTab === 'ai-analysis' && 'Inventory classification by value (ABC) and sales frequency (XYZ) powered'}
             {activeTab === 'ai-reorder' && 'Approve goods receipt based on Reorder Point (ROP) and Economic Order Quantity (EOQ)'}
           </span>
         </div>
@@ -329,7 +329,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                           {bal.product?.name || 'Unknown Product'}
                         </td>
                         <td className="py-3.5 px-4 text-[13px] text-right font-[500] text-[#4a4a4a]">
-                          ${(bal.product?.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          ${(bal.product?.purchasePrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <span className={cn(

@@ -177,7 +177,8 @@ public class SampleDataSeeder implements CommandLineRunner {
                 Product.builder()
                     .name("Seeded Product")
                     .sku("PROD-SEED-0001")
-                    .price(BigDecimal.valueOf(150.00))
+                    .purchasePrice(BigDecimal.valueOf(150.00))
+                    .salesPrice(BigDecimal.valueOf(150.00))
                     .description("High quality seeded product for testing")
                     .organization(organization)
                     .category(defaultCategory)
@@ -566,7 +567,8 @@ public class SampleDataSeeder implements CommandLineRunner {
                   Product.builder()
                       .name(name)
                       .sku(sku)
-                      .price(price)
+                      .purchasePrice(price)
+                      .salesPrice(price.multiply(new BigDecimal("1.25")).setScale(2, java.math.RoundingMode.HALF_UP))
                       .description(desc)
                       .cogsMethod(method)
                       .isArchived(false)
@@ -1117,7 +1119,7 @@ public class SampleDataSeeder implements CommandLineRunner {
           qty = BigDecimal.valueOf(wh.getCode().contains("CENTRAL") ? 4 : 1);
         }
 
-        BigDecimal unitCost = prod.getPrice()
+        BigDecimal unitCost = prod.getPurchasePrice()
             .multiply(BigDecimal.valueOf(0.70))
             .setScale(4, java.math.RoundingMode.HALF_UP);
         BigDecimal valuation = qty.multiply(unitCost);
@@ -1285,7 +1287,7 @@ public class SampleDataSeeder implements CommandLineRunner {
                       && l.getProduct().getId().equals(prod.getId()))
               .findFirst();
 
-          BigDecimal unitCost = prod.getPrice().multiply(BigDecimal.valueOf(0.70));
+          BigDecimal unitCost = prod.getPurchasePrice().multiply(BigDecimal.valueOf(0.70));
           if (receiptLineOpt.isPresent()) {
             InventoryDocumentLine receiptLine = receiptLineOpt.get();
             unitCost = receiptLine.getUnitCost();
@@ -1375,7 +1377,7 @@ public class SampleDataSeeder implements CommandLineRunner {
       Product prod = products.get(Math.abs(orderNumber.hashCode() + i) % products.size());
       Tax tax = (i % 2 == 0) ? vat10 : vat5;
       BigDecimal qty = BigDecimal.valueOf(1 + Math.abs(orderNumber.hashCode() * (i + 1)) % 5);
-      BigDecimal unitPrice = prod.getPrice();
+      BigDecimal unitPrice = prod.getSalesPrice();
       BigDecimal subtotal = qty.multiply(unitPrice);
 
       OrderItem item = OrderItem.builder()

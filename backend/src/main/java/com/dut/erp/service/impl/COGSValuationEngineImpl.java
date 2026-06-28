@@ -96,7 +96,7 @@ public class COGSValuationEngineImpl implements COGSValuationEngine {
           totalQty = totalQty.add(layer.getRemainingQuantity());
         }
 
-        BigDecimal unitCost = product.getPrice(); // Fallback to product price
+        BigDecimal unitCost = product.getPurchasePrice(); // Fallback to product purchase price
         if (totalQty.compareTo(BigDecimal.ZERO) > 0) {
           unitCost = totalValuation.divide(totalQty, 4, RoundingMode.HALF_UP);
         }
@@ -169,9 +169,9 @@ public class COGSValuationEngineImpl implements COGSValuationEngine {
           remainingToValuate = remainingToValuate.subtract(quantityFromLayer);
         }
 
-        // If not enough inbound layers, fallback to product price for the remainder
+        // If not enough inbound layers, fallback to product purchase price for the remainder
         if (remainingToValuate.compareTo(BigDecimal.ZERO) > 0) {
-          BigDecimal fallbackCost = product.getPrice();
+          BigDecimal fallbackCost = product.getPurchasePrice();
           BigDecimal fallbackValuation = remainingToValuate.multiply(fallbackCost);
           totalLineValuation = totalLineValuation.add(fallbackValuation);
 

@@ -30,7 +30,8 @@ export interface ProductBaseResponse {
   id: string;
   name: string;
   sku: string;
-  price: number;
+  salesPrice: number;
+  purchasePrice: number;
 }
 
 // ─── REQUEST INTERFACES ──────────────────────────────────────────────────────
