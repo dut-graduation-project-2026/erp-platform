@@ -21,7 +21,8 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  Legend
 } from 'recharts';
 import { toast } from 'sonner';
 import {
@@ -106,48 +107,86 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
   // 2. Format Trend Data for AreaChart
   const chartData = revenueTrend.map(point => {
     const date = new Date(point.date);
-    const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+    const monthName = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
     return {
-      name: `${monthName} ${date.getFullYear()}`,
+      name: monthName,
       sales: point.grossSales,
       margin: point.netMargin
     };
   });
 
-  // Actionable AI: Map Forecast Points
+  // Dynamic Y-axis domain for revenue/margin chart
+  const salesValues = chartData.map(d => d.sales).filter(v => v > 0);
+  const salesMin = salesValues.length > 0 ? Math.min(...salesValues) : 0;
+  const salesMax = salesValues.length > 0 ? Math.max(...salesValues) : 1000;
+  const salesPad = (salesMax - salesMin) * 0.15;
+  const salesDomain: [number, number] = [
+    Math.max(0, Math.floor((salesMin - salesPad) / 1000) * 1000),
+    Math.ceil((salesMax + salesPad) / 1000) * 1000
+  ];
+
+  // Actionable AI: Map Forecast Points — model forecasts 4 weeks, data is weekly (W-MON)
   const forecastChartData = aiForecast?.forecast_points?.map(p => {
     const d = new Date(p.date);
-    const label = isNaN(d.getTime()) ? p.date : `${d.getDate()}/${d.getMonth() + 1}`;
+    // Format as "Wk 28/6" to make clear each point = 1 week
+    const label = isNaN(d.getTime())
+      ? p.date
+      : `${d.getDate()}/${d.getMonth() + 1}`;
     return {
       name: label,
-      historical: p.historical_revenue,
-      predicted: p.predicted_revenue
+      historical: p.historical_revenue ?? null,
+      predicted: p.predicted_revenue ?? null,
     };
   }) || [];
 
+  // Dynamic Y-axis domain for forecast chart (both series together)
+  const allForecastValues = forecastChartData
+    .flatMap(d => [d.historical, d.predicted])
+    .filter((v): v is number => v !== null && v > 0);
+  const fcMin = allForecastValues.length > 0 ? Math.min(...allForecastValues) : 0;
+  const fcMax = allForecastValues.length > 0 ? Math.max(...allForecastValues) : 1000;
+  const fcPad = (fcMax - fcMin) * 0.15;
+  const fcDomain: [number, number] = [
+    Math.max(0, Math.floor((fcMin - fcPad) / 1000) * 1000),
+    Math.ceil((fcMax + fcPad) / 1000) * 1000
+  ];
+
+  const fmtK = (v: number) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`;
+
   // 3. Process conversion funnel data
+  // A sales funnel works top-down: each stage is a subset of the previous.
+  // We use the TOTAL PIPELINE (all orders ever created) as the 100% baseline,
+  // then each stage shows what % of the total reached that stage.
   const getFunnelData = () => {
     const draft = conversionFunnel.find(c => c.status === 'DRAFT')?.count || 0;
     const sent = conversionFunnel.find(c => c.status === 'SENT')?.count || 0;
     const confirmed = conversionFunnel.find(c => c.status === 'CONFIRMED')?.count || 0;
     const completed = conversionFunnel.find(c => c.status === 'COMPLETED')?.count || 0;
     const waiting = conversionFunnel.find(c => c.status === 'WAITING_FOR_STOCK')?.count || 0;
+    const cancelled = conversionFunnel.find(c => c.status === 'CANCELLED')?.count || 0;
 
-    const totalDraft = draft;
-    const totalSent = sent + confirmed + completed + waiting;
-    const totalConfirmed = confirmed + completed;
+    // Total pipeline = every order/quote that ever entered the system
+    const total = draft + sent + confirmed + completed + waiting + cancelled;
 
-    const draftToSentRate = totalDraft > 0 ? (totalSent / totalDraft) * 100 : 0;
-    const sentToConfirmedRate = totalSent > 0 ? (totalConfirmed / totalSent) * 100 : 0;
-    const overallRate = (totalDraft + totalSent) > 0 ? (totalConfirmed / (totalDraft + totalSent)) * 100 : 0;
+    // Stage counts (cumulative downward - orders that reached AT LEAST this stage)
+    const stageActive = total; // 100% baseline: all created
+    const stageSent = sent + confirmed + completed + waiting; // moved past draft
+    const stageWon = completed; // fully completed
+
+    // Rates as % of total pipeline
+    const sentRate = total > 0 ? (stageSent / total) * 100 : 0;
+    const wonRate = total > 0 ? (stageWon / total) * 100 : 0;
+    // Step-over-step: of those sent, how many won?
+    const sentToWonRate = stageSent > 0 ? (stageWon / stageSent) * 100 : 0;
 
     return {
-      draft: totalDraft,
-      sent: totalSent,
-      confirmed: totalConfirmed,
-      draftToSentRate,
-      sentToConfirmedRate,
-      overallRate
+      total,
+      draft,
+      sent: stageSent,
+      completed: stageWon,
+      sentRate: Math.min(100, sentRate),
+      wonRate: Math.min(100, wonRate),
+      sentToWonRate: Math.min(100, sentToWonRate),
     };
   };
 
@@ -258,7 +297,7 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
                       : "border-[#d0d0d0] text-[#242424] bg-white hover:bg-gray-50"
                   }`}
                 >
-                  {showForecast ? "📊 View Actual Trend" : "🔮 Activate 15-Day AI Forecast"}
+                  {showForecast ? "📊 View Actual Trend" : "🔮 Activate 4-Week AI Forecast"}
                 </Button>
               ) : (
                 <span className="text-[12px] text-[#fb8500] font-[600] bg-[#fb8500]/10 border border-[#fb8500]/20 px-3 py-1.5 rounded-[4px]">
@@ -294,10 +333,18 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
         <div className="lg:col-span-2 border border-[#e0e0e0] rounded-[4px] p-5 bg-white shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-[14px] font-[700] text-[#242424]">Revenue & Margin Trends</h3>
-              <p className="text-[12px] text-[#898989]">Monthly gross sales compared to net profitability margins</p>
+              <h3 className="text-[14px] font-[700] text-[#242424]">
+                {showForecast ? 'Weekly Revenue Forecast (SARIMA)' : 'Revenue & Margin Trends'}
+              </h3>
+              <p className="text-[12px] text-[#898989]">
+                {showForecast
+                  ? `12-week actuals + 4-week forecast · Model: ${aiForecast?.model_name ?? 'SARIMA'}`
+                  : 'Monthly gross sales compared to net profitability margins'
+                }
+              </p>
             </div>
-            <select 
+            {!showForecast && (
+            <select
               value={timePeriod}
               onChange={e => setTimePeriod(e.target.value)}
               className="h-9 border border-[#d0d0d0] rounded-[4px] text-[13px] text-[#242424] px-2 bg-white focus:outline-none"
@@ -305,51 +352,79 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
               <option>Last 6 Months</option>
               <option>This Year</option>
             </select>
+            )}
           </div>
           
           <div className="h-[260px]">
             {showForecast && forecastChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={forecastChartData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
+                <AreaChart data={forecastChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorHist" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0066cc" stopOpacity={0.15}/>
+                      <stop offset="5%" stopColor="#0066cc" stopOpacity={0.2}/>
                       <stop offset="95%" stopColor="#0066cc" stopOpacity={0.0}/>
                     </linearGradient>
                     <linearGradient id="colorPred" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#e67e22" stopOpacity={0.15}/>
+                      <stop offset="5%" stopColor="#e67e22" stopOpacity={0.2}/>
                       <stop offset="95%" stopColor="#e67e22" stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
-                  <XAxis dataKey="name" stroke="#898989" fontSize={10} tickLine={false} />
-                  <YAxis stroke="#898989" fontSize={11} tickLine={false} />
+                  <XAxis dataKey="name" stroke="#898989" fontSize={10} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis
+                    stroke="#898989"
+                    fontSize={10}
+                    tickLine={false}
+                    domain={fcDomain}
+                    tickFormatter={fmtK}
+                    width={55}
+                  />
                   <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                  <Area type="monotone" dataKey="historical" name="Actual Revenue" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorHist)" />
-                  <Area type="monotone" dataKey="predicted" name="AI Predicted Revenue" stroke="#e67e22" strokeWidth={2} strokeDasharray="4 4" fillOpacity={1} fill="url(#colorPred)" />
+                  <Legend iconType="line" wrapperStyle={{ fontSize: 11 }} />
+                  <Area connectNulls type="monotone" dataKey="historical" name="Actual (Weekly)" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorHist)" dot={false} />
+                  <Area connectNulls type="monotone" dataKey="predicted" name="AI Forecast +4wk" stroke="#e67e22" strokeWidth={2} strokeDasharray="5 3" fillOpacity={1} fill="url(#colorPred)" dot={{ r: 3, fill: '#e67e22' }} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : chartData.length === 0 ? (
               <div className="flex h-full items-center justify-center text-[#898989]">No revenue data available</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0066cc" stopOpacity={0.15}/>
+                      <stop offset="5%" stopColor="#0066cc" stopOpacity={0.25}/>
                       <stop offset="95%" stopColor="#0066cc" stopOpacity={0.0}/>
                     </linearGradient>
                     <linearGradient id="colorMargin" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#898989" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#898989" stopOpacity={0.0}/>
+                      <stop offset="5%" stopColor="#28a745" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#28a745" stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
                   <XAxis dataKey="name" stroke="#898989" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#898989" fontSize={11} tickLine={false} />
+                  <YAxis
+                    yAxisId="sales"
+                    orientation="left"
+                    stroke="#0066cc"
+                    fontSize={11}
+                    tickLine={false}
+                    domain={salesDomain}
+                    tickFormatter={fmtK}
+                    width={55}
+                  />
+                  <YAxis
+                    yAxisId="margin"
+                    orientation="right"
+                    stroke="#28a745"
+                    fontSize={11}
+                    tickLine={false}
+                    tickFormatter={fmtK}
+                    width={55}
+                  />
                   <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                  <Area type="monotone" dataKey="sales" name="Gross Sales" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorSales)" />
-                  <Area type="monotone" dataKey="margin" name="Net Margin" stroke="#898989" strokeWidth={2} fillOpacity={1} fill="url(#colorMargin)" />
+                  <Legend iconType="line" wrapperStyle={{ fontSize: 11 }} />
+                  <Area yAxisId="sales" type="monotone" dataKey="sales" name="Gross Sales" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorSales)" />
+                  <Area yAxisId="margin" type="monotone" dataKey="margin" name="Net Margin" stroke="#28a745" strokeWidth={2} fillOpacity={1} fill="url(#colorMargin)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -360,46 +435,49 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
         <div className="border border-[#e0e0e0] rounded-[4px] p-5 bg-white shadow-sm flex flex-col justify-between">
           <div>
             <h3 className="text-[14px] font-[700] text-[#242424] mb-1">Quote Conversion Funnel</h3>
-            <p className="text-[12px] text-[#898989] mb-6">Stage-to-stage conversion efficiency totals</p>
+            <p className="text-[12px] text-[#898989] mb-4">% of total pipeline ({funnelStats.total} orders) that reached each stage</p>
             
             <div className="space-y-4">
+              {/* Stage 1: All created orders = 100% baseline */}
               <div>
                 <div className="flex justify-between text-[13px] mb-1">
-                  <span className="font-semibold text-[#242424]">1. Quotation Drafts</span>
-                  <span className="font-mono text-[#898989]">{funnelStats.draft} draft quotes</span>
+                  <span className="font-semibold text-[#242424]">1. Created (All Orders)</span>
+                  <span className="font-mono text-[#898989]">{funnelStats.total} total — 100%</span>
                 </div>
-                <div className="w-full bg-[#f2f2f2] h-2 rounded-full overflow-hidden">
-                  <div className="bg-[#898989] h-full w-[100%]"></div>
+                <div className="w-full bg-[#f2f2f2] h-2.5 rounded-full overflow-hidden">
+                  <div className="bg-[#898989] h-full w-full" />
                 </div>
               </div>
 
+              {/* Stage 2: Orders that moved past DRAFT → SENT or further */}
               <div>
                 <div className="flex justify-between text-[13px] mb-1">
-                  <span className="font-semibold text-[#242424]">2. Shared / Sent</span>
-                  <span className="font-mono text-[#0066cc]">{funnelStats.sent} orders ({funnelStats.draftToSentRate.toFixed(1)}%)</span>
+                  <span className="font-semibold text-[#242424]">2. Sent / In Progress</span>
+                  <span className="font-mono text-[#0066cc]">{funnelStats.sent} orders — {funnelStats.sentRate.toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-[#f2f2f2] h-2 rounded-full overflow-hidden">
-                  <div className="bg-[#0066cc] h-full" style={{ width: `${Math.min(100, funnelStats.draftToSentRate)}%` }}></div>
+                <div className="w-full bg-[#f2f2f2] h-2.5 rounded-full overflow-hidden">
+                  <div className="bg-[#0066cc] h-full" style={{ width: `${Math.min(100, funnelStats.sentRate)}%` }} />
                 </div>
               </div>
 
+              {/* Stage 3: COMPLETED orders (fully delivered & closed won) */}
               <div>
                 <div className="flex justify-between text-[13px] mb-1">
-                  <span className="font-semibold text-[#242424]">3. Confirmed & Invoiced</span>
-                  <span className="font-mono text-[#28a745]">{funnelStats.confirmed} completed ({funnelStats.overallRate.toFixed(1)}%)</span>
+                  <span className="font-semibold text-[#242424]">3. Won (Completed)</span>
+                  <span className="font-mono text-[#28a745]">{funnelStats.completed} orders — {funnelStats.wonRate.toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-[#f2f2f2] h-2 rounded-full overflow-hidden">
-                  <div className="bg-[#28a745] h-full" style={{ width: `${Math.min(100, funnelStats.overallRate)}%` }}></div>
+                <div className="w-full bg-[#f2f2f2] h-2.5 rounded-full overflow-hidden">
+                  <div className="bg-[#28a745] h-full" style={{ width: `${Math.min(100, funnelStats.wonRate)}%` }} />
                 </div>
               </div>
             </div>
           </div>
 
           <div className="border-t border-[#f5f5f5] pt-4 mt-6 flex justify-between items-center text-[13px] text-[#4a4a4a]">
-            <span>Opportunity Conversion:</span>
+            <span>Close Rate (Sent → Won):</span>
             <strong className="text-[#28a745] flex items-center font-[700]">
               <TrendingUp className="w-4 h-4 mr-1" />
-              {funnelStats.overallRate.toFixed(1)}% Overall
+              {funnelStats.sentToWonRate.toFixed(1)}%
             </strong>
           </div>
         </div>
