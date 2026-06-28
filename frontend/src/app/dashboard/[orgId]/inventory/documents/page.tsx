@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
 import { toast } from 'sonner';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export default function DocumentsListPage() {
   const params = useParams();
@@ -38,6 +39,12 @@ export default function DocumentsListPage() {
   const [documents, setDocuments] = useState<InventoryDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
   
   const searchParams = useSearchParams();
   const initialType = searchParams.get('type') || 'ALL';
@@ -93,10 +100,15 @@ export default function DocumentsListPage() {
     setIsLoading(true);
     getInventoryDocuments(orgId, selectedWarehouseId, {
       search: searchQuery.trim(),
-      limit: 50
+      status: activeTab,
+      type: activeType,
+      page,
+      limit,
     })
       .then(res => {
         setDocuments(res.data || []);
+        setTotalItems(res.pagination?.totalItems || res.total || 0);
+        setTotalPages(res.pagination?.totalPages || res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
       })
       .catch(err => {
         console.error(err);
@@ -107,10 +119,11 @@ export default function DocumentsListPage() {
 
   useEffect(() => {
     fetchDocuments();
-  }, [orgId, selectedWarehouseId]);
+  }, [orgId, selectedWarehouseId, page, searchQuery, activeTab, activeType, limit]);
 
   const handleWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedWarehouseId(e.target.value);
+    setPage(1);
   };
 
   const handleOpenCreateModal = () => {
@@ -171,35 +184,10 @@ export default function DocumentsListPage() {
     }
   };
 
-  const filteredDocs = documents.filter(doc => {
-    // Tab filtering
-    if (activeTab !== 'ALL' && doc.documentStatus !== activeTab) {
-      return false;
-    }
-
-    // Type filtering
-    if (activeType !== 'ALL') {
-      if (activeType === 'TRANSFER' || activeType === 'TRANSFER_OUT') {
-        if (doc.documentType !== DOCUMENT_TYPE.TRANSFER_IN && doc.documentType !== DOCUMENT_TYPE.TRANSFER_OUT) {
-          return false;
-        }
-      } else if (doc.documentType !== activeType) {
-        return false;
-      }
-    }
-    
-    // Search filtering
-    const q = searchQuery.toLowerCase();
-    if (!q) return true;
-
-    return doc.name.toLowerCase().includes(q) || 
-           doc.notes?.toLowerCase().includes(q) || 
-           doc.documentType.toLowerCase().includes(q) ||
-           doc.orderNumber?.toLowerCase().includes(q);
-  });
+  const filteredDocs = documents;
 
   return (
-    <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white">
+    <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white">
       {/* Header Controls */}
       <div className="flex justify-between items-center mb-5 shrink-0">
         <div>
@@ -228,14 +216,18 @@ export default function DocumentsListPage() {
             <Filter className="w-4 h-4 text-[#898989]" />
             <select
               value={activeType}
-              onChange={(e) => setActiveType(e.target.value)}
+              onChange={(e) => {
+                setActiveType(e.target.value);
+                setPage(1);
+              }}
               className="h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc] w-[140px]"
             >
               <option value="ALL">All Operations</option>
-              <option value={DOCUMENT_TYPE.RECEIPT}>Receipts (IN)</option>
-              <option value={DOCUMENT_TYPE.ISSUE}>Deliveries (OUT)</option>
-              <option value="TRANSFER">Transfers (Internal)</option>
-              <option value={DOCUMENT_TYPE.ADJUSTMENT}>Adjustments</option>
+              <option value={DOCUMENT_TYPE.RECEIPT}>Receipt (IN)</option>
+              <option value={DOCUMENT_TYPE.ISSUE}>Issue (OUT)</option>
+              <option value={DOCUMENT_TYPE.TRANSFER_IN}>Transfer In</option>
+              <option value={DOCUMENT_TYPE.TRANSFER_OUT}>Transfer Out</option>
+              <option value={DOCUMENT_TYPE.ADJUSTMENT}>Adjustment</option>
             </select>
           </div>
 
@@ -244,7 +236,10 @@ export default function DocumentsListPage() {
             <Input 
               placeholder="Search documents..." 
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
               className="pl-9 h-10 w-[240px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
             />
           </div>
@@ -273,7 +268,10 @@ export default function DocumentsListPage() {
         {(['ALL', DOCUMENT_STATUS.DRAFT, DOCUMENT_STATUS.CONFIRMED, DOCUMENT_STATUS.COMPLETED, DOCUMENT_STATUS.CANCELLED] as const).map(tab => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              setActiveTab(tab);
+              setPage(1);
+            }}
             className={cn(
               "px-4 py-2 text-[13px] font-[600] border-b-2 transition-all",
               activeTab === tab 
@@ -287,9 +285,10 @@ export default function DocumentsListPage() {
       </div>
 
       {/* Data Table */}
-      <div className="flex-1 overflow-auto bg-[#f8f8f8] p-4 -mx-6 -mb-6 border-t border-[#e0e0e0]">
-        <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-hidden">
-          <table className="w-full text-left border-collapse">
+      <div className="flex-1 min-h-0 overflow-hidden bg-[#f8f8f8] p-4 -mx-6 -mb-6 border-t border-[#e0e0e0] flex flex-col">
+        <div className="flex-grow flex-shrink min-h-0 bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white border-b border-[#e0e0e0]">
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Reference</th>
@@ -404,6 +403,21 @@ export default function DocumentsListPage() {
           </table>
         </div>
       </div>
+      {!isLoading && totalItems > 0 && (
+        <TablePagination
+          page={page}
+          limit={limit}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+          className="mt-4 bg-white"
+        />
+      )}
+    </div>
 
       {/* Manual Stock Move Modal */}
       {isModalOpen && (

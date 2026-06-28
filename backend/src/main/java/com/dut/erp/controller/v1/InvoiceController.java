@@ -115,9 +115,10 @@ public class InvoiceController {
   public ResponseEntity<PagedEntityResponse<InvoiceBaseResponse>> getInvoices(
       @PathVariable UUID organizationId,
       @RequestParam(required = false) String search,
+      @RequestParam(required = false) String status,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
-        invoiceService.getInvoices(organizationId, search, paginationRequest));
+        invoiceService.getInvoices(organizationId, search, status, paginationRequest));
   }
 }

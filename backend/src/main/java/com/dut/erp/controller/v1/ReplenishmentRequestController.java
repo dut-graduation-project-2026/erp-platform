@@ -54,9 +54,10 @@ public class ReplenishmentRequestController {
       @PathVariable UUID organizationId,
       @PathVariable UUID warehouseId,
       @RequestParam(required = false) String search,
+      @RequestParam(required = false) String status,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
-        replenishmentRequestService.getReplenishmentRequests(organizationId, warehouseId, search, paginationRequest));
+        replenishmentRequestService.getReplenishmentRequests(organizationId, warehouseId, search, status, paginationRequest));
   }
 }

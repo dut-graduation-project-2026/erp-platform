@@ -228,7 +228,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
   @Override
   public PagedEntityResponse<InvoiceBaseResponse> getInvoices(
-      UUID organizationId, String search, PaginationRequest paginationRequest) {
+      UUID organizationId, String search, String status, PaginationRequest paginationRequest) {
     log.info("Fetching invoices for organization {}", organizationId);
 
     Pageable pageable =
@@ -236,11 +236,20 @@ public class InvoiceServiceImpl implements InvoiceService {
             paginationRequest.page() - 1,
             paginationRequest.limit());
 
+    InvoiceStatus invoiceStatus = null;
+    if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+      try {
+        invoiceStatus = InvoiceStatus.valueOf(status.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        log.warn("Invalid status value: {}", status);
+      }
+    }
+
     Page<UUID> ids =
         (search != null && !search.trim().isEmpty())
             ? invoiceRepository.findInvoiceIdsByOrganizationIdAndSearch(
-                organizationId, search, pageable)
-            : invoiceRepository.findInvoiceIdsByOrganizationId(organizationId, pageable);
+                organizationId, search, invoiceStatus, pageable)
+            : invoiceRepository.findInvoiceIdsByOrganizationId(organizationId, invoiceStatus, pageable);
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));

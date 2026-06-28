@@ -15,7 +15,7 @@ public interface InventoryDocumentService {
   InventoryDocumentResponse createIssueDocumentFromOrder(UUID organizationId, UUID warehouseId, UUID orderId);
 
   PagedEntityResponse<InventoryDocumentBaseResponse> getDocuments(
-      UUID organizationId, UUID warehouseId, String search, PaginationRequest paginationRequest);
+      UUID organizationId, UUID warehouseId, String search, String status, String type, PaginationRequest paginationRequest);
 
   InventoryDocumentResponse getDocumentById(UUID organizationId, UUID warehouseId, UUID documentId);
 

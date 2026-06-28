@@ -20,18 +20,27 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
   @Query("""
       SELECT d.id FROM InventoryDocument d
       WHERE d.warehouse.id = :warehouseId
+        AND (:status IS NULL OR d.documentStatus = :status)
+        AND (:useTypeFilter = false OR d.documentType IN :types)
       ORDER BY CASE d.documentStatus
         WHEN com.dut.erp.enums.DocumentStatus.COMPLETED THEN 3
         WHEN com.dut.erp.enums.DocumentStatus.CANCELLED THEN 2
         ELSE 1
       END ASC, COALESCE(d.updatedAt, d.createdAt) DESC, d.id ASC
       """)
-  Page<UUID> findIdsByWarehouseId(@Param("warehouseId") UUID warehouseId, Pageable pageable);
+  Page<UUID> findIdsByWarehouseId(
+      @Param("warehouseId") UUID warehouseId,
+      @Param("status") com.dut.erp.enums.DocumentStatus status,
+      @Param("types") java.util.List<com.dut.erp.enums.DocumentType> types,
+      @Param("useTypeFilter") boolean useTypeFilter,
+      Pageable pageable);
 
   @Query("""
       SELECT d.id FROM InventoryDocument d
       LEFT JOIN Order o ON d.referenceType = com.dut.erp.enums.ReferenceType.SALES_ORDER AND d.referenceId = o.id
       WHERE d.warehouse.id = :warehouseId
+        AND (:status IS NULL OR d.documentStatus = :status)
+        AND (:useTypeFilter = false OR d.documentType IN :types)
         AND (LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%'))
              OR (d.referenceType = com.dut.erp.enums.ReferenceType.SALES_ORDER AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))))
       ORDER BY CASE d.documentStatus
@@ -41,7 +50,12 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
       END ASC, COALESCE(d.updatedAt, d.createdAt) DESC, d.id ASC
       """)
   Page<UUID> findIdsByWarehouseIdAndSearch(
-      @Param("warehouseId") UUID warehouseId, @Param("search") String search, Pageable pageable);
+      @Param("warehouseId") UUID warehouseId,
+      @Param("search") String search,
+      @Param("status") com.dut.erp.enums.DocumentStatus status,
+      @Param("types") java.util.List<com.dut.erp.enums.DocumentType> types,
+      @Param("useTypeFilter") boolean useTypeFilter,
+      Pageable pageable);
 
   @Query("""
       SELECT DISTINCT d FROM InventoryDocument d

@@ -8,10 +8,19 @@ export interface RoleBaseResponse {
 
 export interface PagedEntityResponse<T> {
   data: T[];
-  page: number;
-  limit: number;
-  totalElements: number;
-  totalPages: number;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  totalElements?: number;
+  total?: number;
+  totalPages?: number;
+  page?: number;
+  limit?: number;
 }
 
 export interface PermissionResponse {
@@ -41,8 +50,14 @@ export interface UpdateRoleRequest {
   permissionIds: string[];
 }
 
-export const fetchRolesApi = async (orgId: string): Promise<PagedEntityResponse<RoleBaseResponse>> => {
-  const response = await apiClient.get<PagedEntityResponse<RoleBaseResponse>>(API_ENDPOINTS.ORGANIZATIONS.ROLES(orgId));
+export const fetchRolesApi = async (
+  orgId: string,
+  params?: { page?: number; limit?: number }
+): Promise<PagedEntityResponse<RoleBaseResponse>> => {
+  const response = await apiClient.get<PagedEntityResponse<RoleBaseResponse>>(
+    API_ENDPOINTS.ORGANIZATIONS.ROLES(orgId),
+    { params }
+  );
   return response.data;
 };
 

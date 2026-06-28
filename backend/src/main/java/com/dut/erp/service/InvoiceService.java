@@ -24,5 +24,5 @@ public interface InvoiceService {
   InvoiceResponse getInvoiceByOrderId(UUID organizationId, UUID orderId);
 
   PagedEntityResponse<InvoiceBaseResponse> getInvoices(
-      UUID organizationId, String search, PaginationRequest paginationRequest);
+      UUID organizationId, String search, String status, PaginationRequest paginationRequest);
 }

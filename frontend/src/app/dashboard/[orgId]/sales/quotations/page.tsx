@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { PERMISSIONS } from '@/config/permissions';
 import { APP_ROUTES } from '@/config/constants';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export default function QuotationsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const router = useRouter();
@@ -20,30 +21,34 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
   const [searchQuery, setSearchQuery] = useState('');
   const { hasPermission } = usePermissions();
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
+
   useEffect(() => {
-    getQuotations(orgId)
+    setIsLoading(true);
+    getQuotations(orgId, {
+      search: searchQuery.trim(),
+      page,
+      limit
+    })
       .then(res => {
         setOrders(res.data || []);
+        setTotalItems(res.pagination?.totalItems || res.total || 0);
+        setTotalPages(res.pagination?.totalPages || res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [orgId]);
+  }, [orgId, page, searchQuery, limit]);
 
   const filteredOrders = useMemo(() => {
-    if (searchQuery.trim() === '') {
-      return orders;
-    } else {
-      const q = searchQuery.toLowerCase();
-      return orders.filter(o =>
-        (o.orderNumber && o.orderNumber.toLowerCase().includes(q)) ||
-        (o.code && o.code.toLowerCase().includes(q)) ||
-        (o.partner?.name && o.partner.name.toLowerCase().includes(q))
-      );
-    }
-  }, [searchQuery, orders]);
+    return orders;
+  }, [orders]);
 
   return (
-    <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white">
+    <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white">
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
           <h1 className="text-[24px] font-[600] text-[#242424] mb-1">Quotations</h1>
@@ -55,7 +60,10 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
             <Input
               placeholder="Search by ID or customer..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
               className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
             />
           </div>
@@ -115,6 +123,20 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
           </table>
         </div>
       </div>
+      {!isLoading && totalItems > 0 && (
+        <TablePagination
+          page={page}
+          limit={limit}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+          className="mt-6"
+        />
+      )}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
 import { toast } from 'sonner';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export default function WarehousesListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -27,6 +28,12 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
   const [searchQuery, setSearchQuery] = useState('');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const { hasPermission } = usePermissions();
+
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(6);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,9 +50,15 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
 
   const loadWarehouses = () => {
     setIsLoading(true);
-    getWarehouses(orgId)
+    getWarehouses(orgId, {
+      search: searchQuery.trim(),
+      page,
+      limit,
+    })
       .then(res => {
         setWarehouses(res.data || []);
+        setTotalItems(res.pagination?.totalItems || res.total || 0);
+        setTotalPages(res.pagination?.totalPages || res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
       })
       .catch(err => {
         console.error(err);
@@ -56,7 +69,7 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
 
   useEffect(() => {
     loadWarehouses();
-  }, [orgId]);
+  }, [orgId, page, searchQuery, limit]);
 
   const handleOpenModal = (wh?: Warehouse) => {
     setStaffSearchQuery('');
@@ -154,15 +167,10 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
     }
   };
 
-  const filteredWarehouses = warehouses.filter(wh => {
-    const q = searchQuery.toLowerCase();
-    return wh.name.toLowerCase().includes(q) || 
-           wh.code.toLowerCase().includes(q) || 
-           wh.address.toLowerCase().includes(q);
-  });
+  const filteredWarehouses = warehouses;
 
   return (
-    <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white relative">
+    <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white relative">
       {/* Header */}
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
@@ -175,7 +183,10 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
             <Input 
               placeholder="Search warehouses..." 
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
               className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
             />
           </div>
@@ -265,6 +276,20 @@ export default function WarehousesListPage({ params }: { params: Promise<{ orgId
               </div>
             ))}
           </div>
+        )}
+        {!isLoading && totalItems > 0 && (
+          <TablePagination
+            page={page}
+            limit={limit}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+            className="mt-6"
+          />
         )}
       </div>
 

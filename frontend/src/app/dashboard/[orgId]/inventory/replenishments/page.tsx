@@ -11,6 +11,7 @@ import { RefreshCw, Boxes, Calendar, FileText, User, Search } from 'lucide-react
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { APP_ROUTES } from '@/config/constants';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export default function ReplenishmentsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -31,7 +32,8 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const limit = 100;
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   // Fetch warehouses
   useEffect(() => {
@@ -64,11 +66,13 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
     getReplenishmentRequests(orgId, selectedWarehouseId, { 
       page, 
       limit,
+      status: activeTab,
       search: debouncedSearch || undefined 
     })
       .then(res => {
         setRequests(res.data || []);
-        setTotalPages(res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
+        setTotalItems(res.pagination?.totalItems || res.total || 0);
+        setTotalPages(res.pagination?.totalPages || res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
       })
       .catch(err => {
         console.error(err);
@@ -79,15 +83,12 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
 
   useEffect(() => {
     fetchReplenishments();
-  }, [orgId, selectedWarehouseId, page, debouncedSearch]);
+  }, [orgId, selectedWarehouseId, page, debouncedSearch, activeTab, limit]);
 
-  const filteredRequests = requests.filter(req => {
-    if (activeTab === 'ALL') return true;
-    return req.status === activeTab;
-  });
+  const filteredRequests = requests;
 
   return (
-    <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white">
+    <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white">
       {/* Header controls */}
       <div className="flex justify-between items-center mb-5 shrink-0">
         <div>
@@ -138,7 +139,10 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
         {(['ALL', 'OPEN', 'RESOLVED'] as const).map(tab => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              setActiveTab(tab);
+              setPage(1);
+            }}
             className={cn(
               "px-4 py-2 text-[13px] font-[600] border-b-2 transition-all",
               activeTab === tab 
@@ -152,8 +156,8 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
       </div>
 
       {/* Main Table */}
-      <div className="flex-1 overflow-auto bg-[#f8f8f8] p-4 -mx-6 -mb-6 border-t border-[#e0e0e0] flex flex-col justify-between">
-        <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden bg-[#f8f8f8] p-4 -mx-6 -mb-6 border-t border-[#e0e0e0] flex flex-col">
+        <div className="flex-1 overflow-auto bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white border-b border-[#e0e0e0]">
@@ -250,6 +254,20 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
             </tbody>
           </table>
         </div>
+        {!isLoading && totalItems > 0 && (
+          <TablePagination
+            page={page}
+            limit={limit}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+            className="mt-4 bg-white"
+          />
+        )}
       </div>
     </div>
   );

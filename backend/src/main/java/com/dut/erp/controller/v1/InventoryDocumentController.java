@@ -54,9 +54,11 @@ public class InventoryDocumentController {
       @PathVariable UUID organizationId,
       @PathVariable UUID warehouseId,
       @RequestParam(required = false) String search,
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) String type,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    return ResponseEntity.ok(inventoryDocumentService.getDocuments(organizationId, warehouseId, search, paginationRequest));
+    return ResponseEntity.ok(inventoryDocumentService.getDocuments(organizationId, warehouseId, search, status, type, paginationRequest));
   }
 
   @GetMapping("/documents/{documentId}")

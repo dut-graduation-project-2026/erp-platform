@@ -7,14 +7,24 @@ import { PERMISSIONS } from "@/config/permissions";
 import Link from "next/link";
 import { APP_ROUTES } from "@/config/constants";
 import { useRoles } from "@/features/organization/hooks/useRoles";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 export function RolesTab({ orgId }: { orgId: string }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   
-  const { roles, loading, error } = useRoles(orgId);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  
+  const { roles, loading, error, totalElements, totalPages } = useRoles(orgId, page, limit);
 
   const filteredRoles = roles.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setPage(1);
+  };
+
 
   return (
     <div className="h-full bg-white flex flex-col font-['Segoe_UI',_sans-serif] border border-[#e0e0e0] rounded-[8px] overflow-hidden shadow-[0px_1px_3px_rgba(0,0,0,0.05)]">
@@ -40,7 +50,7 @@ export function RolesTab({ orgId }: { orgId: string }) {
                 placeholder="Search roles..."
                 className="pl-9 pr-4 py-2 border border-[#d0d0d0] rounded-[4px] text-[14px] text-[#242424] placeholder-[#898989] focus:outline-none focus:border-[#0066cc] w-[250px]"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
             
@@ -145,10 +155,20 @@ export function RolesTab({ orgId }: { orgId: string }) {
                 </tbody>
               </table>
             </div>
-            <div className="bg-[#f8f8f8] border-t border-[#e0e0e0] px-4 py-3 flex items-center justify-between text-[13px] text-[#898989]">
-              <span>Showing 1 to {filteredRoles.length} of {filteredRoles.length} entries</span>
-            </div>
           </div>
+        )}
+        {!loading && totalElements > 0 && (
+          <TablePagination
+            page={page}
+            limit={limit}
+            totalItems={totalElements}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
         )}
       </div>
     </div>

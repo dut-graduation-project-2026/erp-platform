@@ -14,10 +14,18 @@ export interface ErrorResponse {
 
 export interface PaginatedResponse<T> {
   data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
 }
 
 export interface BaseEntity {

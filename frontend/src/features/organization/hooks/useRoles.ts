@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { fetchRolesApi, fetchRoleDetailApi, RoleBaseResponse, RoleResponse } from '../services/roleService';
 
-export const useRoles = (orgId: string) => {
+export const useRoles = (orgId: string, page?: number, limit?: number) => {
   const [roles, setRoles] = useState<RoleBaseResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     if (!orgId) return;
@@ -12,8 +14,10 @@ export const useRoles = (orgId: string) => {
     const loadRoles = async () => {
       try {
         setLoading(true);
-        const res = await fetchRolesApi(orgId);
+        const res = await fetchRolesApi(orgId, { page, limit });
         setRoles(res.data || []);
+        setTotalElements(res.pagination?.totalItems || 0);
+        setTotalPages(res.pagination?.totalPages || 0);
         setError(null);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: unknown) {
@@ -28,9 +32,9 @@ export const useRoles = (orgId: string) => {
     };
 
     loadRoles();
-  }, [orgId]);
+  }, [orgId, page, limit]);
 
-  return { roles, loading, error };
+  return { roles, loading, error, totalElements, totalPages };
 };
 
 export const useRoleDetail = (orgId: string, roleId: string) => {

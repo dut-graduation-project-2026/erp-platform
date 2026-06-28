@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { PERMISSIONS } from '@/config/permissions';
 import { INVOICE_STATUS, APP_ROUTES } from '@/config/constants';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export default function InvoicesListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const router = useRouter();
@@ -22,36 +23,33 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
   const [statusFilter, setStatusFilter] = useState('ALL');
   const { hasPermission } = usePermissions();
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
+
   useEffect(() => {
-    getSaleInvoices(orgId)
+    setIsLoading(true);
+    getSaleInvoices(orgId, {
+      search: searchQuery.trim(),
+      status: statusFilter,
+      page,
+      limit
+    })
       .then(res => {
         setInvoices(res.data || []);
+        setTotalItems(res.pagination?.totalItems || res.total || 0);
+        setTotalPages(res.pagination?.totalPages || res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [orgId]);
+  }, [orgId, page, searchQuery, statusFilter, limit]);
 
-  const filteredInvoices = useMemo(() => {
-    let result = invoices;
-
-    if (statusFilter !== 'ALL') {
-      result = result.filter(i => i.status === statusFilter);
-    }
-
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(i =>
-        (i.invoiceNumber && i.invoiceNumber.toLowerCase().includes(q)) ||
-        (i.partner?.name && i.partner.name.toLowerCase().includes(q)) ||
-        (i.saleOrder?.orderNumber && i.saleOrder.orderNumber.toLowerCase().includes(q))
-      );
-    }
-
-    return result;
-  }, [searchQuery, statusFilter, invoices]);
+  const filteredInvoices = invoices;
 
   return (
-    <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white">
+    <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white">
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
           <h1 className="text-[24px] font-[600] text-[#242424] mb-1">Invoices</h1>
@@ -63,13 +61,19 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
             <Input
               placeholder="Search by ID or customer..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
               className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
             />
           </div>
           <select
             value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
+            onChange={e => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="h-10 px-3 border border-[#d0d0d0] rounded-[4px] text-[13px] text-[#242424] focus-visible:ring-0 focus-visible:border-[#0066cc] bg-white outline-none"
           >
             <option value="ALL">All Statuses</option>
@@ -154,6 +158,20 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
           </table>
         </div>
       </div>
+      {!isLoading && totalItems > 0 && (
+        <TablePagination
+          page={page}
+          limit={limit}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+          className="mt-6"
+        />
+      )}
     </div>
   );
 }

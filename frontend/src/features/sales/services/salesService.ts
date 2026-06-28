@@ -11,10 +11,19 @@ import {
 
 export interface PagedEntityResponse<T> {
   data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  totalElements?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,7 +99,7 @@ export const createSaleOrder = createQuotation;
 // ─────────────────────────────────────────────────────────────────────────────
 export const getOrders = async (
   orgId: string,
-  params?: { search?: string; page?: number; limit?: number }
+  params?: { search?: string; status?: string; page?: number; limit?: number }
 ): Promise<PagedEntityResponse<SaleOrder>> => {
   const response = await apiClient.get<PagedEntityResponse<SaleOrder>>(
     API_ENDPOINTS.SALES.ORDERS(orgId),
@@ -299,7 +308,7 @@ export const getProductById = async (orgId: string, id: string): Promise<Product
 // ─────────────────────────────────────────────────────────────────────────────
 export const getSaleInvoices = async (
   orgId: string,
-  params?: { search?: string; page?: number; limit?: number }
+  params?: { search?: string; status?: string; page?: number; limit?: number }
 ): Promise<PagedEntityResponse<SaleInvoice>> => {
   const response = await apiClient.get<PagedEntityResponse<any>>(
     API_ENDPOINTS.SALES.INVOICES(orgId),
@@ -485,6 +494,7 @@ export interface AiSalesForecastResponse {
   forecast_30d_total_revenue: number;
   forecast_points: AiForecastPoint[];
   insights: string[];
+  model_name?: string;
 }
 
 export const getAiSalesForecast = async (

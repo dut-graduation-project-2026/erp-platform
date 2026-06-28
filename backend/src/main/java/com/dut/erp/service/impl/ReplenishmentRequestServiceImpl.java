@@ -83,7 +83,7 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
 
   @Override
   public PagedEntityResponse<ReplenishmentRequestResponse> getReplenishmentRequests(
-      UUID organizationId, UUID warehouseId, String search, PaginationRequest paginationRequest) {
+      UUID organizationId, UUID warehouseId, String search, String status, PaginationRequest paginationRequest) {
     log.info("Fetching replenishment requests for warehouse {}", warehouseId);
 
     Pageable pageable = PageRequest.of(
@@ -92,9 +92,18 @@ public class ReplenishmentRequestServiceImpl implements ReplenishmentRequestServ
         SortingConstants.customEntitiesSort(SortField.desc("createdAt"))
     );
 
+    com.dut.erp.enums.ReplenishmentStatus repStatus = null;
+    if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+      try {
+        repStatus = com.dut.erp.enums.ReplenishmentStatus.valueOf(status.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        log.warn("Invalid status value: {}", status);
+      }
+    }
+
     Page<UUID> ids = (search != null && !search.trim().isEmpty())
-        ? replenishmentRequestRepository.findIdsByWarehouseIdAndSearch(warehouseId, search, pageable)
-        : replenishmentRequestRepository.findIdsByWarehouseId(warehouseId, pageable);
+        ? replenishmentRequestRepository.findIdsByWarehouseIdAndSearch(warehouseId, search, repStatus, pageable)
+        : replenishmentRequestRepository.findIdsByWarehouseId(warehouseId, repStatus, pageable);
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));

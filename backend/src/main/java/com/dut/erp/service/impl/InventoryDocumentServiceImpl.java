@@ -309,7 +309,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
   @Override
   public PagedEntityResponse<InventoryDocumentBaseResponse> getDocuments(
-      UUID organizationId, UUID warehouseId, String search, PaginationRequest paginationRequest) {
+      UUID organizationId, UUID warehouseId, String search, String status, String type, PaginationRequest paginationRequest) {
     log.info("Fetching documents for warehouse {}", warehouseId);
 
     Pageable pageable = PageRequest.of(
@@ -317,9 +317,35 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         paginationRequest.limit()
     );
 
+    com.dut.erp.enums.DocumentStatus docStatus = null;
+    if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+      try {
+        docStatus = com.dut.erp.enums.DocumentStatus.valueOf(status.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        log.warn("Invalid status value: {}", status);
+      }
+    }
+
+    java.util.List<com.dut.erp.enums.DocumentType> docTypes = new java.util.ArrayList<>();
+    boolean useTypeFilter = false;
+    if (type != null && !type.trim().isEmpty() && !type.equalsIgnoreCase("ALL")) {
+      useTypeFilter = true;
+      if (type.equalsIgnoreCase("TRANSFER")) {
+        docTypes.add(com.dut.erp.enums.DocumentType.TRANSFER_IN);
+        docTypes.add(com.dut.erp.enums.DocumentType.TRANSFER_OUT);
+      } else {
+        try {
+          docTypes.add(com.dut.erp.enums.DocumentType.valueOf(type.trim().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+          log.warn("Invalid type value: {}", type);
+          useTypeFilter = false;
+        }
+      }
+    }
+
     Page<UUID> ids = (search != null && !search.trim().isEmpty())
-        ? inventoryDocumentRepository.findIdsByWarehouseIdAndSearch(warehouseId, search, pageable)
-        : inventoryDocumentRepository.findIdsByWarehouseId(warehouseId, pageable);
+        ? inventoryDocumentRepository.findIdsByWarehouseIdAndSearch(warehouseId, search, docStatus, docTypes, useTypeFilter, pageable)
+        : inventoryDocumentRepository.findIdsByWarehouseId(warehouseId, docStatus, docTypes, useTypeFilter, pageable);
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));

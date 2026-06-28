@@ -160,18 +160,18 @@ export default function InventoryLayout({
 
       {/* Main Module Content */}
       <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#f8f8f8]">
-        <PermissionGuard
-          permission={PERMISSIONS.INVENTORY.ACCESS}
-          fallback={
-            <div className="flex-1 flex items-center justify-center text-red-500 font-medium bg-white">
-              Access Denied. You do not have permission to access Inventory.
-            </div>
-          }
-        >
-          <div className="flex-1 overflow-auto">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <PermissionGuard
+            permission={PERMISSIONS.INVENTORY.ACCESS}
+            fallback={
+              <div className="flex-1 flex items-center justify-center text-red-500 font-medium bg-white">
+                Access Denied. You do not have permission to access Inventory.
+              </div>
+            }
+          >
             {children}
-          </div>
-        </PermissionGuard>
+          </PermissionGuard>
+        </div>
       </div>
     </div>
   );

@@ -17,8 +17,12 @@ public interface ReplenishmentRequestRepository extends JpaRepository<Replenishm
   @Query("""
       SELECT r.id FROM ReplenishmentRequest r
       WHERE r.warehouse.id = :warehouseId
+        AND (:status IS NULL OR r.status = :status)
       """)
-  Page<UUID> findIdsByWarehouseId(@Param("warehouseId") UUID warehouseId, Pageable pageable);
+  Page<UUID> findIdsByWarehouseId(
+      @Param("warehouseId") UUID warehouseId,
+      @Param("status") com.dut.erp.enums.ReplenishmentStatus status,
+      Pageable pageable);
 
   @Query("""
       SELECT DISTINCT r FROM ReplenishmentRequest r
@@ -38,10 +42,14 @@ public interface ReplenishmentRequestRepository extends JpaRepository<Replenishm
       LEFT JOIN r.inventoryDocument d
       LEFT JOIN Order o ON d.referenceType = com.dut.erp.enums.ReferenceType.SALES_ORDER AND d.referenceId = o.id
       WHERE r.warehouse.id = :warehouseId
+        AND (:status IS NULL OR r.status = :status)
         AND (LOWER(r.notes) LIKE LOWER(CONCAT('%', :search, '%'))
              OR LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%'))
              OR (d.referenceType = com.dut.erp.enums.ReferenceType.SALES_ORDER AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))))
       """)
   Page<UUID> findIdsByWarehouseIdAndSearch(
-      @Param("warehouseId") UUID warehouseId, @Param("search") String search, Pageable pageable);
+      @Param("warehouseId") UUID warehouseId,
+      @Param("search") String search,
+      @Param("status") com.dut.erp.enums.ReplenishmentStatus status,
+      Pageable pageable);
 }

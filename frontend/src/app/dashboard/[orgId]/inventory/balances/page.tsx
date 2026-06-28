@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Filter, RefreshCcw, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, Brain, ShoppingCart, Check, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export default function BalancesListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -30,7 +31,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   // Actionable AI States
   const [activeTab, setActiveTab] = useState<'balances' | 'ai-analysis' | 'ai-reorder'>('balances');
@@ -67,8 +68,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
     })
       .then(res => {
         setBalances(res.data || []);
-        setTotalItems(res.total || 0);
-        setTotalPages(res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
+        setTotalItems(res.pagination?.totalItems || res.total || 0);
+        setTotalPages(res.pagination?.totalPages || res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
       })
       .catch(err => {
         console.error(err);
@@ -133,7 +134,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
       fetchReorderRecommendations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId, selectedWarehouseId, page, activeTab]);
+  }, [orgId, selectedWarehouseId, page, activeTab, limit]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,7 +155,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
   ) || [];
 
   return (
-    <div className="p-6 h-full flex flex-col font-['Segoe_UI'] bg-white overflow-y-auto">
+    <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white">
       {/* Top Controls */}
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
@@ -373,43 +374,18 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
             </table>
           </div>
 
-          {/* Pagination Footer */}
           {!isLoading && totalItems > 0 && (
-            <div className="mt-4 bg-white border border-[#e0e0e0] rounded-[4px] px-4 py-3 flex items-center justify-between text-[13px] text-[#64748b] shrink-0 shadow-sm">
-              <span>
-                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, totalItems)} of {totalItems} items
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="p-1 hover:bg-[#f8f8f8] hover:text-[#242424] rounded disabled:opacity-50 disabled:hover:bg-transparent"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      className={cn(
-                        "w-7 h-7 rounded flex items-center justify-center font-medium",
-                        page === i + 1 ? "bg-[#0066cc] text-white" : "hover:bg-[#f8f8f8] text-[#242424]"
-                      )}
-                      onClick={() => setPage(i + 1)}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="p-1 hover:bg-[#f8f8f8] hover:text-[#242424] rounded disabled:opacity-50 disabled:hover:bg-transparent"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            <TablePagination
+              page={page}
+              limit={limit}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
+            />
           )}
         </div>
       )}
