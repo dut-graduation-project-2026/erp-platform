@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Save, FileText, Calendar, Settings as SettingsIcon } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { PermissionGuard } from "@/components/rbac/PermissionGuard";
 import { PERMISSIONS, PERMISSION_GROUPS, BACKEND_ACTIONS, RESOURCE_LABELS } from "@/config/permissions";
 import { APP_ROUTES } from "@/config/constants";
@@ -140,10 +140,10 @@ export default function RoleFormPage() {
         </div>
 
         {/* Main Content Layout */}
-        <div className="flex flex-col lg:flex-row p-6 gap-6 max-w-[1600px] w-full mx-auto">
+        <div className="flex flex-col p-6 max-w-[1000px] w-full mx-auto">
           
           {/* Left Pane: Role Form */}
-          <div className="flex-1 min-w-0">
+          <div className="w-full">
             <div className="bg-white shadow-[0px_1px_3px_rgba(0,0,0,0.12)] rounded-[4px] border border-[#e0e0e0] overflow-hidden">
               
               {/* Top Section: Basic Info */}
@@ -307,89 +307,6 @@ export default function RoleFormPage() {
             </div>
           </div>
 
-          {/* Right Pane: Odoo Chatter / Log Notes */}
-          <div className="w-full lg:w-[400px] shrink-0 flex flex-col">
-            <div className="bg-white shadow-[0px_1px_3px_rgba(0,0,0,0.12)] rounded-[4px] border border-[#e0e0e0] flex-1">
-              
-              {/* Chatter Header / Action Buttons */}
-              <div className="flex border-b border-[#e0e0e0]">
-                <button className="flex-1 py-3 text-[14px] font-semibold flex items-center justify-center gap-2 hover:bg-[#f8f8f8] transition-colors text-[#242424] border-r border-[#e0e0e0]">
-                  <FileText className="w-4 h-4 text-[#898989]" />
-                  Log Note
-                </button>
-                <button className="flex-1 py-3 text-[14px] font-semibold flex items-center justify-center gap-2 hover:bg-[#f8f8f8] transition-colors text-[#242424]">
-                  <Calendar className="w-4 h-4 text-[#898989]" />
-                  Schedule Activity
-                </button>
-              </div>
-
-              {/* Log Timeline */}
-              <div className="p-4 relative">
-                {/* Vertical Timeline Line */}
-                <div className="absolute left-[36px] top-4 bottom-4 w-px bg-[#e0e0e0] z-0"></div>
-
-                {isNew ? (
-                  <div className="relative z-10 flex gap-4">
-                    <div className="w-10 h-10 rounded-full border border-[#d0d0d0] shrink-0 bg-white flex items-center justify-center">
-                      <SettingsIcon className="w-5 h-5 text-[#898989]" />
-                    </div>
-                    <div className="flex-1 mt-1">
-                      <div className="flex justify-between items-baseline mb-1">
-                        <span className="font-semibold text-[14px] text-[#898989]">System</span>
-                        <span className="text-[12px] text-[#898989]">Just now</span>
-                      </div>
-                      <p className="text-[13px] text-[#898989] italic">
-                        Creating new role. You can assign granular permissions and save.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {/* Entry 1: Current Status */}
-                    <div className="relative z-10 flex gap-4 mb-6">
-                      <div className="w-10 h-10 rounded-full border border-[#d0d0d0] shrink-0 bg-white overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${role?.name || 'Role'}`} alt="Role Avatar" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 mt-1">
-                        <div className="flex justify-between items-baseline mb-1">
-                          <span className="font-semibold text-[14px] text-[#242424]">{role?.name || 'Role'} Status</span>
-                          <span className="text-[12px] text-[#898989]">Current</span>
-                        </div>
-                        <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] p-3 mt-2 text-[13px] text-[#242424]">
-                          This role is actively managed under organization <strong>{role?.organization?.name || 'your organization'}</strong>.
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Entry 2: Permission Count */}
-                    <div className="relative z-10 flex gap-4">
-                      <div className="w-10 h-10 rounded-full border border-[#d0d0d0] shrink-0 bg-white flex items-center justify-center">
-                        <SettingsIcon className="w-5 h-5 text-[#898989]" />
-                      </div>
-                      <div className="flex-1 mt-1">
-                        <div className="flex justify-between items-baseline mb-1">
-                          <span className="font-semibold text-[14px] text-[#898989]">System Audit</span>
-                          <span className="text-[12px] text-[#898989]">Auto-generated</span>
-                        </div>
-                        <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] p-3 mt-2">
-                          <p className="text-[13px] text-[#242424] mb-3">
-                            Currently holds <strong>{permissions.size}</strong> granular permissions.
-                          </p>
-                          <div className="space-y-1 font-mono text-[12px]">
-                            <div className="bg-[#f0f4ff] text-[#0066cc] px-2 py-1 rounded">
-                              + Synced with module definitions.
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-              </div>
-            </div>
-          </div>
 
         </div>
       </div>

@@ -9,7 +9,8 @@ public record ProductBaseResponse(
     UUID id,
     String name,
     String sku,
-    BigDecimal price,
+    BigDecimal salesPrice,
+    BigDecimal purchasePrice,
     boolean isArchived,
     ProductCategoryBaseResponse category,
     String image

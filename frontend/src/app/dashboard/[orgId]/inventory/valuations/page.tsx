@@ -407,22 +407,6 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
               ))}
             </div>
           </div>
-
-          {/* Audit Verification block */}
-          <div className="border border-[#e0e0e0] bg-[#fafafa] rounded-[4px] p-4 text-[13px] text-[#4a4a4a] space-y-3">
-            <div className="flex items-center space-x-2 text-[#0066cc]">
-              <ShieldAlert className="w-5 h-5" />
-              <h4 className="font-[700]">Inventory Auditing Compliance</h4>
-            </div>
-            <p className="text-[12px]">
-              All stock moves (Receipts and Issues) are automatically tracked using double-entry warehouse ledgers. Cost valuations comply with GAAP / IFRS standards.
-            </p>
-            <div className="bg-white p-2 rounded border border-[#e0e0e0] font-mono text-[10px] text-[#898989]">
-              Valuation Engine: Active<br/>
-              Database Checksum: OK<br/>
-              State Transitions: Validated
-            </div>
-          </div>
         </div>
 
       </div>

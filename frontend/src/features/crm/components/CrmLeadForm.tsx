@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AddressInput } from '@/components/ui/address-input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Clock, MessageSquare, Mail, Phone, Building, X } from 'lucide-react';
+import { Building, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateLead, createLead } from '../services/crmService';
 import { useRouter } from 'next/navigation';
@@ -72,14 +72,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
     }
   }, [orgId]);
 
-  // Chatter state
-  const [notes, setNotes] = useState<{ id: string; author: string; text: string; time: string; color: string }[]>([
-    { id: '1', author: 'Mitchell Admin', text: 'Had a great discovery call. They are highly interested in the Enterprise Licensing package for 500 users.', time: '2 hours ago', color: '#0066cc' },
-    { id: '2', author: 'System', text: 'Stage changed from "New" to "Qualified"', time: 'Yesterday', color: '#e0e0e0' },
-    { id: '3', author: 'Marc Demo', text: 'Email sent: "Introduction to TechCorp Enterprise Solutions"', time: 'Oct 12, 2026', color: '#e0e0e0' }
-  ]);
-  const [newNote, setNewNote] = useState('');
-  const [isLogging, setIsLogging] = useState(false);
+
 
   const handleCreateCustomer = async () => {
     if (!newCustomer.name?.trim()) return alert('Customer name is required.');
@@ -122,21 +115,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
     }
   };
 
-  const handlePostNote = () => {
-    if (!newNote.trim()) return;
 
-    const note = {
-      id: Date.now().toString(),
-      author: 'You (Current User)',
-      text: newNote,
-      time: 'Just now',
-      color: '#28a745'
-    };
-
-    setNotes([note, ...notes]);
-    setNewNote('');
-    setIsLogging(false);
-  };
 
   return (
     <div className="h-full flex flex-col font-['Segoe_UI'] bg-white">
@@ -182,9 +161,9 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-3/5 overflow-y-auto p-6 border-r border-[#e0e0e0]">
-          <div className="max-w-2xl space-y-6">
+      <div className="flex flex-1 overflow-hidden justify-center bg-[#f8f8f8]">
+        <div className="w-full max-w-4xl overflow-y-auto p-8 bg-white border-x border-[#e0e0e0] shadow-[0px_4px_16px_rgba(0,0,0,0.05)]">
+          <div className="space-y-6">
 
             <div>
               <label className="block text-[14px] font-[600] text-[#242424] mb-1">Opportunity Name *</label>
@@ -343,63 +322,6 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
           </div>
         </div>
 
-        <div className="w-2/5 flex flex-col bg-[#f8f8f8]">
-          <div className="p-4 border-b border-[#e0e0e0] flex items-center space-x-2 bg-white shrink-0">
-            <Button
-              variant="ghost"
-              className={cn("h-8 px-3 text-[13px] font-[600]", isLogging ? "bg-[#0066cc] text-white hover:bg-[#004499] hover:text-white" : "text-[#0066cc] hover:bg-[#f0f4ff]")}
-              onClick={() => setIsLogging(!isLogging)}
-            >
-              <MessageSquare className="w-4 h-4 mr-2" /> Log Note
-            </Button>
-            <Button variant="ghost" className="text-[#898989] hover:text-[#242424] h-8 px-3 text-[13px]">
-              <Mail className="w-4 h-4 mr-2" /> Send Email
-            </Button>
-            <Button variant="ghost" className="text-[#898989] hover:text-[#242424] h-8 px-3 text-[13px]">
-              <Phone className="w-4 h-4 mr-2" /> Call
-            </Button>
-          </div>
-
-          {isLogging && (
-            <div className="p-4 bg-white border-b border-[#e0e0e0]">
-              <Textarea
-                autoFocus
-                placeholder="Log a note..."
-                value={newNote}
-                onChange={e => setNewNote(e.target.value)}
-                className="min-h-[80px] text-[13px] mb-2"
-              />
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" size="sm" onClick={() => setIsLogging(false)}>Cancel</Button>
-                <Button className="bg-[#0066cc] text-white" size="sm" onClick={handlePostNote}>Log</Button>
-              </div>
-            </div>
-          )}
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {notes.map(note => (
-              <div key={note.id} className="relative pl-6 border-l-2 border-[#e0e0e0]">
-                <div
-                  className="absolute w-3 h-3 rounded-full -left-[7px] top-1 border-2 border-[#f8f8f8]"
-                  style={{ backgroundColor: note.color }}
-                ></div>
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="font-[600] text-[13px] text-[#242424]">{note.author}</span>
-                  <span className="text-[12px] text-[#898989]">{note.time}</span>
-                </div>
-                {note.author === 'System' ? (
-                  <p className="text-[13px] text-[#898989] italic">
-                    {note.text}
-                  </p>
-                ) : (
-                  <p className="text-[13px] text-[#242424] bg-white p-3 border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] whitespace-pre-wrap">
-                    {note.text}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Inline Customer Creation Modal */}

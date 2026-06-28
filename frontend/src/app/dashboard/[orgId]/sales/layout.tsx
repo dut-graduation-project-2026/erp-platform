@@ -145,26 +145,6 @@ export default function SalesLayout({
           </div>
         </div>
 
-        {/* Sidebar Footer Widget - Monthly Goal Progress */}
-        {!isCollapsed ? (
-          <div className="p-4 border-t border-[#e0e0e0] bg-[#fafafa] select-none transition-all duration-300">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[11px] font-semibold text-[#898989]">Monthly Sales Target</span>
-              <span className="text-[11px] font-bold text-[#28a745]">75%</span>
-            </div>
-            <div className="w-full bg-[#e0e0e0] h-1.5 rounded-full overflow-hidden mb-2">
-              <div className="bg-[#28a745] h-full w-[75%] rounded-full transition-all duration-500"></div>
-            </div>
-            <div className="flex justify-between items-center text-[10px] text-[#898989]">
-              <span className="font-mono">$750M / $1.0B</span>
-              <span className="bg-[#28a745]/10 text-[#28a745] px-1.5 py-0.5 rounded font-bold">On track</span>
-            </div>
-          </div>
-        ) : (
-          <div className="p-3 border-t border-[#e0e0e0] bg-[#fafafa] flex justify-center text-[#28a745]" title="Sales Target: 75%">
-            <Percent className="w-4.5 h-4.5 animate-pulse" />
-          </div>
-        )}
       </aside>
 
       {/* Main Module Content */}

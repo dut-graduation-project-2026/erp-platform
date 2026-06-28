@@ -143,7 +143,7 @@ export function Header({ className }: HeaderProps) {
   return (
     <>
       <header className={cn(
-        "h-16 bg-gradient-to-r from-blue-600 to-blue-800 border-b border-blue-700 flex items-center justify-between px-6 text-white relative z-50",
+        "h-16 bg-gradient-to-r from-blue-600 to-blue-800 border-b border-blue-700 flex items-center justify-between px-6 text-white sticky top-0 z-50",
         className
       )}>
         {/* Left Section - Odoo Style Navigation */}
@@ -163,15 +163,6 @@ export function Header({ className }: HeaderProps) {
           {currentModule && !isAppLauncherOpen ? (
             <div className="flex items-center space-x-4">
               <span className="text-[18px] font-semibold text-white">{currentModule.name}</span>
-              {/* Odoo Sub-navigation would go here, mapped by module */}
-              <div className="hidden md:flex space-x-1 ml-4 border-l border-white/20 pl-4">
-                 <Button variant="ghost" className="text-white hover:bg-white/10 h-8 text-sm px-3">
-                   Overview
-                 </Button>
-                 <Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 h-8 text-sm px-3">
-                   Configuration
-                 </Button>
-              </div>
             </div>
           ) : (
             <div className="text-[18px] font-semibold text-white">App Launcher</div>

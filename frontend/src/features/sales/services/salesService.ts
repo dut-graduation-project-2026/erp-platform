@@ -279,11 +279,9 @@ export const getProducts = async (
     API_ENDPOINTS.SALES.PRODUCTS(orgId),
     { params }
   );
-  // Normalise `salePrice` → `price` so existing UI doesn't break
   if (response.data?.data) {
     response.data.data = response.data.data.map((p: any) => ({
       ...p,
-      price: p.price ?? p.salePrice ?? 0,
       sku: p.sku ?? p.code,
     }));
   }
@@ -293,7 +291,7 @@ export const getProducts = async (
 export const getProductById = async (orgId: string, id: string): Promise<Product> => {
   const response = await apiClient.get<Product>(`${API_ENDPOINTS.SALES.PRODUCTS(orgId)}/${id}`);
   const p = response.data as any;
-  return { ...p, price: p.price ?? p.salePrice ?? 0, sku: p.sku ?? p.code };
+  return { ...p, sku: p.sku ?? p.code };
 };
 
 

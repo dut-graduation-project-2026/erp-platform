@@ -127,7 +127,25 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
           <h1 className="text-[24px] font-[600] text-[#242424] mb-1">Customers</h1>
           <span className="text-[14px] text-[#898989]">Manage your customers and partners</span>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex space-x-3 items-center">
+          {/* View Mode Toggle (Organizations style) */}
+          <div className="flex items-center bg-[#f8f8f8] p-1 rounded-[6px] border border-[#e0e0e0]">
+            <button 
+              onClick={() => setViewMode('card')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-[13px] font-[600] transition-colors ${viewMode === 'card' ? 'bg-white shadow-sm text-[#0066cc]' : 'text-[#898989] hover:text-[#242424]'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Card
+            </button>
+            <button 
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-[13px] font-[600] transition-colors ${viewMode === 'table' ? 'bg-white shadow-sm text-[#0066cc]' : 'text-[#898989] hover:text-[#242424]'}`}
+            >
+              <List className="w-4 h-4" />
+              List
+            </button>
+          </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
             <Input
@@ -239,34 +257,6 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
             </table>
           </div>
         )}
-      </div>
-
-      {/* Floating Toggle View Mode Pill */}
-      <div className="fixed bottom-6 right-6 z-40 bg-white border border-[#e0e0e0] shadow-[0px_4px_16px_rgba(0,0,0,0.12)] rounded-full p-1.5 flex items-center space-x-1">
-        <button
-          onClick={() => setViewMode('card')}
-          title="Card View"
-          className={cn(
-            "p-2 rounded-full transition-all duration-200",
-            viewMode === 'card'
-              ? "bg-[#0066cc] text-white"
-              : "text-[#898989] hover:bg-gray-100 hover:text-[#242424]"
-          )}
-        >
-          <LayoutGrid className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setViewMode('table')}
-          title="Table View"
-          className={cn(
-            "p-2 rounded-full transition-all duration-200",
-            viewMode === 'table'
-              ? "bg-[#0066cc] text-white"
-              : "text-[#898989] hover:bg-gray-100 hover:text-[#242424]"
-          )}
-        >
-          <List className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Partner Form Modal */}

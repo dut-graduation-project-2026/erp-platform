@@ -57,9 +57,6 @@ export default function AppLauncherPage() {
     return hasModuleAccess(configModule.id, configModule.permission);
   });
 
-  console.log("Backend Modules:", backendModules);
-  console.log("Accessible Config Modules:", accessibleModules);
-
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-white p-8">
       {/* App Grid */}

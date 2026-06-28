@@ -3,11 +3,11 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
-import { 
-  FileText, 
-  Warehouse, 
-  Package, 
-  Activity, 
+import {
+  FileText,
+  Warehouse,
+  Package,
+  Activity,
   Boxes,
   DollarSign,
   ChevronLeft,
@@ -61,8 +61,8 @@ export default function InventoryLayout({
   ];
 
   const renderNavItem = (item: { name: string; href: string; icon: React.ElementType }) => {
-    const isActive = item.name === 'Overview' 
-      ? pathname === item.href 
+    const isActive = item.name === 'Overview'
+      ? pathname === item.href
       : (pathname === item.href || pathname.startsWith(item.href + '/'));
     const Icon = item.icon;
     return (
@@ -73,8 +73,8 @@ export default function InventoryLayout({
         className={cn(
           "flex items-center rounded-[6px] text-[13px] font-[500] transition-all duration-300 select-none",
           isCollapsed ? "justify-center p-2.5 mx-auto w-10 h-10" : "px-3 py-2.5 mx-1",
-          isActive 
-            ? "bg-[#f0f4ff] text-[#0066cc] font-[600]" 
+          isActive
+            ? "bg-[#f0f4ff] text-[#0066cc] font-[600]"
             : "text-[#4a4a4a] hover:bg-[#f5f5f5] hover:text-[#242424]"
         )}
       >
@@ -156,32 +156,11 @@ export default function InventoryLayout({
             </div>
           </div>
         </div>
-
-        {/* Sidebar Footer Widget - Quick Alert */}
-        {!isCollapsed ? (
-          <div className="p-4 border-t border-[#e0e0e0] bg-[#fafafa] select-none transition-all duration-300">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[11px] font-semibold text-[#898989]">Warehouse Health</span>
-              <span className="text-[11px] font-bold text-[#28a745]">100%</span>
-            </div>
-            <div className="w-full bg-[#e0e0e0] h-1.5 rounded-full overflow-hidden mb-2">
-              <div className="bg-[#28a745] h-full w-full rounded-full"></div>
-            </div>
-            <div className="flex justify-between items-center text-[10px] text-[#898989]">
-              <span>System Audited</span>
-              <span className="bg-[#28a745]/10 text-[#28a745] px-1.5 py-0.5 rounded font-bold">Secure</span>
-            </div>
-          </div>
-        ) : (
-          <div className="p-3 border-t border-[#e0e0e0] bg-[#fafafa] flex justify-center text-[#28a745]" title="Warehouse Health: 100%">
-            <Activity className="w-4.5 h-4.5 animate-pulse" />
-          </div>
-        )}
       </aside>
 
       {/* Main Module Content */}
       <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#f8f8f8]">
-        <PermissionGuard 
+        <PermissionGuard
           permission={PERMISSIONS.INVENTORY.ACCESS}
           fallback={
             <div className="flex-1 flex items-center justify-center text-red-500 font-medium bg-white">

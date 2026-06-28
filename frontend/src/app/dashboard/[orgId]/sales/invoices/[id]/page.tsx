@@ -4,7 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import { getSaleInvoiceById, getOrderItems, updateInvoiceStatus, registerPayment } from '@/features/sales/services/salesService';
 import { SaleInvoice, OrderItem } from '@/features/sales/types';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, CheckCircle, FileText, XCircle, Calendar, Clock, Activity, Printer } from 'lucide-react';
+import { ChevronRight, CheckCircle, FileText, XCircle, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/use-permissions';
 import { toast } from 'sonner';
@@ -137,10 +137,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="max-w-[1000px] mx-auto">
           
-          {/* Left: Invoice Sheet Container (2/3 width) */}
-          <div className="lg:col-span-2 bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_4px_16px_rgba(0,0,0,0.05)] p-8 md:p-12">
+          {/* Left: Invoice Sheet Container */}
+          <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_4px_16px_rgba(0,0,0,0.05)] p-8 md:p-12">
             
             {/* Header Block */}
             <div className="mb-8">
@@ -318,78 +318,6 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ orgId:
 
           </div>
 
-          {/* Right: Chatter Sidebar (1/3 width) */}
-          <div className="space-y-4 lg:sticky lg:top-6">
-            {/* Tabs */}
-            <div className="flex border border-[#e0e0e0] rounded-t-[4px] overflow-hidden bg-[#fafafa]">
-              <button className="flex-1 py-2.5 font-[600] text-[#242424] text-[13px] bg-white border-r border-[#e0e0e0] flex items-center justify-center gap-1.5">
-                <FileText className="w-4 h-4 text-[#898989]" /> Log Note
-              </button>
-              <button className="flex-1 py-2.5 text-[#898989] text-[13px] hover:text-[#242424] flex items-center justify-center gap-1.5 cursor-not-allowed" disabled>
-                <Calendar className="w-4 h-4 text-[#898989]" /> Schedule Activity
-              </button>
-            </div>
-
-            {/* Timeline Content */}
-            <div className="border border-[#e0e0e0] border-t-0 rounded-b-[4px] p-6 bg-[#fcfcfc] space-y-6 relative min-h-[300px]">
-              {/* Vertical line */}
-              <div className="absolute left-[39px] top-6 bottom-6 w-[1px] bg-[#e0e0e0] z-0" />
-
-              {invoice.createdAt && (
-                <div className="relative flex items-start z-10 gap-3">
-                  {/* Timeline node: Avatar */}
-                  <div className="w-8 h-8 rounded-full bg-[#0066cc] text-white font-bold flex items-center justify-center text-[12px] shrink-0 shadow-sm">
-                    {invoice.createdBy?.firstName?.[0] || 'U'}
-                  </div>
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center text-[13px] mb-1">
-                      <span className="font-[600] text-[#242424] truncate">
-                        {invoice.createdBy?.firstName} {invoice.createdBy?.lastName}
-                      </span>
-                      <span className="text-[11px] text-[#898989] shrink-0">Original</span>
-                    </div>
-                    <div className="bg-white border border-[#e0e0e0] rounded-[4px] p-3 shadow-[0px_1px_2px_rgba(0,0,0,0.02)] text-[13px]">
-                      <p className="text-[#242424] font-medium mb-1">Invoice Issued</p>
-                      <p className="text-[#606060] text-[12px]">
-                        Invoice <span className="font-mono text-[#0066cc]">{invoice.invoiceNumber}</span> was registered in draft mode.
-                      </p>
-                      <div className="text-[10px] text-[#898989] mt-2 font-mono">
-                        {new Date(invoice.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {invoice.updatedAt && invoice.updatedBy && (
-                <div className="relative flex items-start z-10 gap-3">
-                  {/* Timeline node: Clock icon in a white circle */}
-                  <div className="w-8 h-8 rounded-full bg-white border border-[#e0e0e0] text-[#898989] flex items-center justify-center shrink-0 shadow-sm">
-                    <Clock className="w-4 h-4" />
-                  </div>
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center text-[13px] mb-1">
-                      <span className="font-[600] text-[#242424] truncate">
-                        {invoice.updatedBy?.firstName} {invoice.updatedBy?.lastName}
-                      </span>
-                      <span className="text-[11px] text-[#898989] shrink-0">Recent Update</span>
-                    </div>
-                    <div className="bg-white border border-[#e0e0e0] rounded-[4px] p-3 shadow-[0px_1px_2px_rgba(0,0,0,0.02)] text-[13px]">
-                      <p className="text-[#242424] font-medium mb-1">Status Transition</p>
-                      <p className="text-[#606060] text-[12px]">
-                        Invoice status updated to <span className="font-[600] text-[#242424]">{invoice.status}</span>.
-                      </p>
-                      <div className="text-[10px] text-[#898989] mt-2 font-mono">
-                        {new Date(invoice.updatedAt).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
 
         </div>
       </div>

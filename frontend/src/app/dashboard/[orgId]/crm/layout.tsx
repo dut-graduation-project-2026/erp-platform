@@ -144,27 +144,6 @@ export default function CrmLayout({
             </div>
           </div>
         </div>
-
-        {/* Sidebar Footer Widget - Leads Conversion */}
-        {!isCollapsed ? (
-          <div className="p-4 border-t border-[#e0e0e0] bg-[#fafafa] select-none transition-all duration-300">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[11px] font-semibold text-[#898989]">Leads Qualified</span>
-              <span className="text-[11px] font-bold text-[#0066cc]">85%</span>
-            </div>
-            <div className="w-full bg-[#e0e0e0] h-1.5 rounded-full overflow-hidden mb-2">
-              <div className="bg-[#0066cc] h-full w-[85%] rounded-full transition-all duration-500"></div>
-            </div>
-            <div className="flex justify-between items-center text-[10px] text-[#898989]">
-              <span>Target: 50 Leads</span>
-              <span className="bg-[#0066cc]/10 text-[#0066cc] px-1.5 py-0.5 rounded font-bold">Excellent</span>
-            </div>
-          </div>
-        ) : (
-          <div className="p-3 border-t border-[#e0e0e0] bg-[#fafafa] flex justify-center text-[#0066cc]" title="Leads Qualified: 85%">
-            <Target className="w-4.5 h-4.5 animate-pulse" />
-          </div>
-        )}
       </aside>
 
       {/* Main Module Content */}

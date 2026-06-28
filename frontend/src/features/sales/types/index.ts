@@ -42,9 +42,8 @@ export interface Product {
   code: string;   // backend field
   sku: string;   // alias kept for legacy UI
   description: string;
-  price: number;  // frontend alias; backend sends `salePrice`
-  salePrice?: number;
-  purchasePrice?: number;
+  salesPrice: number;
+  purchasePrice: number;
   isActive?: boolean;
   isArchived?: boolean;
   categoryId?: string;
