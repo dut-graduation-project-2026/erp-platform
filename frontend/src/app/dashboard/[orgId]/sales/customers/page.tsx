@@ -11,15 +11,21 @@ import { AddressInput } from '@/components/ui/address-input';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PARTNER_TYPES } from '@/config/constants';
 import { PERMISSIONS } from '@/config/permissions';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export default function CustomersListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
   const [customers, setCustomers] = useState<SalePartner[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<SalePartner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { hasPermission } = usePermissions();
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,10 +34,15 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
 
   const loadPartners = () => {
     setIsLoading(true);
-    getPartners(orgId)
+    getPartners(orgId, {
+      search: searchQuery.trim(),
+      page,
+      limit
+    })
       .then(res => {
         setCustomers(res.data || []);
-        setFilteredCustomers(res.data || []);
+        setTotalItems(res.pagination?.totalItems || res.total || 0);
+        setTotalPages(res.pagination?.totalPages || res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
@@ -39,20 +50,7 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
 
   useEffect(() => {
     loadPartners();
-  }, [orgId]);
-
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredCustomers(customers);
-    } else {
-      const q = searchQuery.toLowerCase();
-      setFilteredCustomers(customers.filter(c =>
-        (c.name && c.name.toLowerCase().includes(q)) ||
-        (c.email && c.email.toLowerCase().includes(q)) ||
-        (c.code && c.code.toLowerCase().includes(q))
-      ));
-    }
-  }, [searchQuery, customers]);
+  }, [orgId, page, searchQuery, limit]);
 
   const handleOpenModal = async (partner?: SalePartner) => {
     if (partner) {
@@ -151,7 +149,10 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
             <Input
               placeholder="Search partners..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
               className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
             />
           </div>
@@ -169,11 +170,11 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
       <div className="flex-1 overflow-auto bg-[#f8f8f8] p-6 -mx-6 -mb-6 border-t border-[#e0e0e0]">
         {isLoading ? (
           <div className="flex justify-center items-center h-full text-[#898989]">Loading Customers...</div>
-        ) : filteredCustomers.length === 0 ? (
+        ) : customers.length === 0 ? (
           <div className="flex justify-center items-center h-full text-[#898989]">No customers found</div>
         ) : viewMode === 'card' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredCustomers.map((customer) => (
+            {customers.map((customer) => (
               <div
                 key={customer.id}
                 onClick={() => handleOpenModal(customer)}
@@ -220,7 +221,7 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-[#e0e0e0]">
-                {filteredCustomers.map((customer) => (
+                {customers.map((customer) => (
                   <tr 
                     key={customer.id} 
                     onClick={() => handleOpenModal(customer)}
@@ -258,6 +259,21 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
           </div>
         )}
       </div>
+
+      {!isLoading && totalItems > 0 && (
+        <TablePagination
+          page={page}
+          limit={limit}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+          className="mt-6"
+        />
+      )}
 
       {/* Partner Form Modal */}
       {isModalOpen && selectedPartner && (

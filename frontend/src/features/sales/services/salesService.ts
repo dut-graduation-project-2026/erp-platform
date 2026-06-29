@@ -206,24 +206,28 @@ export const getPartners = async (
   orgId: string,
   params?: { search?: string; page?: number; limit?: number; isArchived?: boolean }
 ): Promise<PagedEntityResponse<SalePartner>> => {
-  const response = await apiClient.get<SalePartner[]>(
+  const response = await apiClient.get<PagedEntityResponse<SalePartner>>(
     API_ENDPOINTS.SALES.PARTNERS(orgId),
     { params }
   );
   
-  const list = Array.isArray(response.data) ? response.data : [];
+  const originalData = response.data;
+  const list = Array.isArray(originalData?.data) ? originalData.data : [];
   const mapped = list.map(p => ({
     ...p,
     type: p.partnerType || PARTNER_TYPES.INDIVIDUAL,
     partnerType: p.partnerType || PARTNER_TYPES.INDIVIDUAL
   }));
 
+  const paginationObj = originalData?.pagination;
   return {
     data: mapped,
-    total: mapped.length,
-    page: 1,
-    limit: mapped.length,
-    totalPages: 1
+    pagination: paginationObj,
+    total: paginationObj?.totalItems ?? mapped.length,
+    page: paginationObj?.page ?? 1,
+    limit: paginationObj?.limit ?? mapped.length,
+    totalPages: paginationObj?.totalPages ?? 1,
+    totalElements: paginationObj?.totalItems ?? mapped.length
   };
 };
 

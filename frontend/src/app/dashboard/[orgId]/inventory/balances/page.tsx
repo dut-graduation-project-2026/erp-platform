@@ -134,12 +134,11 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
       fetchReorderRecommendations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId, selectedWarehouseId, page, activeTab, limit]);
+  }, [orgId, selectedWarehouseId, page, activeTab, limit, searchQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchBalances();
   };
 
   const handleWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -183,7 +182,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                 <option value="">No Warehouses Available</option>
               ) : (
                 warehouses.map(wh => (
-                  <option key={wh.id} value={wh.id}>
+                   <option key={wh.id} value={wh.id}>
                     [{wh.code}] {wh.name}
                   </option>
                 ))
@@ -198,7 +197,10 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                 <Input
                   placeholder="Search by product name/SKU..."
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-9 h-10 w-[260px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                 />
               </form>

@@ -1,8 +1,10 @@
 package com.dut.erp.service;
 
 import com.dut.erp.dto.request.CreatePartnerRequest;
+import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
+import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.PartnerBaseResponse;
 import com.dut.erp.dto.response.PartnerResponse;
 import java.util.List;
@@ -20,12 +22,15 @@ public interface PartnerService {
   PartnerResponse createPartner(UUID organizationId, CreatePartnerRequest request);
 
   /**
-   * Retrieves all partners belonging to the specified organization.
+   * Retrieves all partners belonging to the specified organization with pagination and search.
    *
    * @param organizationId the UUID of the organization
-   * @return list of PartnerBaseResponse objects
+   * @param search the search query string
+   * @param paginationRequest the pagination parameters
+   * @return paged list of PartnerBaseResponse objects
    */
-  List<PartnerBaseResponse> getPartners(UUID organizationId);
+  PagedEntityResponse<PartnerBaseResponse> getPartners(
+      UUID organizationId, String search, PaginationRequest paginationRequest);
 
   /**
    * Retrieves a single partner by ID within the specified organization.
