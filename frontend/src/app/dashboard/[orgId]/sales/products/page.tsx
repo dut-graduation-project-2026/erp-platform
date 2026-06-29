@@ -17,10 +17,11 @@ import { TablePagination } from '@/components/ui/table-pagination';
 export default function ProductsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+
   const { hasPermission } = usePermissions();
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
@@ -38,13 +39,12 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
   const loadProducts = () => {
     setIsLoading(true);
     getProducts(orgId, {
-      search: searchQuery.trim(),
+      search: appliedSearch.trim(),
       page,
       limit
     })
       .then(res => {
         setProducts(res.data || []);
-        setFilteredProducts(res.data || []);
         setTotalItems(res.pagination?.totalItems || res.total || 0);
         setTotalPages(res.pagination?.totalPages || res.totalPages || Math.ceil((res.total || 1) / limit) || 1);
       })
@@ -54,17 +54,13 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
 
   useEffect(() => {
     loadProducts();
-  }, [orgId, page, searchQuery, limit]);
+  }, [orgId, page, appliedSearch, limit]);
 
   useEffect(() => {
     getProductCategories(orgId)
       .then(res => setCategories(res.data || []))
       .catch(console.error);
   }, [orgId]);
-
-  useEffect(() => {
-    setFilteredProducts(products);
-  }, [products]);
 
   const handleOpenModal = (product?: Product) => {
     if (product) {
@@ -147,13 +143,30 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
             </div>
 
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
+              <button 
+                onClick={() => {
+                  setAppliedSearch(searchQuery);
+                  setPage(1);
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#898989] hover:text-[#0066cc] focus:outline-none transition-colors"
+              >
+                <Search className="w-4 h-4" />
+              </button>
               <Input 
                 placeholder="Search products..." 
                 value={searchQuery}
                 onChange={e => {
                   setSearchQuery(e.target.value);
-                  setPage(1);
+                  if (e.target.value === '') {
+                    setAppliedSearch('');
+                    setPage(1);
+                  }
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    setAppliedSearch(searchQuery);
+                    setPage(1);
+                  }
                 }}
                 className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
               />
@@ -176,11 +189,11 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
       <div className="flex-1 overflow-auto bg-[#f8f8f8] p-6 -mx-6 -mb-6 border-t border-[#e0e0e0]">
         {isLoading ? (
           <div className="flex justify-center items-center h-full text-[#898989]">Loading Products...</div>
-        ) : filteredProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="flex justify-center items-center h-full text-[#898989]">No products found</div>
         ) : viewMode === 'card' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-             {filteredProducts.map((product) => (
+             {products.map((product) => (
               <div 
                 key={product.id} 
                 onClick={() => handleOpenModal(product)}
@@ -237,7 +250,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-[#e0e0e0]">
-                {filteredProducts.map((product) => (
+                {products.map((product) => (
                   <tr 
                     key={product.id} 
                     onClick={() => handleOpenModal(product)}

@@ -18,6 +18,8 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
   const [customers, setCustomers] = useState<SalePartner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+
   const { hasPermission } = usePermissions();
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
@@ -35,7 +37,7 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
   const loadPartners = () => {
     setIsLoading(true);
     getPartners(orgId, {
-      search: searchQuery.trim(),
+      search: appliedSearch.trim(),
       page,
       limit
     })
@@ -50,7 +52,7 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
 
   useEffect(() => {
     loadPartners();
-  }, [orgId, page, searchQuery, limit]);
+  }, [orgId, page, appliedSearch, limit]);
 
   const handleOpenModal = async (partner?: SalePartner) => {
     if (partner) {
@@ -145,13 +147,30 @@ export default function CustomersListPage({ params }: { params: Promise<{ orgId:
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
+            <button 
+              onClick={() => {
+                setAppliedSearch(searchQuery);
+                setPage(1);
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#898989] hover:text-[#0066cc] focus:outline-none transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </button>
             <Input
               placeholder="Search partners..."
               value={searchQuery}
               onChange={e => {
                 setSearchQuery(e.target.value);
-                setPage(1);
+                if (e.target.value === '') {
+                  setAppliedSearch('');
+                  setPage(1);
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  setAppliedSearch(searchQuery);
+                  setPage(1);
+                }
               }}
               className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
             />

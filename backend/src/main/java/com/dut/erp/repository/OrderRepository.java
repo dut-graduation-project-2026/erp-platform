@@ -59,9 +59,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       """
       SELECT o.id
       FROM Order o
+      LEFT JOIN o.partner p
       WHERE o.organization.id = :organizationId
       AND o.status = com.dut.erp.enums.OrderStatus.DRAFT
-      AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+      AND (LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
       """)
   Page<UUID> findQuotationIdsByOrganizationIdAndSearch(
       @Param("organizationId") UUID organizationId,
@@ -88,9 +90,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       """
       SELECT o.id
       FROM Order o
+      LEFT JOIN o.partner p
       WHERE o.organization.id = :organizationId
       AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
-      AND LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+      AND (LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
       AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
       AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
       """)
@@ -109,9 +113,12 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       LEFT JOIN o.lead l
       LEFT JOIN l.salePerson sp
       LEFT JOIN l.saleTeam st
+      LEFT JOIN o.partner p
       WHERE o.organization.id = :organizationId
       AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
-      AND (:search IS NULL OR :search = '' OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%')))
+      AND (:search IS NULL OR :search = '' 
+           OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
       AND (:status IS NULL OR o.status = :status)
       AND (:partnerId IS NULL OR o.partner.id = :partnerId)
       AND (:salePersonId IS NULL OR sp.id = :salePersonId)

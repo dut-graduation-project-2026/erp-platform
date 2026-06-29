@@ -24,7 +24,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
   
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
 
   // Tabs filter state
   const [activeTab, setActiveTab] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
@@ -50,15 +50,6 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
       });
   }, [orgId]);
 
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
   const fetchReplenishments = () => {
     if (!selectedWarehouseId) return;
 
@@ -67,7 +58,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
       page, 
       limit,
       status: activeTab,
-      search: debouncedSearch || undefined 
+      search: appliedSearch || undefined 
     })
       .then(res => {
         setRequests(res.data || []);
@@ -83,7 +74,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
 
   useEffect(() => {
     fetchReplenishments();
-  }, [orgId, selectedWarehouseId, page, debouncedSearch, activeTab, limit]);
+  }, [orgId, selectedWarehouseId, page, appliedSearch, activeTab, limit]);
 
   const filteredRequests = requests;
 
@@ -97,11 +88,31 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
         </div>
         <div className="flex space-x-3 items-center">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
+            <button 
+              onClick={() => {
+                setAppliedSearch(searchQuery);
+                setPage(1);
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#898989] hover:text-[#0066cc] focus:outline-none transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </button>
             <Input 
               placeholder="Search replenishment..." 
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                if (e.target.value === '') {
+                  setAppliedSearch('');
+                  setPage(1);
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  setAppliedSearch(searchQuery);
+                  setPage(1);
+                }
+              }}
               className="pl-9 h-10 w-[240px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
             />
           </div>

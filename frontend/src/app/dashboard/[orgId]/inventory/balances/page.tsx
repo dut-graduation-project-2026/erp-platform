@@ -26,6 +26,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
   const [balances, setBalances] = useState<InventoryBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
 
   // Pagination State
   const [page, setPage] = useState(1);
@@ -56,13 +57,13 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
       });
   }, [orgId]);
 
-  // Load balances when selectedWarehouseId, page, or searchQuery changes
+  // Load balances when selectedWarehouseId, page, or appliedSearch changes
   const fetchBalances = () => {
     if (!selectedWarehouseId) return;
 
     setIsLoading(true);
     getInventoryBalances(orgId, selectedWarehouseId, {
-      search: searchQuery.trim(),
+      search: appliedSearch.trim(),
       page,
       limit
     })
@@ -134,10 +135,11 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
       fetchReorderRecommendations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId, selectedWarehouseId, page, activeTab, limit, searchQuery]);
+  }, [orgId, selectedWarehouseId, page, activeTab, limit, appliedSearch]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setAppliedSearch(searchQuery);
     setPage(1);
   };
 
@@ -193,13 +195,21 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
           {activeTab === 'balances' && (
             <>
               <form onSubmit={handleSearchSubmit} className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
+                <button 
+                  type="submit"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#898989] hover:text-[#0066cc] focus:outline-none transition-colors"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
                 <Input
                   placeholder="Search by product name/SKU..."
                   value={searchQuery}
                   onChange={e => {
                     setSearchQuery(e.target.value);
-                    setPage(1);
+                    if (e.target.value === '') {
+                      setAppliedSearch('');
+                      setPage(1);
+                    }
                   }}
                   className="pl-9 h-10 w-[260px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
                 />

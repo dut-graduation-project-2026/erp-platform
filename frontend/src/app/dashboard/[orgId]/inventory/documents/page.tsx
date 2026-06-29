@@ -39,6 +39,7 @@ export default function DocumentsListPage() {
   const [documents, setDocuments] = useState<InventoryDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   
   // Pagination State
   const [page, setPage] = useState(1);
@@ -99,7 +100,7 @@ export default function DocumentsListPage() {
 
     setIsLoading(true);
     getInventoryDocuments(orgId, selectedWarehouseId, {
-      search: searchQuery.trim(),
+      search: appliedSearch.trim(),
       status: activeTab,
       type: activeType,
       page,
@@ -119,7 +120,7 @@ export default function DocumentsListPage() {
 
   useEffect(() => {
     fetchDocuments();
-  }, [orgId, selectedWarehouseId, page, searchQuery, activeTab, activeType, limit]);
+  }, [orgId, selectedWarehouseId, page, appliedSearch, activeTab, activeType, limit]);
 
   const handleWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedWarehouseId(e.target.value);
@@ -232,13 +233,30 @@ export default function DocumentsListPage() {
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
+            <button 
+              onClick={() => {
+                setAppliedSearch(searchQuery);
+                setPage(1);
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#898989] hover:text-[#0066cc] focus:outline-none transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </button>
             <Input 
               placeholder="Search documents..." 
               value={searchQuery}
               onChange={e => {
                 setSearchQuery(e.target.value);
-                setPage(1);
+                if (e.target.value === '') {
+                  setAppliedSearch('');
+                  setPage(1);
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  setAppliedSearch(searchQuery);
+                  setPage(1);
+                }
               }}
               className="pl-9 h-10 w-[240px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
             />

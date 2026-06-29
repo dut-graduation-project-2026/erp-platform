@@ -20,6 +20,8 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
   const [invoices, setInvoices] = useState<SaleInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+
   const [statusFilter, setStatusFilter] = useState('ALL');
   const { hasPermission } = usePermissions();
 
@@ -32,7 +34,7 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
   useEffect(() => {
     setIsLoading(true);
     getSaleInvoices(orgId, {
-      search: searchQuery.trim(),
+      search: appliedSearch.trim(),
       status: statusFilter,
       page,
       limit
@@ -44,7 +46,7 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [orgId, page, searchQuery, statusFilter, limit]);
+  }, [orgId, page, appliedSearch, statusFilter, limit]);
 
   const filteredInvoices = invoices;
 
@@ -57,13 +59,30 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
         </div>
         <div className="flex space-x-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#898989]" />
+            <button 
+              onClick={() => {
+                setAppliedSearch(searchQuery);
+                setPage(1);
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#898989] hover:text-[#0066cc] focus:outline-none transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </button>
             <Input
               placeholder="Search by ID or customer..."
               value={searchQuery}
               onChange={e => {
                 setSearchQuery(e.target.value);
-                setPage(1);
+                if (e.target.value === '') {
+                  setAppliedSearch('');
+                  setPage(1);
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  setAppliedSearch(searchQuery);
+                  setPage(1);
+                }
               }}
               className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
             />

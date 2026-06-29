@@ -170,7 +170,7 @@ export function Header({ className }: HeaderProps) {
         </div>
 
         {/* Center Section - Search */}
-        <div className="flex-1 max-w-md mx-8">
+        {/* <div className="flex-1 max-w-md mx-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -178,7 +178,7 @@ export function Header({ className }: HeaderProps) {
               className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/70 focus:bg-white focus:text-gray-900"
             />
           </div>
-        </div>
+        </div> */}
 
         {/* Right Section - Actions */}
         <div className="flex items-center space-x-4">
