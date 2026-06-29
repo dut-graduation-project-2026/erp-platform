@@ -44,6 +44,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.dut.erp.repository.PermissionRepository;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -55,6 +57,7 @@ public class LeadServiceImpl implements LeadService {
   private final SaleTeamRepository saleTeamRepository;
   private final PartnerRepository partnerRepository;
   private final UserRepository userRepository;
+  private final PermissionRepository permissionRepository;
   private final LeadMapper leadMapper;
   private final ApplicationEventPublisher applicationEventPublisher;
   private final SecurityAuthService securityAuthService;
@@ -70,10 +73,22 @@ public class LeadServiceImpl implements LeadService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.asc("name"), SortField.asc("updatedAt")));
 
-    Page<UUID> ids =
-        (search != null && !search.trim().isEmpty())
-            ? leadRepository.findIdsByOrganizationIdAndSearch(organizationId, search, pageable)
-            : leadRepository.findIdsByOrganizationId(organizationId, pageable);
+    CustomUserDetails currentUser = SecurityUtils.getCurrentUser();
+    boolean isAllLeads = securityAuthService.isAdmin(currentUser) || 
+        permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+            currentUser.getId(), organizationId, "leads:read_all"
+        );
+
+    Page<UUID> ids;
+    if (isAllLeads) {
+      ids = (search != null && !search.trim().isEmpty())
+          ? leadRepository.findIdsByOrganizationIdAndSearch(organizationId, search, pageable)
+          : leadRepository.findIdsByOrganizationId(organizationId, pageable);
+    } else {
+      ids = (search != null && !search.trim().isEmpty())
+          ? leadRepository.findIdsByOrganizationIdAndSearchAndUser(organizationId, search, currentUser.getId(), pageable)
+          : leadRepository.findIdsByOrganizationIdAndUser(organizationId, currentUser.getId(), pageable);
+    }
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));

@@ -1507,8 +1507,12 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(
         permissionsByCode, leadsModule, "leads:read", "Read and list leads");
     createPermissionIfNotExists(
+        permissionsByCode, leadsModule, "leads:read_all", "Read all leads in the organization");
+    createPermissionIfNotExists(
         permissionsByCode, leadsModule, "leads:select", "Select lead details");
     createPermissionIfNotExists(permissionsByCode, leadsModule, "leads:write", "Update leads");
+    createPermissionIfNotExists(
+        permissionsByCode, leadsModule, "leads:write_all", "Update all leads in the organization");
     createPermissionIfNotExists(permissionsByCode, leadsModule, "leads:delete", "Delete leads");
 
     // Taxes module
@@ -1529,8 +1533,12 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(
         permissionsByCode, ordersModule, "orders:read", "Read and list orders");
     createPermissionIfNotExists(
+        permissionsByCode, ordersModule, "orders:read_all", "Read all orders in the organization");
+    createPermissionIfNotExists(
         permissionsByCode, ordersModule, "orders:select", "Select order details");
     createPermissionIfNotExists(permissionsByCode, ordersModule, "orders:write", "Update orders");
+    createPermissionIfNotExists(
+        permissionsByCode, ordersModule, "orders:write_all", "Update all orders in the organization");
     createPermissionIfNotExists(permissionsByCode, ordersModule, "orders:delete", "Delete orders");
 
     // Invoices module
@@ -1553,9 +1561,13 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(
         permissionsByCode, warehousesModule, "warehouses:read", "Read and list warehouses");
     createPermissionIfNotExists(
+        permissionsByCode, warehousesModule, "warehouses:read_all", "Read all warehouses in the organization");
+    createPermissionIfNotExists(
         permissionsByCode, warehousesModule, "warehouses:select", "Select warehouse details");
     createPermissionIfNotExists(
         permissionsByCode, warehousesModule, "warehouses:write", "Update warehouses");
+    createPermissionIfNotExists(
+        permissionsByCode, warehousesModule, "warehouses:write_all", "Update all warehouses in the organization");
     createPermissionIfNotExists(
         permissionsByCode, warehousesModule, "warehouses:delete", "Delete warehouses");
 

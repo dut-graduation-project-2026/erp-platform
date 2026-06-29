@@ -34,6 +34,7 @@ import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.service.OrderService;
 import com.dut.erp.service.SalesOrderIntegrationService;
 import com.dut.erp.service.SecurityAuthService;
+import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.util.SecurityUtils;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -55,6 +56,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.dut.erp.repository.PermissionRepository;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -71,6 +74,7 @@ public class OrderServiceImpl implements OrderService {
   private final SalesOrderIntegrationService salesOrderIntegrationService;
   private final ApplicationEventPublisher applicationEventPublisher;
   private final SecurityAuthService securityAuthService;
+  private final PermissionRepository permissionRepository;
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
@@ -83,11 +87,22 @@ public class OrderServiceImpl implements OrderService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
 
-    Page<UUID> ids =
-        (search != null && !search.trim().isEmpty())
-            ? orderRepository.findQuotationIdsByOrganizationIdAndSearch(
-                organizationId, search, pageable)
-            : orderRepository.findQuotationIdsByOrganizationId(organizationId, pageable);
+    CustomUserDetails currentUser = SecurityUtils.getCurrentUser();
+    boolean isAllOrders = securityAuthService.isAdmin(currentUser) || 
+        permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+            currentUser.getId(), organizationId, "orders:read_all"
+        );
+
+    Page<UUID> ids;
+    if (isAllOrders) {
+      ids = (search != null && !search.trim().isEmpty())
+          ? orderRepository.findQuotationIdsByOrganizationIdAndSearch(organizationId, search, pageable)
+          : orderRepository.findQuotationIdsByOrganizationId(organizationId, pageable);
+    } else {
+      ids = (search != null && !search.trim().isEmpty())
+          ? orderRepository.findQuotationIdsByOrganizationIdAndSearchAndUser(organizationId, search, currentUser.getId(), pageable)
+          : orderRepository.findQuotationIdsByOrganizationIdAndUser(organizationId, currentUser.getId(), pageable);
+    }
 
     return getPagedResponseFromIds(ids, pageable);
   }
@@ -111,17 +126,37 @@ public class OrderServiceImpl implements OrderService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
 
-    Page<UUID> ids =
-        orderRepository.findOrderIdsWithFilters(
-            organizationId,
-            (search != null && !search.trim().isEmpty()) ? search : null,
-            status,
-            partnerId,
-            salePersonId,
-            saleTeamId,
-            startDate,
-            endDate,
-            pageable);
+    CustomUserDetails currentUser = SecurityUtils.getCurrentUser();
+    boolean isAllOrders = securityAuthService.isAdmin(currentUser) || 
+        permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+            currentUser.getId(), organizationId, "orders:read_all"
+        );
+
+    Page<UUID> ids;
+    if (isAllOrders) {
+      ids = orderRepository.findOrderIdsWithFilters(
+              organizationId,
+              (search != null && !search.trim().isEmpty()) ? search : null,
+              status,
+              partnerId,
+              salePersonId,
+              saleTeamId,
+              startDate,
+              endDate,
+              pageable);
+    } else {
+      ids = orderRepository.findOrderIdsWithFiltersAndUser(
+              organizationId,
+              (search != null && !search.trim().isEmpty()) ? search : null,
+              status,
+              partnerId,
+              salePersonId,
+              saleTeamId,
+              startDate,
+              endDate,
+              currentUser.getId(),
+              pageable);
+    }
 
     return getPagedResponseFromIds(ids, pageable);
   }
@@ -137,8 +172,18 @@ public class OrderServiceImpl implements OrderService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
 
-    Page<UUID> ids =
-        orderRepository.findIdsByOrganizationIdAndStatus(organizationId, status, pageable);
+    CustomUserDetails currentUser = SecurityUtils.getCurrentUser();
+    boolean isAllOrders = securityAuthService.isAdmin(currentUser) || 
+        permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+            currentUser.getId(), organizationId, "orders:read_all"
+        );
+
+    Page<UUID> ids;
+    if (isAllOrders) {
+      ids = orderRepository.findIdsByOrganizationIdAndStatus(organizationId, status, pageable);
+    } else {
+      ids = orderRepository.findIdsByOrganizationIdAndStatusAndUser(organizationId, status, currentUser.getId(), pageable);
+    }
 
     return getPagedResponseFromIds(ids, pageable);
   }

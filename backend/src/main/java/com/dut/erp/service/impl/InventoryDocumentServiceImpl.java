@@ -58,6 +58,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.dut.erp.service.SecurityAuthService;
+import com.dut.erp.util.SecurityUtils;
 
 @Slf4j
 @Service
@@ -75,6 +77,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   private final InvoiceRepository invoiceRepository;
   private final COGSValuationEngine cogsValuationEngine;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final SecurityAuthService securityAuthService;
 
   @Override
   @Transactional
@@ -311,6 +314,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   public PagedEntityResponse<InventoryDocumentBaseResponse> getDocuments(
       UUID organizationId, UUID warehouseId, String search, String status, String type, PaginationRequest paginationRequest) {
     log.info("Fetching documents for warehouse {}", warehouseId);
+    findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
 
     Pageable pageable = PageRequest.of(
         paginationRequest.page() - 1,
@@ -399,6 +403,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   @Override
   public InventoryDocumentResponse getDocumentById(UUID organizationId, UUID warehouseId, UUID documentId) {
     log.info("Fetching document {} for warehouse {}", documentId, warehouseId);
+    findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
     InventoryDocument doc = inventoryDocumentRepository.findByIdAndWarehouseId(documentId, warehouseId)
         .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
     return mapToResponse(doc);
@@ -408,6 +413,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   @Transactional
   public InventoryDocumentResponse confirmDocument(UUID organizationId, UUID warehouseId, UUID documentId) {
     log.info("Confirming document {} for warehouse {}", documentId, warehouseId);
+    findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
     InventoryDocument doc = inventoryDocumentRepository.findByIdAndWarehouseId(documentId, warehouseId)
         .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
 
@@ -419,6 +425,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   @Transactional
   public InventoryDocumentResponse completeDocument(UUID organizationId, UUID warehouseId, UUID documentId) {
     log.info("Completing document {} for warehouse {}", documentId, warehouseId);
+    findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
     InventoryDocument doc = inventoryDocumentRepository.findByIdAndWarehouseId(documentId, warehouseId)
         .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
 
@@ -515,6 +522,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   @Transactional
   public InventoryDocumentResponse cancelDocument(UUID organizationId, UUID warehouseId, UUID documentId) {
     log.info("Cancelling document {} for warehouse {}", documentId, warehouseId);
+    findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
     InventoryDocument doc = inventoryDocumentRepository.findByIdAndWarehouseId(documentId, warehouseId)
         .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
 
@@ -558,8 +566,10 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
   // ---- Private Helpers ----
 
   private Warehouse findWarehouseByIdAndOrganizationId(UUID warehouseId, UUID organizationId) {
-    return warehouseRepository.findByIdAndOrganizationId(warehouseId, organizationId)
+    Warehouse warehouse = warehouseRepository.findByIdAndOrganizationId(warehouseId, organizationId)
         .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found: " + warehouseId));
+    securityAuthService.isWarehouseStaffOrManagerOrAdmin(warehouse, SecurityUtils.getCurrentUser());
+    return warehouse;
   }
 
   private String generateDocumentName(DocumentType type) {

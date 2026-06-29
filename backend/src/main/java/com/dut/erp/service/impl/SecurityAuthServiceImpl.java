@@ -87,11 +87,11 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
     if (warehouse.getManager() != null && warehouse.getManager().getId().equals(userDetails.getId())) {
       return true;
     }
-    // Check if user has 'warehouses:write' permission in the organization
-    boolean hasWritePermission = permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
-        userDetails.getId(), warehouse.getOrganization().getId(), "warehouses:write"
+    // Check if user has 'warehouses:write_all' permission in the organization
+    boolean hasWriteAllPermission = permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+        userDetails.getId(), warehouse.getOrganization().getId(), "warehouses:write_all"
     );
-    if (hasWritePermission) {
+    if (hasWriteAllPermission) {
       return true;
     }
     log.warn("User {} denied update access to warehouse {}", userDetails.getId(), warehouse.getId());
@@ -111,11 +111,11 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
     if (isStaff) {
       return true;
     }
-    // Check if user has 'warehouses:select' permission in the organization
-    boolean hasSelectPermission = permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
-        userDetails.getId(), warehouse.getOrganization().getId(), "warehouses:select"
+    // Check if user has 'warehouses:read_all' permission in the organization
+    boolean hasReadAllPermission = permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+        userDetails.getId(), warehouse.getOrganization().getId(), "warehouses:read_all"
     );
-    if (hasSelectPermission) {
+    if (hasReadAllPermission) {
       return true;
     }
     log.warn("User {} denied access to warehouse {}", userDetails.getId(), warehouse.getId());
@@ -125,6 +125,13 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
   @Override
   public boolean isLeadOwnerOrManagerOrAdmin(Lead lead, CustomUserDetails userDetails) {
     if (isAdmin(userDetails)) {
+      return true;
+    }
+    // Check if user has 'leads:read_all' permission in the organization
+    boolean hasReadAllPermission = permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+        userDetails.getId(), lead.getOrganization().getId(), "leads:read_all"
+    );
+    if (hasReadAllPermission) {
       return true;
     }
     if (lead.getSalePerson() != null && lead.getSalePerson().getId().equals(userDetails.getId())) {
@@ -141,6 +148,13 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
   @Override
   public boolean isOrderOwnerOrManagerOrAdmin(Order order, CustomUserDetails userDetails) {
     if (isAdmin(userDetails)) {
+      return true;
+    }
+    // Check if user has 'orders:read_all' permission in the organization
+    boolean hasReadAllPermission = permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+        userDetails.getId(), order.getOrganization().getId(), "orders:read_all"
+    );
+    if (hasReadAllPermission) {
       return true;
     }
     if (order.getCreatedBy() != null && order.getCreatedBy().getId().equals(userDetails.getId())) {

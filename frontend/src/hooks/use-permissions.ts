@@ -13,16 +13,36 @@ export const usePermissions = () => {
   // ✅ Read from top-level `permissions` — NOT from org.permissions (which is undefined)
   const { permissions } = useAuthStore();
 
+  const checkSinglePermission = (permCode: string): boolean => {
+    if (permissions.includes(permCode)) {
+      return true;
+    }
+
+    const parts = permCode.split(':');
+    if (parts.length !== 2) return false;
+    const [module, action] = parts;
+
+    if (action === 'read' || action === 'select') {
+      return permissions.includes(`${module}:read_all`) || 
+             permissions.includes(`${module}:write_all`) ||
+             permissions.includes(`${module}:write`);
+    }
+    if (action === 'write' || action === 'create' || action === 'delete') {
+      return permissions.includes(`${module}:write_all`);
+    }
+    return false;
+  };
+
   const hasPermission = (permissionCode: string): boolean => {
-    return permissions.includes(permissionCode);
+    return checkSinglePermission(permissionCode);
   };
 
   const hasAnyPermission = (permissionCodes: string[]): boolean => {
-    return permissionCodes.some((code) => permissions.includes(code));
+    return permissionCodes.some((code) => checkSinglePermission(code));
   };
 
   const hasAllPermissions = (permissionCodes: string[]): boolean => {
-    return permissionCodes.every((code) => permissions.includes(code));
+    return permissionCodes.every((code) => checkSinglePermission(code));
   };
 
   /**
@@ -38,7 +58,7 @@ export const usePermissions = () => {
     }
     // Fallback to checking the default permission string if specified
     if (defaultPermission) {
-      return permissions.includes(defaultPermission);
+      return checkSinglePermission(defaultPermission);
     }
     return false;
   };

@@ -23,6 +23,18 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, UUID> {
       @Param("organizationId") UUID organizationId, Pageable pageable);
 
   @Query("""
+      SELECT DISTINCT w.id
+      FROM Warehouse w
+      LEFT JOIN w.staff s
+      WHERE w.organization.id = :organizationId
+        AND (w.manager.id = :userId OR s.id = :userId)
+      """)
+  Page<UUID> findIdsByOrganizationIdAndUserId(
+      @Param("organizationId") UUID organizationId,
+      @Param("userId") UUID userId,
+      Pageable pageable);
+
+  @Query("""
       SELECT DISTINCT w FROM Warehouse w
       LEFT JOIN FETCH w.manager
       WHERE w.id IN :ids

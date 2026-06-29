@@ -24,6 +24,7 @@ import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.service.SecurityAuthService;
 import com.dut.erp.service.WarehouseService;
+import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.util.SecurityUtils;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.dut.erp.repository.PermissionRepository;
 import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.repository.OrderRepository;
 
@@ -56,6 +58,7 @@ public class WarehouseServiceImpl implements WarehouseService {
   private final InventoryBalanceRepository inventoryBalanceRepository;
   private final InventoryDocumentRepository inventoryDocumentRepository;
   private final OrderRepository orderRepository;
+  private final PermissionRepository permissionRepository;
   private final WarehouseMapper warehouseMapper;
   private final SecurityAuthService securityAuthService;
 
@@ -70,7 +73,18 @@ public class WarehouseServiceImpl implements WarehouseService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.asc("name"), SortField.asc("updatedAt")));
 
-    Page<UUID> ids = warehouseRepository.findIdsByOrganizationId(organizationId, pageable);
+    CustomUserDetails currentUser = SecurityUtils.getCurrentUser();
+    boolean isAllWarehouses = securityAuthService.isAdmin(currentUser) || 
+        permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+            currentUser.getId(), organizationId, "warehouses:read_all"
+        );
+
+    Page<UUID> ids;
+    if (isAllWarehouses) {
+      ids = warehouseRepository.findIdsByOrganizationId(organizationId, pageable);
+    } else {
+      ids = warehouseRepository.findIdsByOrganizationIdAndUserId(organizationId, currentUser.getId(), pageable);
+    }
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));

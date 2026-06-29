@@ -70,6 +70,42 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("search") String search,
       Pageable pageable);
 
+  @Query(
+      """
+      SELECT o.id
+      FROM Order o
+      LEFT JOIN o.lead l
+      LEFT JOIN l.salePerson sp
+      LEFT JOIN l.saleTeam st
+      WHERE o.organization.id = :organizationId
+      AND o.status = com.dut.erp.enums.OrderStatus.DRAFT
+      AND (sp.id = :userId OR st.leader.id = :userId)
+      """)
+  Page<UUID> findQuotationIdsByOrganizationIdAndUser(
+      @Param("organizationId") UUID organizationId,
+      @Param("userId") UUID userId,
+      Pageable pageable);
+
+  @Query(
+      """
+      SELECT o.id
+      FROM Order o
+      LEFT JOIN o.lead l
+      LEFT JOIN l.salePerson sp
+      LEFT JOIN l.saleTeam st
+      LEFT JOIN o.partner p
+      WHERE o.organization.id = :organizationId
+      AND o.status = com.dut.erp.enums.OrderStatus.DRAFT
+      AND (sp.id = :userId OR st.leader.id = :userId)
+      AND (LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+      """)
+  Page<UUID> findQuotationIdsByOrganizationIdAndSearchAndUser(
+      @Param("organizationId") UUID organizationId,
+      @Param("search") String search,
+      @Param("userId") UUID userId,
+      Pageable pageable);
+
   // --- Orders (status != DRAFT) ---
   @Query(
       """
@@ -139,6 +175,39 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
   @Query(
       """
+      SELECT o.id
+      FROM Order o
+      LEFT JOIN o.lead l
+      LEFT JOIN l.salePerson sp
+      LEFT JOIN l.saleTeam st
+      LEFT JOIN o.partner p
+      WHERE o.organization.id = :organizationId
+      AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
+      AND (sp.id = :userId OR st.leader.id = :userId)
+      AND (:search IS NULL OR :search = '' 
+           OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+      AND (:status IS NULL OR o.status = :status)
+      AND (:partnerId IS NULL OR o.partner.id = :partnerId)
+      AND (:salePersonId IS NULL OR sp.id = :salePersonId)
+      AND (:saleTeamId IS NULL OR st.id = :saleTeamId)
+      AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
+      AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
+      """)
+  Page<UUID> findOrderIdsWithFiltersAndUser(
+      @Param("organizationId") UUID organizationId,
+      @Param("search") String search,
+      @Param("status") OrderStatus status,
+      @Param("partnerId") UUID partnerId,
+      @Param("salePersonId") UUID salePersonId,
+      @Param("saleTeamId") UUID saleTeamId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate,
+      @Param("userId") UUID userId,
+      Pageable pageable);
+
+  @Query(
+      """
       SELECT DISTINCT o FROM Order o
       LEFT JOIN FETCH o.organization
       LEFT JOIN FETCH o.partner
@@ -159,6 +228,23 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   Page<UUID> findIdsByOrganizationIdAndStatus(
       @Param("organizationId") UUID organizationId,
       @Param("status") com.dut.erp.enums.OrderStatus status,
+      Pageable pageable);
+
+  @Query(
+      """
+      SELECT o.id
+      FROM Order o
+      LEFT JOIN o.lead l
+      LEFT JOIN l.salePerson sp
+      LEFT JOIN l.saleTeam st
+      WHERE o.organization.id = :organizationId
+      AND o.status = :status
+      AND (sp.id = :userId OR st.leader.id = :userId)
+      """)
+  Page<UUID> findIdsByOrganizationIdAndStatusAndUser(
+      @Param("organizationId") UUID organizationId,
+      @Param("status") com.dut.erp.enums.OrderStatus status,
+      @Param("userId") UUID userId,
       Pageable pageable);
 
   @Query(

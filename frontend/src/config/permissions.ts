@@ -65,6 +65,8 @@ export const PERMISSIONS = {
     WRITE: 'leads:write',
     CREATE: 'leads:create',
     DELETE: 'leads:delete',
+    READ_ALL: 'leads:read_all',
+    WRITE_ALL: 'leads:write_all',
   },
 
   // --- BUSINESS MODULES (Upcoming / Placeholder) ---
@@ -112,6 +114,8 @@ export const PERMISSIONS = {
     WRITE: 'orders:write',
     CREATE: 'orders:create',
     DELETE: 'orders:delete',
+    READ_ALL: 'orders:read_all',
+    WRITE_ALL: 'orders:write_all',
   },
   INVOICES: {
     SELECT: 'invoices:select',
@@ -136,6 +140,8 @@ export const PERMISSIONS = {
     WRITE: 'warehouses:write',
     CREATE: 'warehouses:create',
     DELETE: 'warehouses:delete',
+    READ_ALL: 'warehouses:read_all',
+    WRITE_ALL: 'warehouses:write_all',
   },
   INVENTORY_DOCUMENTS: {
     SELECT: 'inventory-documents:select',
