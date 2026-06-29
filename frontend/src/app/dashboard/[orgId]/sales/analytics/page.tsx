@@ -53,7 +53,8 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
 
   // Actionable AI states
   const [aiForecast, setAiForecast] = useState<AiSalesForecastResponse | null>(null);
-  const [showForecast, setShowForecast] = useState(false);
+  const [activeTab, setActiveTab] = useState<'monthly' | 'weekly'>('monthly');
+  const showForecast = activeTab === 'weekly';
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -103,8 +104,11 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
   const ytdNetRevenue = summary?.ytdNetRevenue || 0;
   const quotaAttainment = salesTarget > 0 ? (ytdNetRevenue / salesTarget) * 100 : 0;
 
-  // 2. Format Trend Data for AreaChart
-  const chartData = revenueTrend.map(point => {
+  // 2. Format Trend Data for AreaChart and filter out leading empty months (Zero-Month Filtering)
+  const firstNonZeroIndex = revenueTrend.findIndex(point => point.grossSales > 0);
+  const activeTrendPoints = firstNonZeroIndex === -1 ? [] : revenueTrend.slice(firstNonZeroIndex);
+
+  const chartData = activeTrendPoints.map(point => {
     const date = new Date(point.date);
     const monthName = date.toLocaleDateString('en-US', { month: 'short' });
     return {
@@ -133,20 +137,19 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
     const completed = conversionFunnel.find(c => c.status === 'COMPLETED')?.count || 0;
     const waiting = conversionFunnel.find(c => c.status === 'WAITING_FOR_STOCK')?.count || 0;
 
-    const totalDraft = draft;
+    const totalCreated = draft + sent + confirmed + completed + waiting;
     const totalSent = sent + confirmed + completed + waiting;
     const totalConfirmed = confirmed + completed;
 
-    const draftToSentRate = totalDraft > 0 ? (totalSent / totalDraft) * 100 : 0;
-    const sentToConfirmedRate = totalSent > 0 ? (totalConfirmed / totalSent) * 100 : 0;
-    const overallRate = (totalDraft + totalSent) > 0 ? (totalConfirmed / (totalDraft + totalSent)) * 100 : 0;
+    const sentRate = totalCreated > 0 ? (totalSent / totalCreated) * 100 : 100;
+    const overallRate = totalCreated > 0 ? (totalConfirmed / totalCreated) * 100 : 0;
 
     return {
-      draft: totalDraft,
+      draft: draft,
       sent: totalSent,
       confirmed: totalConfirmed,
-      draftToSentRate,
-      sentToConfirmedRate,
+      totalCreated,
+      sentRate,
       overallRate
     };
   };
@@ -233,79 +236,164 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
       </div>
 
       {/* Actionable AI: AI Assistant Panel */}
-      {aiForecast && (
-        <div className="border border-[#0066cc]/20 rounded-[4px] p-5 bg-[#0066cc]/[0.02] mb-6 shadow-sm hover:border-[#0066cc]/40 transition-all duration-300 font-['Segoe_UI']">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-9 h-9 rounded-[4px] bg-[#f0f4ff] flex items-center justify-center text-[#0066cc] font-semibold text-[16px] shrink-0 shadow-sm border border-blue-100">
-                🤖
+      {aiForecast && (() => {
+        const validationMetrics = aiForecast.insights?.filter(i => i.startsWith('📊')) || [];
+        const actionableRecommendations = aiForecast.insights?.filter(i => !i.startsWith('📊')) || [];
+        return (
+          <div className="border border-[#0066cc]/20 rounded-[4px] p-5 bg-[#0066cc]/[0.02] mb-6 shadow-sm hover:border-[#0066cc]/40 transition-all duration-300 font-['Segoe_UI']">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start space-x-3">
+                <div className="w-9 h-9 rounded-[4px] bg-[#f0f4ff] flex items-center justify-center text-[#0066cc] font-semibold text-[16px] shrink-0 shadow-sm border border-blue-100">
+                  🤖
+                </div>
+                <div>
+                  <h2 className="text-[15px] font-[700] text-[#242424] flex items-center gap-2">
+                    AI Sales Forecast Assistant
+                  </h2>
+                  <p className="text-[12px] text-[#898989]">Automatic sales trend analysis and market demand forecasting</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 self-end md:self-auto">
+                {aiForecast.forecast_points && aiForecast.forecast_points.length > 0 ? (
+                  <Button 
+                    onClick={() => setActiveTab(activeTab === 'weekly' ? 'monthly' : 'weekly')} 
+                    variant={activeTab === 'weekly' ? "default" : "outline"}
+                    className={`h-9 px-4 rounded-[4px] font-[600] text-[12px] transition-all ${
+                      activeTab === 'weekly' 
+                        ? "bg-[#0066cc] text-white hover:bg-[#0052a3]" 
+                        : "border-[#d0d0d0] text-[#242424] bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    {activeTab === 'weekly' ? "📊 View Monthly Trend" : "🔮 Activate 4-Week AI Forecast"}
+                  </Button>
+                ) : (
+                  <span className="text-[12px] text-[#fb8500] font-[600] bg-[#fb8500]/10 border border-[#fb8500]/20 px-3 py-1.5 rounded-[4px]">
+                    ⚠️ Forecast Unavailable
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-dashed border-[#e0e0e0] pt-4">
+              <div className="md:col-span-2">
+                <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">AI Analysis & Insights</span>
+                <p className="text-[13px] leading-relaxed text-[#4a4a4a] italic bg-white/50 p-3 rounded border border-gray-100">
+                  &quot;{aiForecast.summary || ''}&quot;
+                </p>
               </div>
               <div>
-                <h2 className="text-[15px] font-[700] text-[#242424] flex items-center gap-2">
-                  AI Sales Forecast Assistant
-                </h2>
-                <p className="text-[12px] text-[#898989]">Automatic sales trend analysis and market demand forecasting</p>
+                <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Actionable Recommendations</span>
+                <ul className="text-[12px] text-[#4a4a4a] space-y-1.5 list-disc pl-4">
+                  {actionableRecommendations.map((insight, idx) => (
+                    <li key={idx} className="font-[500]">{insight}</li>
+                  ))}
+                </ul>
               </div>
             </div>
-            <div className="flex items-center space-x-2 self-end md:self-auto">
-              {aiForecast.forecast_points && aiForecast.forecast_points.length > 0 ? (
-                <Button 
-                  onClick={() => setShowForecast(!showForecast)} 
-                  variant={showForecast ? "default" : "outline"}
-                  className={`h-9 px-4 rounded-[4px] font-[600] text-[12px] transition-all ${
-                    showForecast 
-                      ? "bg-[#0066cc] text-white hover:bg-[#0052a3]" 
-                      : "border-[#d0d0d0] text-[#242424] bg-white hover:bg-gray-50"
-                  }`}
-                >
-                  {showForecast ? "📊 View Actual Trend" : "🔮 Activate 15-Day AI Forecast"}
-                </Button>
-              ) : (
-                <span className="text-[12px] text-[#fb8500] font-[600] bg-[#fb8500]/10 border border-[#fb8500]/20 px-3 py-1.5 rounded-[4px]">
-                  ⚠️ Forecast Unavailable
+
+            {/* Scientific Validation Block */}
+            {validationMetrics.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-[#0066cc]/10 flex flex-wrap gap-x-6 gap-y-2 text-[12px] text-[#4a4a4a] bg-[#0066cc]/[0.01] p-3 rounded">
+                <span className="font-[600] text-[#0066cc] flex items-center gap-1">
+                  🔬 Scientific Validation (Backtesting):
                 </span>
-              )}
-            </div>
+                {validationMetrics.map((metric, idx) => {
+                  const cleanText = metric.replace('📊 [Accuracy] ', '').replace('📊 ', '');
+                  const parts = cleanText.split(': ');
+                  if (parts.length === 2) {
+                    return (
+                      <span key={idx} className="font-[500] flex items-center gap-1">
+                        <strong>{parts[0]}:</strong> <span className="text-[#0066cc] font-[600] bg-[#f0f4ff] px-2 py-0.5 rounded border border-blue-50/50">{parts[1]}</span>
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={idx} className="font-[500]">
+                      {cleanText}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-dashed border-[#e0e0e0] pt-4">
-            <div className="md:col-span-2">
-              <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">AI Analysis & Insights</span>
-              <p className="text-[13px] leading-relaxed text-[#4a4a4a] italic bg-white/50 p-3 rounded border border-gray-100">
-                &quot;{aiForecast.summary || ''}&quot;
-              </p>
-            </div>
-            <div>
-              <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Actionable Recommendations</span>
-              <ul className="text-[12px] text-[#4a4a4a] space-y-1.5 list-disc pl-4">
-                {aiForecast.insights?.map((insight, idx) => (
-                  <li key={idx} className="font-[500]">{insight}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Main Charts area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         
         {/* Sales Performance Area Chart */}
         <div className="lg:col-span-2 border border-[#e0e0e0] rounded-[4px] p-5 bg-white shadow-sm">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-[14px] font-[700] text-[#242424]">Revenue & Margin Trends</h3>
-              <p className="text-[12px] text-[#898989]">Monthly gross sales compared to net profitability margins</p>
+              <h3 className="text-[14px] font-[700] text-[#242424]">
+                {activeTab === 'monthly' ? 'Monthly Financial Trends' : 'Weekly Demand Forecasting (AI)'}
+              </h3>
+              <p className="text-[12px] text-[#898989]">
+                {activeTab === 'monthly'
+                  ? 'Monthly gross sales compared to net profitability margins'
+                  : 'Weekly historical sales with 4-week future demand forecast'}
+              </p>
             </div>
-            <select 
-              value={timePeriod}
-              onChange={e => setTimePeriod(e.target.value)}
-              className="h-9 border border-[#d0d0d0] rounded-[4px] text-[13px] text-[#242424] px-2 bg-white focus:outline-none"
-            >
-              <option>Last 6 Months</option>
-              <option>This Year</option>
-            </select>
+            <div className="flex items-center gap-3">
+              <div className="flex bg-[#f2f2f2] p-0.5 rounded-[4px] border border-[#e0e0e0]">
+                <button
+                  onClick={() => setActiveTab('monthly')}
+                  className={`px-3 py-1 rounded-[3px] text-[11px] font-[600] transition-all ${
+                    activeTab === 'monthly'
+                      ? 'bg-white text-[#242424] shadow-sm'
+                      : 'text-[#898989] hover:text-[#4a4a4a]'
+                  }`}
+                >
+                  📊 Monthly
+                </button>
+                <button
+                  onClick={() => setActiveTab('weekly')}
+                  className={`px-3 py-1 rounded-[3px] text-[11px] font-[600] transition-all ${
+                    activeTab === 'weekly'
+                      ? 'bg-white text-[#242424] shadow-sm'
+                      : 'text-[#898989] hover:text-[#4a4a4a]'
+                  }`}
+                >
+                  🔮 Weekly AI
+                </button>
+              </div>
+              {activeTab === 'monthly' && (
+                <select 
+                  value={timePeriod}
+                  onChange={e => setTimePeriod(e.target.value)}
+                  className="h-8 border border-[#d0d0d0] rounded-[4px] text-[12px] font-[600] text-[#242424] px-2 bg-white focus:outline-none"
+                >
+                  <option>Last 6 Months</option>
+                  <option>This Year</option>
+                </select>
+              )}
+            </div>
           </div>
+          
+          {activeTab === 'monthly' ? (
+            <div className="mb-4 bg-[#f8f9fa] border border-[#e9ecef] rounded-[4px] p-3 text-[12px] text-[#4a4a4a] space-y-1.5 font-sans shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0066cc] inline-block shadow-sm"></span>
+                <span><strong>Gross Sales:</strong> The total sales revenue generated from all customer orders (Tổng doanh thu gộp).</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#898989] inline-block shadow-sm"></span>
+                <span><strong>Gross Profit:</strong> The profit remaining after subtracting the <strong>Cost of Goods Sold (COGS - wholesale purchase price of goods)</strong> from Gross Sales (Gross Profit = Gross Sales - COGS).</span>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-4 bg-[#f8f9fa] border border-[#e9ecef] rounded-[4px] p-3 text-[12px] text-[#4a4a4a] space-y-1.5 font-sans shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0066cc] inline-block shadow-sm"></span>
+                <span><strong>Weekly Revenue:</strong> Actual weekly revenue recorded over the last 12 weeks.</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#e67e22] inline-block border border-dashed border-[#e67e22] shadow-sm"></span>
+                <span><strong>AI Predicted Revenue:</strong> Predicted weekly demand for the next 4 weeks generated by the ACCA model.</span>
+              </div>
+            </div>
+          )}
           
           <div className="h-[260px]">
             {showForecast && forecastChartData.length > 0 ? (
@@ -325,8 +413,8 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
                   <XAxis dataKey="name" stroke="#898989" fontSize={10} tickLine={false} />
                   <YAxis stroke="#898989" fontSize={11} tickLine={false} />
                   <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                  <Area type="monotone" dataKey="historical" name="Actual Revenue" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorHist)" />
-                  <Area type="monotone" dataKey="predicted" name="AI Predicted Revenue" stroke="#e67e22" strokeWidth={2} strokeDasharray="4 4" fillOpacity={1} fill="url(#colorPred)" />
+                  <Area type="linear" dataKey="historical" name="Actual Revenue" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorHist)" />
+                  <Area type="linear" dataKey="predicted" name="AI Predicted Revenue" stroke="#e67e22" strokeWidth={2} strokeDasharray="4 4" fillOpacity={1} fill="url(#colorPred)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : chartData.length === 0 ? (
@@ -348,8 +436,8 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
                   <XAxis dataKey="name" stroke="#898989" fontSize={11} tickLine={false} />
                   <YAxis stroke="#898989" fontSize={11} tickLine={false} />
                   <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                  <Area type="monotone" dataKey="sales" name="Gross Sales" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorSales)" />
-                  <Area type="monotone" dataKey="margin" name="Net Margin" stroke="#898989" strokeWidth={2} fillOpacity={1} fill="url(#colorMargin)" />
+                  <Area type="linear" dataKey="sales" name="Gross Sales" stroke="#0066cc" strokeWidth={2} fillOpacity={1} fill="url(#colorSales)" />
+                  <Area type="linear" dataKey="margin" name="Gross Profit" stroke="#898989" strokeWidth={2} fillOpacity={1} fill="url(#colorMargin)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -376,10 +464,10 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
               <div>
                 <div className="flex justify-between text-[13px] mb-1">
                   <span className="font-semibold text-[#242424]">2. Shared / Sent</span>
-                  <span className="font-mono text-[#0066cc]">{funnelStats.sent} orders ({funnelStats.draftToSentRate.toFixed(1)}%)</span>
+                  <span className="font-mono text-[#0066cc]">{funnelStats.sent} orders ({funnelStats.sentRate.toFixed(1)}%)</span>
                 </div>
                 <div className="w-full bg-[#f2f2f2] h-2 rounded-full overflow-hidden">
-                  <div className="bg-[#0066cc] h-full" style={{ width: `${Math.min(100, funnelStats.draftToSentRate)}%` }}></div>
+                  <div className="bg-[#0066cc] h-full" style={{ width: `${Math.min(100, funnelStats.sentRate)}%` }}></div>
                 </div>
               </div>
 

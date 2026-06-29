@@ -69,7 +69,7 @@ export function TablePagination({
       <div className="flex items-center gap-4">
         {onLimitChange && (
           <div className="flex items-center gap-1.5">
-            <span className="text-[12px] text-[#898989] uppercase font-[600]">Rows per page:</span>
+            <span className="text-[12px] text-[#898989] font-[600]">Rows per page:</span>
             <select
               value={limit}
               onChange={(e) => {

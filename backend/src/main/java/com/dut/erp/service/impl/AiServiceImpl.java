@@ -309,6 +309,8 @@ public class AiServiceImpl implements AiService {
       m.put("productId", ib.getProduct().getId().toString());
       m.put("productName", ib.getProduct().getName());
       m.put("quantity", ib.getQuantity());
+      m.put("purchasePrice", ib.getProduct().getPurchasePrice());
+      m.put("salesPrice", ib.getProduct().getSalesPrice());
       balList.add(m);
     }
     payload.put("balances", balList);
@@ -430,7 +432,13 @@ public class AiServiceImpl implements AiService {
 
   /** Parse quantity from recommendation map with type conversion */
   private BigDecimal parseQuantity(Map<String, Object> recommendation) {
-    Object quantityObj = recommendation.get("quantity");
+    Object quantityObj = recommendation.get("recommendedQuantity");
+    if (quantityObj == null) {
+      quantityObj = recommendation.get("quantity");
+    }
+    if (quantityObj == null) {
+      throw new IllegalArgumentException("Missing quantity or recommendedQuantity in recommendation");
+    }
     if (quantityObj instanceof Number) {
       return BigDecimal.valueOf(((Number) quantityObj).doubleValue());
     }

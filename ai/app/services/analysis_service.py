@@ -4,10 +4,6 @@ import asyncio
 import math
 import pandas as pd
 import numpy as np
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.holtwinters import ExponentialSmoothing
-from pmdarima import auto_arima
 import warnings
 from sklearn.metrics import mean_absolute_error
 
@@ -51,215 +47,154 @@ class AnalysisService:
         
         return is_valid, non_zero_days, std_dev
 
-    def _fit_sarima_params(self, train: pd.Series) -> tuple:
-        """
-        Tìm tham số ARIMA(p,d,q) không seasonal bằng auto_arima.
-        Seasonal bị tắt vì lượng dữ liệu (~25 tuần) chưa đủ để học mùa vụ tin cậy.
-
-        Returns:
-            (order, seasonal_order, success)
-        """
-        try:
-            model = auto_arima(
-                train,
-                seasonal=False,          # không seasonal
-                max_p=3, max_q=3,
-                max_d=2,
-                error_action="ignore",
-                suppress_warnings=True,
-                stepwise=True
-            )
-            order = model.order
-            seasonal_order = (0, 0, 0, 0)  # không có thành phần seasonal
-            print(f"[DEBUG] ARIMA params selected: ARIMA{order} AIC={model.aic():.2f}")
-            return order, seasonal_order, True
-        except Exception as e:
-            print(f"[DEBUG] auto_arima failed: {e}")
-            return None, None, False
-
-    def _walk_forward_arima(
-        self, ts: pd.Series, initial_split: int, n_steps: int,
-        order: tuple, seasonal_order: tuple
-    ) -> float:
-        """
-        Walk-forward (expanding-window) validation cho ARIMA.
-        T\u1ea1i m\u1ed7i b\u01b0\u1edbc t, train tr\u00ean ts[:initial_split+t], d\u1ef1 b\u00e1o 1 b\u01b0\u1edbc, \u0111o l\u01b0\u1eddng abs error.
-        ARIMA params (order, seasonal_order) \u0111\u01b0\u1ee3c gi\u1eef c\u1ed1 \u0111\u1ecbnh (fitted m\u1ed9t l\u1ea7n tr\u01b0\u1edbc khi v\u00f2ng l\u1eb7p).
-
-        Returns: mean MAE qua n_steps b\u01b0\u1edbc.
-        """
-        errors = []
-        for step in range(n_steps):
-            train_wf = ts.iloc[:initial_split + step]
-            actual   = float(ts.iloc[initial_split + step])
-            try:
-                m = SARIMAX(
-                    train_wf,
-                    order=order,
-                    seasonal_order=seasonal_order,
-                    enforce_stationarity=False,
-                    enforce_invertibility=False
-                )
-                r = m.fit(disp=False, maxiter=200)
-                pred = max(0.0, float(r.forecast(steps=1)[0]))
-                errors.append(abs(actual - pred))
-            except Exception as e:
-                print(f"[DEBUG] ARIMA WF step {step} failed: {e}")
-                errors.append(float("inf"))
-
-        mae = float(np.mean(errors)) if errors else float("inf")
-        print(f"[DEBUG] ARIMA{order} WF-MAE (avg {n_steps} steps) = {mae:.4f}")
-        return mae
-
-    def _walk_forward_ets(
-        self, ts: pd.Series, initial_split: int, n_steps: int, cfg: dict
-    ) -> float:
-        """
-        Walk-forward (expanding-window) validation cho m\u1ed9t c\u1ea5u h\u00ecnh ETS.
-        T\u1ea1i m\u1ed7i b\u01b0\u1edbc t, refit ExponentialSmoothing tr\u00ean ts[:initial_split+t],
-        d\u1ef1 b\u00e1o 1 b\u01b0\u1edbc, \u0111o l\u01b0\u1eddng abs error.
-
-        Returns: mean MAE qua n_steps b\u01b0\u1edbc.
-        """
-        errors = []
-        for step in range(n_steps):
-            train_wf = ts.iloc[:initial_split + step]
-            actual   = float(ts.iloc[initial_split + step])
-            try:
-                kwargs = {
-                    "trend": cfg["trend"],
-                    "seasonal": cfg["seasonal"],
-                    "initialization_method": "estimated",
-                }
-                if cfg["trend"] is not None:
-                    kwargs["damped_trend"] = cfg["damped_trend"]
-                hw = ExponentialSmoothing(train_wf, **kwargs).fit(optimized=True)
-                pred = max(0.0, float(hw.forecast(steps=1)[0]))
-                errors.append(abs(actual - pred))
-            except Exception as e:
-                print(f"[DEBUG] ETS {cfg['label']} WF step {step} failed: {e}")
-                errors.append(float("inf"))
-
-        mae = float(np.mean(errors)) if errors else float("inf")
-        print(f"[DEBUG] ETS {cfg['label']} WF-MAE (avg {n_steps} steps) = {mae:.4f}")
-        return mae
-
     def _select_best_forecast(self, ts: pd.Series, val_size: int = 4, periods: int = 4) -> tuple:
         """
-        Ch\u1ecdn model t\u1ed1t nh\u1ea5t gi\u1eefa ARIMA v\u00e0 ETS b\u1eb1ng Walk-forward Validation.
-
-        Ph\u01b0\u01a1ng ph\u00e1p:
-          - initial_split = len(ts) - val_size
-          - V\u1edbi m\u1ed7i step t \u2208 [0, val_size):
-              \u2022 Train tr\u00ean ts[:initial_split + t]   (expanding window)
-              \u2022 D\u1ef1 b\u00e1o ts[initial_split + t]        (1 b\u01b0\u1edbc ti\u1ebfp theo)
-              \u2022 Ghi l\u1ea1i |actual \u2212 pred|
-          - MAE trung b\u00ecnh qua val_size b\u01b0\u1edbc l\u00e0 ti\u00eau ch\u00ed ch\u1ecdn model.
-          - Model th\u1eafng \u0111\u01b0\u1ee3c retrain tr\u00ean to\u00e0n b\u1ed9 ts \u0111\u1ec3 t\u1ea1o forecast cu\u1ed1i.
-
-        Args:
-            ts:       Weekly time series (pd.Series)
-            val_size: S\u1ed1 b\u01b0\u1edbc walk-forward (= forecast horizon = 4 tu\u1ea7n)
-            periods:  S\u1ed1 b\u01b0\u1edbc d\u1ef1 b\u00e1o cu\u1ed1i c\u00f9ng
-
-        Returns:
-            (forecast_values, model_info_str)
+        Forecast sales using Classical Decomposition (ACCA Method).
         """
         is_valid, non_zero, std_dev = self._validate_time_series(ts)
         if not is_valid or len(ts) < val_size + 8:
-            print(f"[WARNING] Series too short/invalid. len={len(ts)}, non_zero={non_zero}")
+            print(f"[WARNING] Series too short/invalid for ACCA. len={len(ts)}, non_zero={non_zero}")
             mean_val = max(0.0, float(ts.mean())) if len(ts) > 0 else 0.0
             return [mean_val] * periods, "Naive Mean"
 
-        initial_split = len(ts) - val_size   # training window grows from here
-        train_initial = ts.iloc[:initial_split]
+        try:
+            forecast_values = self._forecast_classical_decomposition(ts, periods)
+            model_info = "Classical Decomposition (ACCA)"
+            print(f"[FORECAST] Chosen: {model_info} (Generated forecast for next {periods} weeks)")
+            return forecast_values, model_info
+        except Exception as e:
+            print(f"[ERROR] Classical Decomposition final forecast failed: {e}")
+            last_val = max(0.0, float(ts.iloc[-1])) if len(ts) > 0 else 0.0
+            return [last_val] * periods, "Naive Forecast (Last Observed Value)"
 
-        # ── ARIMA: t\u00ecm params m\u1ed9t l\u1ea7n, d\u00f9ng c\u1ed1 \u0111\u1ecbnh trong walk-forward ──
-        arima_wf_mae  = float("inf")
-        arima_order   = None
-        arima_s_order = None
+    def _validate_model_accuracy(self, ts: pd.Series, val_size: int = 4) -> dict:
+        """
+        Evaluate forecast accuracy using out-of-sample backtesting (validation split).
+        """
+        n = len(ts)
+        if n < val_size + 8:
+            return {
+                "model_name": "Naive Mean (Fallback)",
+                "mape": 0.0,
+                "mae": 0.0,
+                "r2": 0.0
+            }
 
-        order, seasonal_order, arima_ok = self._fit_sarima_params(train_initial)
-        if arima_ok:
-            arima_order   = order
-            arima_s_order = seasonal_order
-            arima_wf_mae  = self._walk_forward_arima(
-                ts, initial_split, val_size, order, seasonal_order
-            )
+        try:
+            # 1. Split into training and validation
+            train_ts = ts.iloc[:-val_size]
+            val_ts = ts.iloc[-val_size:]
 
-        # ── ETS: th\u1eed t\u1ea5t c\u1ea3 configs, ch\u1ecdn config c\u00f3 walk-forward MAE th\u1ea5p nh\u1ea5t ──
-        ets_configs = [
-            {"trend": "add", "damped_trend": False, "seasonal": None, "label": "Holt-Linear", "sp": None},
-            {"trend": "add", "damped_trend": True,  "seasonal": None, "label": "Holt-Damped", "sp": None},
-            {"trend": None,  "damped_trend": False, "seasonal": None, "label": "SES",         "sp": None},
-        ]
+            # 2. Run forecasting on training set
+            val_preds = self._forecast_classical_decomposition(train_ts, val_size)
+            actuals = val_ts.values
+            preds = np.array(val_preds)
 
-        best_ets_mae = float("inf")
-        best_ets_cfg = None
-        for cfg in ets_configs:
-            mae = self._walk_forward_ets(ts, initial_split, val_size, cfg)
-            if mae < best_ets_mae:
-                best_ets_mae = mae
-                best_ets_cfg = cfg
+            # 3. Calculate metrics
+            mae = float(np.mean(np.abs(actuals - preds)))
+            
+            # Avoid division by zero for MAPE
+            non_zero_mask = actuals > 0
+            if np.sum(non_zero_mask) > 0:
+                mape = float(np.mean(np.abs((actuals[non_zero_mask] - preds[non_zero_mask]) / actuals[non_zero_mask])) * 100)
+            else:
+                mape = 0.0
 
-        print(
-            f"[MODEL SELECTION] ARIMA WF-MAE={arima_wf_mae:.4f} | "
-            f"Best ETS ({best_ets_cfg['label'] if best_ets_cfg else 'none'}) WF-MAE={best_ets_mae:.4f}"
-        )
+            # R-squared (coefficient of determination)
+            ss_res = np.sum((actuals - preds) ** 2)
+            ss_tot = np.sum((actuals - np.mean(actuals)) ** 2)
+            r2 = float(1.0 - (ss_res / ss_tot)) if ss_tot > 0 else 1.0
 
-        # ── Retrain th\u1eafng tr\u00ean to\u00e0n b\u1ed9 ts ──
-        if arima_ok and arima_wf_mae <= best_ets_mae:
+            return {
+                "model_name": "ACCA Classical Decomposition",
+                "mape": min(100.0, max(0.0, mape)),
+                "mae": mae,
+                "r2": min(1.0, max(0.0, r2))
+            }
+        except Exception as e:
+            print(f"[ERROR] Accuracy evaluation failed: {e}")
+            return {
+                "model_name": "Naive Mean (Fallback)",
+                "mape": 0.0,
+                "mae": 0.0,
+                "r2": 0.0
+            }
+
+    def _forecast_classical_decomposition(
+        self, ts: pd.Series, periods: int, seasonal_period: int = 4
+    ) -> list:
+        """
+        Classical multiplicative decomposition forecasting using OLS regression and moving average.
+        """
+        n = len(ts)
+        if n < seasonal_period * 2:
+            # Không đủ dữ liệu để tính toán mùa vụ, chỉ dùng Hồi quy tuyến tính đơn giản
+            x = np.arange(n)
+            y = ts.values
             try:
-                m_full = SARIMAX(
-                    ts,
-                    order=arima_order,
-                    seasonal_order=arima_s_order,
-                    enforce_stationarity=False,
-                    enforce_invertibility=False
-                )
-                r_full = m_full.fit(disp=False, maxiter=200)
-                future = r_full.forecast(steps=periods)
-                forecast_values = [max(0.0, float(v)) for v in future.values]
-                model_info = f"ARIMA{arima_order}"
-                print(f"[MODEL SELECTION] \u2192 Chosen: {model_info} (WF-MAE={arima_wf_mae:.4f})")
-                return forecast_values, model_info
-            except Exception as e:
-                print(f"[ERROR] ARIMA final forecast failed: {e}")
-                # fall through to ETS
+                slope, intercept = np.polyfit(x, y, 1)
+                future_x = np.arange(n, n + periods)
+                preds = slope * future_x + intercept
+                return [max(0.0, float(v)) for v in preds]
+            except Exception:
+                return [max(0.0, float(ts.mean()))] * periods
 
-        if best_ets_cfg is not None:
-            try:
-                kwargs_full = {
-                    "trend": best_ets_cfg["trend"],
-                    "seasonal": None,
-                    "initialization_method": "estimated",
-                }
-                if best_ets_cfg["trend"] is not None:
-                    kwargs_full["damped_trend"] = best_ets_cfg["damped_trend"]
-                hw_full = ExponentialSmoothing(ts, **kwargs_full).fit(optimized=True)
-                future  = hw_full.forecast(steps=periods)
-                forecast_values = [max(0.0, float(v)) for v in future.values]
-                model_info = best_ets_cfg["label"]
-                print(f"[MODEL SELECTION] \u2192 Chosen: {model_info} (WF-MAE={best_ets_mae:.4f})")
-                return forecast_values, model_info
-            except Exception as e:
-                print(f"[ERROR] ETS final forecast failed: {e}")
+        # 1. Tính toán Xu hướng bằng Trung bình trượt (Moving Average)
+        ma = ts.rolling(window=seasonal_period, center=True).mean()
+        # Đắp bù các phần đầu và cuối bị NaN bằng nội suy tuyến tính/ngoại suy
+        ma = ma.interpolate(method="linear", limit_direction="both").fillna(ts.mean())
 
-        # C\u1ea3 hai th\u1ea5t b\u1ea1i \u2192 Naive rolling mean 4 tu\u1ea7n
-        print("[MODEL SELECTION] \u2192 Both models failed. Using Naive 4-week rolling mean.")
-        mean_val = max(0.0, float(ts.tail(4).mean()) if len(ts) >= 4 else float(ts.mean()))
-        return [mean_val] * periods, "Naive 4-Week Rolling Mean"
+        # 2. Tách chỉ số mùa vụ dạng nhân tử (Multiplicative Seasonality: Y_t / Trend_t)
+        seasonal_ratios = ts / ma
+        
+        seasonal_factors = [0.0] * seasonal_period
+        for i in range(seasonal_period):
+            indices = [idx for idx in range(i, n, seasonal_period)]
+            ratios_for_week = [float(seasonal_ratios.iloc[idx]) for idx in indices if not pd.isna(seasonal_ratios.iloc[idx])]
+            if ratios_for_week:
+                seasonal_factors[i] = np.mean(ratios_for_week)
+            else:
+                seasonal_factors[i] = 1.0
+
+        # Chuẩn hóa để trung bình các nhân tử mùa vụ = 1.0
+        sum_factors = sum(seasonal_factors)
+        if sum_factors > 0:
+            seasonal_factors = [f * (seasonal_period / sum_factors) for f in seasonal_factors]
+        else:
+            seasonal_factors = [1.0] * seasonal_period
+
+        # 3. Khử mùa vụ (Deseasonalize) để thực hiện Hồi quy tuyến tính
+        deseasonalized = ts.copy()
+        for idx in range(n):
+            sf = seasonal_factors[idx % seasonal_period]
+            deseasonalized.iloc[idx] = ts.iloc[idx] / sf if sf > 0 else ts.iloc[idx]
+
+        # Khớp đường xu hướng tuyến tính (Linear Regression) trên chuỗi đã khử mùa vụ
+        t_indices = np.arange(n)
+        try:
+            slope, intercept = np.polyfit(t_indices, deseasonalized.values, 1)
+        except Exception:
+            slope, intercept = 0.0, float(deseasonalized.mean())
+
+        # 4. Dự báo các tuần tương lai t + h
+        forecast_values = []
+        for h in range(1, periods + 1):
+            future_t = n + h - 1
+            trend_val = slope * future_t + intercept
+            seasonal_factor = seasonal_factors[future_t % seasonal_period]
+            pred_val = trend_val * seasonal_factor
+            forecast_values.append(max(0.0, float(pred_val)))
+
+        return forecast_values
 
 
     async def analyze_sales_forecast(self, organization_id: str, history: list) -> SalesForecastResponse:
         """
-        Dự báo doanh số 4 tuần tiếp theo sử dụng cỗi thời gian theo tuần (Weekly ETS / ARIMA).
-        Dữ liệu thô (daily) được gộp theo tuần (W-MON), sau đó mô hình được đánh giá
-        trên cùng tập validation 4 tuần trước khi chọn model tối ưu.
+        Forecast weekly sales for the next 4 weeks using the ACCA Classical Decomposition method.
         """
         print(f"[DEBUG] analyze_sales_forecast received history size: {len(history)}")
 
-        # --- Bước 1: Thu thập doanh thu theo ngày trong 180 ngày gần nhất ---
+        # --- Step 1: Collect daily revenue for the past 180 days ---
         end_date = datetime.datetime.now()
         daily_revenue = {}
         for day_idx in range(180):
@@ -276,7 +211,7 @@ class AnalysisService:
         non_zero_days = sum(1 for v in daily_revenue.values() if v > 0.0)
         print(f"[DEBUG] Found {non_zero_days} non-zero sales days in the last 180 days.")
 
-        # --- Bước 2: Tạo chuỗi thời gian daily, sau đó resample sang weekly ---
+        # --- Step 2: Create daily time series, then resample to weekly ---
         sorted_dates = sorted(daily_revenue.keys())
         y_hist = [daily_revenue[d] for d in sorted_dates]
 
@@ -284,10 +219,10 @@ class AnalysisService:
         df_daily = df_daily.asfreq("D", fill_value=0.0)
         daily_ts = df_daily["revenue"]
 
-        # Gộp theo tuần bắt đầu Tứ Hai (W-MON), label = ngày đầu tuần
+        # Resample to weekly starting on Monday (W-MON)
         weekly_ts = daily_ts.resample("W-MON", closed="left", label="left").sum()
 
-        # Loại bỏ tuần hiện tại nếu chưa kết thúc (chưa đủ 7 ngày)
+        # Remove current week if it is incomplete
         today = pd.Timestamp.now(tz=None).normalize()
         current_week_start = today - pd.Timedelta(days=today.weekday())
         if len(weekly_ts) > 0 and weekly_ts.index[-1] >= current_week_start:
@@ -296,7 +231,7 @@ class AnalysisService:
         num_weeks = len(weekly_ts)
         print(f"[DEBUG] Weekly series: {num_weeks} complete weeks available.")
 
-        # --- Bước 3: Lấy 12 tuần lịch sử gần nhất làm forecast_points ---
+        # --- Step 3: Get last 12 weeks of history as forecast points ---
         forecast_points = []
         for idx in range(max(0, num_weeks - 12), num_weeks):
             forecast_points.append(
@@ -307,8 +242,7 @@ class AnalysisService:
                 )
             )
 
-        # --- Bước 4: Dự báo 4 tuần tiếp theo ---
-        # Đánh giá ARIMA và ETS (Holt-Winters) trên cùng validation set 4 tuần
+        # --- Step 4: Forecast sales for the next 4 weeks ---
         forecast_revenue_total = 0.0
         forecast_values, model_info_str = self._select_best_forecast(
             weekly_ts, val_size=4, periods=4
@@ -335,7 +269,7 @@ class AnalysisService:
         forecast_weekly_avg = forecast_revenue_total / 4.0
 
         prompt = (
-            f"Here is the weekly sales forecast summary for organization {organization_id}:\n"
+            f"Here is the weekly sales forecast summary for our organization:\n"
             f"- Historical period: Last {num_weeks} weeks (~180 days). "
             f"Total revenue: {hist_total:,.2f} USD (Weekly Average: {hist_weekly_avg:,.2f} USD/week)\n"
             f"- Forecast period: Next 4 weeks. "
@@ -344,7 +278,8 @@ class AnalysisService:
             f"to determine if the sales trend is growing or declining.\n"
             f"Please write a brief business report (3-4 sentences) identifying the sales trend and "
             f"suggesting 3 concrete recommendations to optimize sales strategy. "
-            f"Use plain English for employees. Do NOT mention model names, equations, or technical jargon."
+            f"Use plain English for employees. Do NOT mention model names, equations, or technical jargon. "
+            f"Do NOT output any raw organization ID or UUID in your response. Refer to the organization simply as 'the organization' or 'the company'."
         )
 
         messages = [
@@ -359,11 +294,18 @@ class AnalysisService:
 
         llm_resp = response.choices[0].message.parsed
 
+        # --- Bước 6: Đánh giá độ chính xác mô hình và đưa vào insights ---
+        val_metrics = self._validate_model_accuracy(weekly_ts)
+        insights_list = list(llm_resp.insights or [])
+        insights_list.append(f"📊 [Accuracy] Algorithm: {val_metrics['model_name']}")
+        insights_list.append(f"📊 [Accuracy] MAPE: {val_metrics['mape']:.2f}%")
+        insights_list.append(f"📊 [Accuracy] R2: {val_metrics['r2']:.2f}")
+
         parsed_resp = SalesForecastResponse(
             summary=llm_resp.summary,
             forecast_30d_total_revenue=round(forecast_revenue_total, 2),
             forecast_points=forecast_points,
-            insights=llm_resp.insights
+            insights=insights_list
         )
 
         return parsed_resp
@@ -371,7 +313,9 @@ class AnalysisService:
     async def analyze_inventory_abc_xyz(
         self, organization_id: str, warehouses: list, balances: list, sales: list, force_refresh: bool = False
     ) -> InventoryAnalysisResponse:
-        """Phân tích ma trận ABC-XYZ, tính toán ROP, EOQ động dựa trên lịch sử mua bán và lượng tồn kho thực tế."""
+        """
+        Perform ABC-XYZ analysis, and calculate dynamic ROP and EOQ based on actual inventory balances and transaction history.
+        """
 
         if not warehouses:
             return InventoryAnalysisResponse(
@@ -381,9 +325,11 @@ class AnalysisService:
                 recommendations=["Please create a warehouse and import products to start the analysis."]
             )
 
-        # Map lưu trữ tồn kho hiện tại theo productId
+        # Map to store current product quantities and prices
         product_stock = {}
         product_names = {}
+        product_purchase_prices = {}
+        product_sales_prices = {}
         
         for bal in balances:
             prod_id = bal.get("productId")
@@ -394,10 +340,14 @@ class AnalysisService:
                 product_stock[prod_id] = product_stock.get(prod_id, 0.0) + qty
                 if prod_name:
                     product_names[prod_id] = prod_name
+                # Retrieve purchase and sales prices from backend payload
+                product_purchase_prices[prod_id] = float(bal.get("purchasePrice") or 0.0) if bal.get("purchasePrice") is not None else 10.0
+                product_sales_prices[prod_id] = float(bal.get("salesPrice") or 0.0) if bal.get("salesPrice") is not None else 15.0
 
-        # Phân tích lượng bán của từng sản phẩm
+        # Analyze quantity sold and transaction intervals for each product
         product_daily_sales = {}
         product_revenues = {}
+        product_sales_dates = {}
 
         for item in sales:
             prod_id = item.get("productId")
@@ -416,11 +366,16 @@ class AnalysisService:
                     product_daily_sales[prod_id] = {}
                 product_daily_sales[prod_id][date_str] = product_daily_sales[prod_id].get(date_str, 0.0) + qty_sold
 
-        # Tính toán ABC-XYZ cho từng sản phẩm
+                if qty_sold > 0:
+                    if prod_id not in product_sales_dates:
+                        product_sales_dates[prod_id] = set()
+                    product_sales_dates[prod_id].add(date_str)
+
+        # Compute ABC-XYZ classes for each product
         abc_xyz_matrix = []
         critical_count = 0
 
-        # Phân loại ABC dựa trên Doanh thu
+        # Classify ABC based on revenue share
         sorted_prods_by_rev = sorted(product_revenues.items(), key=lambda x: x[1], reverse=True)
         total_rev_all = sum(product_revenues.values())
 
@@ -445,7 +400,7 @@ class AnalysisService:
             name = product_names.get(pid, f"Product {pid[:8]}")
             curr_stock = product_stock.get(pid, 0.0)
 
-            # Phân tích nhu cầu hàng ngày
+            # Analyze daily sales demand
             daily_sales_dict = product_daily_sales.get(pid, {})
             sales_values = [daily_sales_dict.get((end_date - datetime.timedelta(days=i)).strftime("%Y-%m-%d"), 0.0) for i in range(90)]
             
@@ -453,7 +408,37 @@ class AnalysisService:
             variance = sum((x - mu) ** 2 for x in sales_values) / 90.0
             sigma = math.sqrt(variance)
 
-            # Phân loại XYZ
+            # --- Connect AI Sales Forecast with Demand-Driven Inventory Optimization ---
+            # Get 180 days of product sales history resampled to weekly for ACCA
+            history_days = 180
+            product_daily_series = [daily_sales_dict.get((end_date - datetime.timedelta(days=i)).strftime("%Y-%m-%d"), 0.0) for i in range(history_days)]
+            product_daily_series.reverse()  # Sắp xếp từ cũ nhất đến mới nhất
+            
+            dates_series = [(end_date - datetime.timedelta(days=i)).strftime("%Y-%m-%d") for i in range(history_days)]
+            dates_series.reverse()
+            
+            df_prod = pd.DataFrame({"qty": product_daily_series}, index=pd.to_datetime(dates_series))
+            weekly_prod_ts = df_prod["qty"].resample("W-MON", closed="left", label="left").sum()
+            
+            mu_adjusted = mu
+            demand_ratio = 1.0
+            # Perform forecast adjustment only if sufficient history exists (min 12 weeks)
+            if len(weekly_prod_ts) >= 12 and weekly_prod_ts.sum() > 0:
+                try:
+                    forecast_vals = self._forecast_classical_decomposition(weekly_prod_ts, periods=4)
+                    historical_weekly_avg = weekly_prod_ts.iloc[-8:].mean()  # average of last 8 weeks
+                    forecasted_weekly_avg = np.mean(forecast_vals)
+                    
+                    if historical_weekly_avg > 0:
+                        demand_ratio = forecasted_weekly_avg / historical_weekly_avg
+                        # Clamp ratio between 0.5 and 2.0 to prevent extreme volatility
+                        demand_ratio = max(0.5, min(2.0, demand_ratio))
+                        mu_adjusted = mu * demand_ratio
+                        print(f"[DEMAND ADJUSTMENT] Product: {name}, Hist Weekly Avg: {historical_weekly_avg:.2f}, Forecast Weekly Avg: {forecasted_weekly_avg:.2f}, Ratio: {demand_ratio:.2f}, Adjusted mu: {mu_adjusted:.4f}")
+                except Exception as e:
+                    print(f"[WARNING] Failed to calculate demand adjustment for product {name}: {e}")
+
+            # Classify XYZ based on coefficient of variation
             cv = sigma / mu if mu > 0 else 9.9
             if cv < 0.3:
                 xyz = "X"
@@ -464,23 +449,60 @@ class AnalysisService:
 
             abc = abc_class.get(pid, "C")
 
-            # Tính ROP, EOQ, Safety Stock
-            lead_time = 5.0
-            safety_stock = 1.65 * sigma * math.sqrt(lead_time)
-            
-            if safety_stock < 2.0:
-                safety_stock = 5.0
-            
-            rop = (mu * lead_time) + safety_stock
-            if rop < 5.0:
-                rop = 10.0
+            # 1. Compute dynamic Lead Time (clamped between 3 and 30 days, default 7 days)
+            dates_list = sorted(list(product_sales_dates.get(pid, [])))
+            if len(dates_list) >= 2:
+                try:
+                    date_objs = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates_list]
+                    gaps = [(date_objs[i] - date_objs[i-1]).days for i in range(1, len(date_objs))]
+                    avg_gap = sum(gaps) / len(gaps)
+                    lead_time = max(3.0, min(30.0, avg_gap * 0.5))
+                except Exception:
+                    lead_time = 7.0
+            else:
+                lead_time = 7.0
 
-            annual_demand = mu * 365.0
-            eoq = math.sqrt((2 * annual_demand * 50.0) / 2.0) if annual_demand > 0 else 30.0
-            if eoq < 10.0:
-                eoq = 30.0
+            # 2. Dynamic Service Z-score based on ABC classification (A: 98% -> Z=2.05, B: 95% -> Z=1.65, C: 90% -> Z=1.28)
+            if abc == "A":
+                z_score = 2.05
+            elif abc == "B":
+                z_score = 1.65
+            else:
+                z_score = 1.28
 
-            # Xác định trạng thái
+            # 3. Calculate Safety Stock (no hardcoded floor)
+            safety_stock = z_score * sigma * math.sqrt(lead_time)
+            if safety_stock < 0.0:
+                safety_stock = 0.0
+
+            # 4. Calculate ROP (uses mu_adjusted for forward-looking demand)
+            rop = (mu_adjusted * lead_time) + safety_stock
+            if mu_adjusted > 0 and rop < 1.0:
+                rop = 1.0
+            elif mu_adjusted == 0:
+                rop = 0.0
+
+            # 5. Compute dynamic EOQ based on actual purchasePrice and dynamic ordering cost S
+            annual_demand = mu_adjusted * 365.0
+            
+            # S: Dynamic ordering cost proxy (1.5% of average monthly revenue, floor of 10.0)
+            avg_monthly_rev = product_revenues.get(pid, 0.0) / 3.0  # 90 days = 3 months
+            ordering_cost_S = max(10.0, avg_monthly_rev * 0.015)
+            
+            # H: Dynamic holding cost = unit purchase price * 25% holding rate
+            unit_cost = product_purchase_prices.get(pid, 10.0)
+            holding_cost_H = unit_cost * 0.25
+            
+            if annual_demand > 0 and holding_cost_H > 0:
+                eoq = math.sqrt((2 * annual_demand * ordering_cost_S) / holding_cost_H)
+            else:
+                eoq = 0.0
+
+            # Set minimum EOQ to 1.0 if sales exist
+            if annual_demand > 0 and eoq < 1.0:
+                eoq = 1.0
+
+            # Determine replenishment warning status
             if curr_stock < rop * 0.5:
                 status = "CRITICAL"
                 critical_count += 1
@@ -502,7 +524,7 @@ class AnalysisService:
                 )
             )
 
-        # LLM tóm tắt
+        # LLM summary
         critical_items = [item for item in abc_xyz_matrix if item.status in ["CRITICAL", "WARNING"]]
         summary_prompt = (
             f"Here is the summary of the organization's actual inventory data:\n"
@@ -534,12 +556,16 @@ class AnalysisService:
         return parsed_resp
 
     async def get_inventory_alerts(self, organization_id: str, warehouses: list, balances: list, sales: list) -> list:
-        """Lấy nhanh các mặt hàng cảnh báo hết hàng."""
+        """
+        Get list of products running low on stock (below ROP).
+        """
         analysis = await self.analyze_inventory_abc_xyz(organization_id, warehouses, balances, sales)
         return [item for item in analysis.abc_xyz_matrix if item.status in ["CRITICAL", "WARNING"]]
 
     async def get_reorder_recommendations(self, organization_id: str, warehouses: list, balances: list, sales: list) -> ReorderRecommendationResponse:
-        """Đề xuất lượng nhập tối ưu cho các sản phẩm dưới ROP."""
+        """
+        Recommend optimal reorder quantities for products below ROP.
+        """
         analysis = await self.analyze_inventory_abc_xyz(organization_id, warehouses, balances, sales)
         
         default_wh_id = warehouses[0]["id"] if warehouses else ""
@@ -616,7 +642,9 @@ class AnalysisService:
         return ReorderRecommendationResponse(recommendations=reorder_items)
 
     async def get_dashboard_summary(self, organization_id: str, history: list, inventory_data: dict) -> DashboardSummaryResponse:
-        """Tạo Daily Brief tóm tắt nhanh tình trạng bán hàng và tồn kho."""
+        """
+        Generate a concise Daily Brief summarizing sales forecast and inventory alerts for the CEO.
+        """
         try:
             sales = await self.analyze_sales_forecast(organization_id, history)
             
@@ -634,7 +662,7 @@ class AnalysisService:
 
         prompt = (
             f"Please compose a Daily Brief in clear business English, extremely concise (about 3 sentences), for the CEO:\n"
-            f"- Forecasted sales for the next 15 days: {predicted_sales:,.2f} USD\n"
+            f"- Forecasted sales for the next 30 days: {predicted_sales:,.2f} USD\n"
             f"- Stock alerts: {critical_count} products are running low below the ROP.\n"
             f"Use an inspiring, concise tone, highlighting the immediate action to take today."
         )

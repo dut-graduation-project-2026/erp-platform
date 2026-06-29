@@ -85,27 +85,16 @@ public class SampleDataSeeder implements CommandLineRunner {
   private final ReplenishmentRequestRepository replenishmentRequestRepository;
   private final PartnerContactRepository partnerContactRepository;
   private final ProductCategoryRepository productCategoryRepository;
+  private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
   @Override
   @Transactional
   public void run(String... args) {
     seedModulesAndPermissions();
 
-    // Clean up old seed if it exists, to force re-seeding with updated low stock
-    // and alerts
-    boolean hasOldSeed = false;
-    Optional<Product> macbookOpt = productRepository.findAll().stream()
-        .filter(p -> "MacBook Pro M3 Max".equals(p.getName()))
-        .findFirst();
-    if (macbookOpt.isPresent()) {
-      UUID macbookId = macbookOpt.get().getId();
-      hasOldSeed = inventoryBalanceRepository.findAll().stream()
-          .anyMatch(
-              b -> b.getProduct().getId().equals(macbookId)
-                  && b.getQuantity().compareTo(BigDecimal.valueOf(100.0)) == 0);
-    }
-
-    if (hasOldSeed) {
+    // Trực tiếp kiểm tra xem số lượng đơn hàng có < 100 hay không, nếu ít tức là chưa seed đủ 180 ngày lịch sử
+    boolean needsSeeding = orderRepository.count() < 100;
+    if (needsSeeding) {
       replenishmentRequestRepository.deleteAll();
       stockValuationRepository.deleteAll();
       inventoryDocumentLineRepository.deleteAll();
@@ -262,8 +251,8 @@ public class SampleDataSeeder implements CommandLineRunner {
     keeperStaff2.getRoles().add(keeperRole);
     userRepository.save(keeperStaff2);
 
-    // Bulk business dataset seeding (if empty)
-    if (productRepository.count() <= 1) { // 1 because of the Seeded Product
+    // Bulk business dataset seeding (if empty or needs re-seeding)
+    if (needsSeeding || productRepository.count() <= 1) {
       seedHighVolumeData(
           organization,
           salesRole,
@@ -371,6 +360,9 @@ public class SampleDataSeeder implements CommandLineRunner {
 
     // 8. Orders, Issues, Stock Valuations, Invoices
     seedOrdersAndInvoices(org, partners, products, leads, salesAgents, centralWh, vat10, vat5);
+
+    // 8.5. Seed 180 days of historical sales for AI Forecasting & Inventory calculations
+    seedHistoricalSales(org, partners, products, vat10, vat5, centralWh);
 
     // 9. Replenishment Requests
     seedReplenishmentRequests(warehouses);
@@ -1697,5 +1689,179 @@ public class SampleDataSeeder implements CommandLineRunner {
                     .roles(new HashSet<>())
                     .organizations(new HashSet<>())
                     .build()));
+  }
+
+  private void seedHistoricalSales(
+      Organization org,
+      List<Partner> partners,
+      List<Product> products,
+      Tax vat10,
+      Tax vat5,
+      Warehouse centralWh) {
+    
+    // Kiểm tra xem đã có dữ liệu lịch sử chưa
+    boolean hasHistoricalOrders = orderRepository.existsByOrganizationIdAndOrderNumber(org.getId(), "HIST-SO-180-1");
+    if (hasHistoricalOrders) {
+      return;
+    }
+
+    Random rand = new Random(42);
+    Instant now = Instant.now();
+
+    for (int day = 180; day >= 1; day--) {
+      int relativeDay = 180 - day; // Ngày 0 là cách đây 180 ngày, ngày 179 là cách đây 1 ngày
+      
+      // 1. Trend: Tăng trưởng tuyến tính từ 0.8 đến 1.4 (tăng 75% sau 180 ngày)
+      double trend = 0.8 + (relativeDay / 180.0) * 0.6;
+      
+      // 2. Mùa vụ chu kỳ 28 ngày (4 tuần): mô phỏng lương/khuyến mãi hàng tháng
+      int dayOfCycle = relativeDay % 28;
+      double seasonal = 1.0;
+      if (dayOfCycle < 7) {
+        seasonal = 1.35; // Tuần 1: Đầu tháng mua sắm mạnh
+      } else if (dayOfCycle < 14) {
+        seasonal = 0.85; // Tuần 2: Giảm nhẹ
+      } else if (dayOfCycle < 21) {
+        seasonal = 1.20; // Tuần 3: Đợt khuyến mãi giữa tháng
+      } else {
+        seasonal = 0.60; // Tuần 4: Cuối tháng chi tiêu tiết kiệm
+      }
+      
+      // 3. Nhiễu ngẫu nhiên nhỏ +/- 5% để tạo nhấp nhô tự nhiên nhưng ổn định
+      double noise = 0.95 + rand.nextDouble() * 0.10;
+      
+      double demandMultiplier = trend * seasonal * noise;
+      
+      // Tạo đơn hàng đều đặn mỗi ngày (không skip ngày) để dữ liệu không bị gãy chuỗi
+      int ordersOnThisDay = 2; // Cố định 2 đơn hàng/ngày để ổn định quy mô doanh số
+      for (int oNum = 1; oNum <= ordersOnThisDay; oNum++) {
+        String orderNum = "HIST-SO-" + day + "-" + oNum;
+        Instant orderDate = now.minus(java.time.Duration.ofDays(day))
+            .minus(java.time.Duration.ofHours(rand.nextInt(12)))
+            .minus(java.time.Duration.ofMinutes(rand.nextInt(60)));
+
+        Order order = Order.builder()
+            .organization(org)
+            .partner(partners.get(rand.nextInt(partners.size())))
+            .orderNumber(orderNum)
+            .status(com.dut.erp.enums.OrderStatus.COMPLETED)
+            .deliveryDate(orderDate.plus(java.time.Duration.ofDays(1)))
+            .expirationDate(orderDate.plus(java.time.Duration.ofDays(7)))
+            .totalAmount(BigDecimal.ZERO)
+            .build();
+
+        order = orderRepository.save(order);
+
+        int itemCount = 2; // Mỗi đơn hàng có 2 sản phẩm
+        List<OrderItem> items = new ArrayList<>();
+        BigDecimal totalOrderAmt = BigDecimal.ZERO;
+
+        for (int itemIdx = 0; itemIdx < itemCount; itemIdx++) {
+          Product prod = products.get(rand.nextInt(products.size()));
+          Tax tax = (rand.nextBoolean()) ? vat10 : vat5;
+          // Số lượng ổn định nhân với hệ số nhu cầu động
+          BigDecimal qty = BigDecimal.valueOf(Math.max(1, (int)(2 * demandMultiplier)));
+          // Giả lập biến động giá bán thực tế ±5% do chiết khấu/khuyến mãi nhẹ
+          double salesFluctuation = 0.95 + rand.nextDouble() * 0.10;
+          BigDecimal unitPrice = prod.getSalesPrice()
+              .multiply(BigDecimal.valueOf(salesFluctuation))
+              .setScale(2, java.math.RoundingMode.HALF_UP);
+          BigDecimal subtotal = qty.multiply(unitPrice);
+
+          OrderItem item = OrderItem.builder()
+              .organization(org)
+              .order(order)
+              .product(prod)
+              .tax(tax)
+              .quantity(qty)
+              .unitPrice(unitPrice)
+              .subtotal(subtotal)
+              .build();
+
+          items.add(item);
+          totalOrderAmt = totalOrderAmt.add(subtotal);
+        }
+        order.setItems(items);
+        order.setTotalAmount(totalOrderAmt);
+        order = orderRepository.save(order);
+
+        // Tạo tài liệu xuất kho ISSUE tương ứng
+        String outDocName = centralWh.getCode() + "/OUT/HIST/" + day + "-" + oNum;
+        InventoryDocument outDoc = inventoryDocumentRepository.save(
+            InventoryDocument.builder()
+                .warehouse(centralWh)
+                .name(outDocName)
+                .documentType(com.dut.erp.enums.DocumentType.ISSUE)
+                .referenceType(com.dut.erp.enums.ReferenceType.SALES_ORDER)
+                .referenceId(order.getId())
+                .documentStatus(com.dut.erp.enums.DocumentStatus.COMPLETED)
+                .notes("Historical stock issue for order " + orderNum)
+                .scheduledDate(orderDate)
+                .dateDone(orderDate)
+                .build());
+
+        List<InventoryDocumentLine> outLines = new ArrayList<>();
+        for (OrderItem item : order.getItems()) {
+          Product prod = item.getProduct();
+          BigDecimal qty = item.getQuantity();
+          // Giả lập biến động giá mua vào ±15% từ nhà cung cấp
+          double purchaseFluctuation = 0.85 + rand.nextDouble() * 0.30;
+          BigDecimal unitCost = prod.getPurchasePrice()
+              .multiply(BigDecimal.valueOf(purchaseFluctuation))
+              .setScale(4, java.math.RoundingMode.HALF_UP);
+          BigDecimal valuation = qty.multiply(unitCost);
+
+          InventoryDocumentLine outLine = inventoryDocumentLineRepository.save(
+              InventoryDocumentLine.builder()
+                  .inventoryDocument(outDoc)
+                  .product(prod)
+                  .quantity(qty)
+                  .unitCost(unitCost)
+                  .valuation(valuation)
+                  .remainingQuantity(BigDecimal.ZERO)
+                  .build());
+          outLines.add(outLine);
+
+          stockValuationRepository.save(
+              StockValuation.builder()
+                  .inventoryDocumentLine(outLine)
+                  .product(prod)
+                  .quantity(qty)
+                  .unitCost(unitCost)
+                  .totalValuation(valuation)
+                  .method(prod.getCogsMethod())
+                  .build());
+        }
+        outDoc.setLines(outLines);
+        inventoryDocumentRepository.save(outDoc);
+
+        // Tạo hóa đơn tương ứng
+        Invoice invoice = invoiceRepository.save(
+            Invoice.builder()
+                .organization(org)
+                .order(order)
+                .partner(order.getPartner())
+                .invoiceNumber("INV-HIST-" + day + "-" + oNum)
+                .dueDate(orderDate.plus(java.time.Duration.ofDays(30)))
+                .totalAmount(totalOrderAmt)
+                .paidAmount(totalOrderAmt)
+                .status(com.dut.erp.enums.InvoiceStatus.PAID)
+                .build());
+
+        // Ép Hibernate flush các câu lệnh INSERT xuống DB trước khi chạy JDBC UPDATE
+        orderRepository.flush();
+        invoiceRepository.flush();
+        inventoryDocumentRepository.flush();
+
+        // Cập nhật ngày tạo và cập nhật thủ công qua JDBC Template để bypass JPA Auditing
+        java.sql.Timestamp orderDateTimestamp = new java.sql.Timestamp(orderDate.toEpochMilli());
+        jdbcTemplate.update("UPDATE orders SET created_at = ?, updated_at = ? WHERE id = ?", 
+            orderDateTimestamp, orderDateTimestamp, order.getId());
+        jdbcTemplate.update("UPDATE invoices SET created_at = ?, updated_at = ? WHERE id = ?", 
+            orderDateTimestamp, orderDateTimestamp, invoice.getId());
+        jdbcTemplate.update("UPDATE inventory_documents SET created_at = ?, updated_at = ? WHERE id = ?", 
+            orderDateTimestamp, orderDateTimestamp, outDoc.getId());
+      }
+    }
   }
 }
