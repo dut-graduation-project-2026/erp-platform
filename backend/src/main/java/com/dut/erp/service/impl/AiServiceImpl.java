@@ -122,8 +122,8 @@ public class AiServiceImpl implements AiService {
 
     log.info("Fetching sales forecast for organization: {}, period: {}", organizationId, period);
     
-    // Fetch daily sales revenue for the past 180 days
-    Instant startDate = Instant.now().minus(java.time.Duration.ofDays(180));
+    // Fetch all historical daily sales revenue
+    Instant startDate = Instant.EPOCH;
     List<Object[]> dailyData = orderRepository.getDailyRevenue(organizationId, startDate);
     
     List<Map<String, Object>> historyList = new ArrayList<>();
@@ -234,8 +234,8 @@ public class AiServiceImpl implements AiService {
     Map<String, Object> payload = new HashMap<>();
     payload.put("organizationId", organizationId.toString());
 
-    // Historical daily sales revenue (180 days)
-    Instant startDate = Instant.now().minus(java.time.Duration.ofDays(180));
+    // Historical daily sales revenue (All history)
+    Instant startDate = Instant.EPOCH;
     List<Object[]> dailyData = orderRepository.getDailyRevenue(organizationId, startDate);
     List<Map<String, Object>> historyList = new ArrayList<>();
     for (Object[] row : dailyData) {
@@ -315,8 +315,8 @@ public class AiServiceImpl implements AiService {
     }
     payload.put("balances", balList);
 
-    // 3. Sales History (180 days)
-    Instant startDate = Instant.now().minus(java.time.Duration.ofDays(180));
+    // 3. Sales History (All history)
+    Instant startDate = Instant.EPOCH;
     List<Object[]> salesHistory = orderRepository.getProductSalesHistory(organizationId, startDate);
     List<Map<String, Object>> salesList = new ArrayList<>();
     for (Object[] row : salesHistory) {
@@ -420,6 +420,7 @@ public class AiServiceImpl implements AiService {
     return new CreateInventoryDocumentRequest(
         DocumentType.RECEIPT,
         null, // transferSourceWarehouseId not used for RECEIPT
+        null, // replenishmentRequestId not used for automatic receipt
         Instant.now(),
         "Automatic receipt created from AI reorder recommendations (stock below ROP)",
         items);

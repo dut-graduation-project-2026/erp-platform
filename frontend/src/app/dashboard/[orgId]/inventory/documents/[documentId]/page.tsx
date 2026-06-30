@@ -250,6 +250,7 @@ export default function DocumentDetailsPage({
   const isDraft = doc.documentStatus === 'DRAFT';
   const isConfirmed = doc.documentStatus === 'CONFIRMED';
   const isWaitingStock = doc.documentStatus === 'WAITING_FOR_STOCK';
+  const showAvailableStock = doc.documentStatus !== 'SENT' && doc.documentStatus !== 'COMPLETED' && doc.documentStatus !== 'CANCELLED';
 
   return (
     <div className="h-full flex flex-col font-['Segoe_UI'] bg-white">
@@ -322,6 +323,16 @@ export default function DocumentDetailsPage({
                 <CheckCircle className="w-4 h-4 mr-2" /> Complete Transfer
               </Button>
             )
+          )}
+
+          {doc.documentStatus === 'SENT' && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
+            <Button 
+              onClick={() => setIsCompleteOpen(true)} 
+              disabled={isActionLoading}
+              className="bg-[#28a745] hover:bg-[#218838] text-white h-9 px-4 rounded-[4px] font-[600] text-[13px]"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" /> Complete Move
+            </Button>
           )}
 
           {(isConfirmed || isWaitingStock) && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
@@ -459,7 +470,7 @@ export default function DocumentDetailsPage({
                   <thead>
                     <tr className="border-b border-[#e0e0e0]">
                       <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider">Product Name</th>
-                      <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Available Stock</th>
+                      {showAvailableStock && <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Available Stock</th>}
                       <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Quantity</th>
                       <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Unit Cost</th>
                       <th className="py-2.5 text-[11px] font-bold text-[#898989] uppercase tracking-wider text-right">Total Valuation</th>
@@ -468,7 +479,7 @@ export default function DocumentDetailsPage({
                   <tbody>
                     {doc.lines?.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-[#898989] text-[13px]">No product lines registered</td>
+                        <td colSpan={showAvailableStock ? 5 : 4} className="py-8 text-center text-[#898989] text-[13px]">No product lines registered</td>
                       </tr>
                     ) : (
                       doc.lines?.map((line) => {
@@ -483,9 +494,11 @@ export default function DocumentDetailsPage({
                               {line.productName}
                             </div>
                           </td>
-                          <td className={cn("py-3 text-[13px] text-right font-[600]", isShortage ? "text-[#dc3545]" : "text-[#4a4a4a]")}>
-                            {available.toLocaleString()}
-                          </td>
+                          {showAvailableStock && (
+                            <td className={cn("py-3 text-[13px] text-right font-[600]", isShortage ? "text-[#dc3545]" : "text-[#4a4a4a]")}>
+                              {available.toLocaleString()}
+                            </td>
+                          )}
                           <td className="py-3 text-[13px] text-right font-[600] text-[#242424]">
                             {line.quantity.toLocaleString()}
                           </td>
@@ -581,6 +594,7 @@ export default function DocumentDetailsPage({
         }}
         confirmText="Confirm Details"
         variant="default"
+        disabled={isActionLoading}
       />
       <ConfirmDialog
         isOpen={isCompleteOpen}
@@ -593,6 +607,7 @@ export default function DocumentDetailsPage({
         }}
         confirmText="Complete Transfer"
         variant="success"
+        disabled={isActionLoading}
       />
       <ConfirmDialog
         isOpen={isSentOpen}
@@ -605,6 +620,7 @@ export default function DocumentDetailsPage({
         }}
         confirmText="Send Move"
         variant="success"
+        disabled={isActionLoading}
       />
       <ConfirmDialog
         isOpen={isCancelOpen}
@@ -617,6 +633,7 @@ export default function DocumentDetailsPage({
         }}
         confirmText="Cancel Move"
         variant="destructive"
+        disabled={isActionLoading}
       />
     </div>
   );

@@ -47,6 +47,7 @@ public class StockValuationServiceImpl implements StockValuationService {
             sv.getQuantity(),
             sv.getUnitCost(),
             sv.getTotalValuation(),
+            sv.getProduct().getSalesPrice(),
             sv.getMethod(),
             sv.getCreatedAt()
         ))

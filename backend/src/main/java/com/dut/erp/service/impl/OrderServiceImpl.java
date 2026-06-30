@@ -58,6 +58,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.dut.erp.repository.PermissionRepository;
+import com.dut.erp.repository.ReplenishmentRequestRepository;
+import com.dut.erp.enums.ReplenishmentStatus;
+import com.dut.erp.dto.event.ReplenishmentRequestStatusChangedEvent;
 
 @Slf4j
 @Service
@@ -73,6 +76,7 @@ public class OrderServiceImpl implements OrderService {
   private final InvoiceRepository invoiceRepository;
   private final InventoryDocumentRepository inventoryDocumentRepository;
   private final InventoryBalanceRepository inventoryBalanceRepository;
+  private final ReplenishmentRequestRepository replenishmentRequestRepository;
   private final SalesOrderIntegrationService salesOrderIntegrationService;
   private final ApplicationEventPublisher applicationEventPublisher;
   private final SecurityAuthService securityAuthService;
@@ -464,14 +468,30 @@ public class OrderServiceImpl implements OrderService {
                     }
                   }
 
-                  doc.setDocumentStatus(DocumentStatus.CANCELLED);
-                  inventoryDocumentRepository.save(doc);
-                  log.info(
-                      "Automatically cancelled inventory document {} because order {} was"
-                          + " CANCELLED",
-                      doc.getId(),
-                      id);
-                }
+                   doc.setDocumentStatus(DocumentStatus.CANCELLED);
+                   inventoryDocumentRepository.save(doc);
+                   log.info(
+                       "Automatically cancelled inventory document {} because order {} was"
+                           + " CANCELLED",
+                       doc.getId(),
+                       id);
+
+                   // Automatically cancel associated replenishment request if exists
+                   replenishmentRequestRepository.findByInventoryDocumentId(doc.getId())
+                       .ifPresent(req -> {
+                         if (req.getStatus() != ReplenishmentStatus.CANCELED) {
+                           ReplenishmentStatus oldReqStatus = req.getStatus();
+                           req.setStatus(ReplenishmentStatus.CANCELED);
+                           replenishmentRequestRepository.save(req);
+                           applicationEventPublisher.publishEvent(new ReplenishmentRequestStatusChangedEvent(
+                               req.getId(), oldReqStatus, ReplenishmentStatus.CANCELED));
+                           log.info(
+                               "Automatically cancelled replenishment request {} because order {} was CANCELLED",
+                               req.getId(),
+                               id);
+                         }
+                       });
+                 }
               });
     }
 

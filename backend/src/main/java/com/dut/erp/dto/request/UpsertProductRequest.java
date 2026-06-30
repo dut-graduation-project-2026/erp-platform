@@ -36,4 +36,5 @@ public record UpsertProductRequest(
         BigDecimal salesPrice,
     @NotNull(message = "Product category ID is required")
         UUID categoryId,
+    com.dut.erp.enums.CogsMethod cogsMethod,
     String image) {}

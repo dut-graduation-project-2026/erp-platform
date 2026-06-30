@@ -11,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Loader2 } from 'lucide-react';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   variant?: 'default' | 'destructive' | 'success';
+  disabled?: boolean;
 }
 
 export function ConfirmDialog({
@@ -32,6 +34,7 @@ export function ConfirmDialog({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   variant = 'default',
+  disabled = false,
 }: ConfirmDialogProps) {
   const getButtonClass = () => {
     switch (variant) {
@@ -56,16 +59,24 @@ export function ConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="mt-6 flex flex-row justify-end space-x-2 sm:space-x-2">
-          <AlertDialogCancel className="h-9 text-[13px] font-[600] border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] px-4 rounded-[4px] mt-0">
+          <AlertDialogCancel 
+            disabled={disabled}
+            className="h-9 text-[13px] font-[600] border-[#d0d0d0] text-[#242424] hover:bg-[#f8f8f8] px-4 rounded-[4px] mt-0 disabled:opacity-50"
+          >
             {cancelText}
           </AlertDialogCancel>
           <AlertDialogAction
+            disabled={disabled}
             onClick={(e) => {
-              // Execute confirm callback
+              if (disabled) {
+                e.preventDefault();
+                return;
+              }
               onConfirm();
             }}
-            className={`${getButtonClass()} h-9 text-[13px] font-[600] px-4 rounded-[4px] transition-colors border`}
+            className={`${getButtonClass()} h-9 text-[13px] font-[600] px-4 rounded-[4px] transition-colors border disabled:opacity-50 flex items-center justify-center`}
           >
+            {disabled && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>

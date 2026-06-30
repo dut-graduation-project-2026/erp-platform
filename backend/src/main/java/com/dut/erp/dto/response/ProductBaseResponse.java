@@ -13,5 +13,6 @@ public record ProductBaseResponse(
     BigDecimal purchasePrice,
     boolean isArchived,
     ProductCategoryBaseResponse category,
+    com.dut.erp.enums.CogsMethod cogsMethod,
     String image
 ) {}

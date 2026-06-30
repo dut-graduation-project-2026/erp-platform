@@ -130,6 +130,7 @@ export interface StockValuation {
   quantity: number;
   unitCost: number;
   totalValuation: number;
+  salesPrice: number;
   method: CogsMethod;
   createdAt: string;
 }
@@ -163,4 +164,13 @@ export interface ConfirmRouteRequest {
     orderId: string;
     warehouseId: string;
   }[];
+}
+
+export interface StockLayer {
+  documentLineId: string;
+  documentName: string;
+  dateDone: string;
+  originalQuantity: number;
+  remainingQuantity: number;
+  unitCost: number;
 }

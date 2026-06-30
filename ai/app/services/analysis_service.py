@@ -1,13 +1,11 @@
-import json
 import datetime
-import asyncio
 import math
 import pandas as pd
 import numpy as np
 import warnings
-from sklearn.metrics import mean_absolute_error
 
 
+from .forecast_pipeline import RevenueForecasterPipeline
 from ..integrations.openai_clients import openai_client
 from ..schemas.responses import (
     SalesForecastResponse,
@@ -30,188 +28,74 @@ class AnalysisService:
     def __init__(self):
         self.openai_client = openai_client
 
-    def _validate_time_series(self, ts: pd.Series, min_non_zero_days: int = 7) -> tuple:
-        """
-        Kiểm tra tính hợp lệ của chuỗi thời gian.
-        
-        Args:
-            ts: Pandas Series chứa dữ liệu thời gian
-            min_non_zero_days: Số ngày tối thiểu có giao dịch
-            
-        Returns:
-            (is_valid, non_zero_days, std_dev)
-        """
-        non_zero_days = (ts > 0).sum()
-        std_dev = ts.std()
-        is_valid = non_zero_days >= min_non_zero_days and std_dev > 0
-        
-        return is_valid, non_zero_days, std_dev
 
-    def _select_best_forecast(self, ts: pd.Series, val_size: int = 4, periods: int = 4) -> tuple:
-        """
-        Forecast sales using Classical Decomposition (ACCA Method).
-        """
-        is_valid, non_zero, std_dev = self._validate_time_series(ts)
-        if not is_valid or len(ts) < val_size + 8:
-            print(f"[WARNING] Series too short/invalid for ACCA. len={len(ts)}, non_zero={non_zero}")
-            mean_val = max(0.0, float(ts.mean())) if len(ts) > 0 else 0.0
-            return [mean_val] * periods, "Naive Mean"
-
-        try:
-            forecast_values = self._forecast_classical_decomposition(ts, periods)
-            model_info = "Classical Decomposition (ACCA)"
-            print(f"[FORECAST] Chosen: {model_info} (Generated forecast for next {periods} weeks)")
-            return forecast_values, model_info
-        except Exception as e:
-            print(f"[ERROR] Classical Decomposition final forecast failed: {e}")
-            last_val = max(0.0, float(ts.iloc[-1])) if len(ts) > 0 else 0.0
-            return [last_val] * periods, "Naive Forecast (Last Observed Value)"
-
-    def _validate_model_accuracy(self, ts: pd.Series, val_size: int = 4) -> dict:
-        """
-        Evaluate forecast accuracy using out-of-sample backtesting (validation split).
-        """
-        n = len(ts)
-        if n < val_size + 8:
-            return {
-                "model_name": "Naive Mean (Fallback)",
-                "mape": 0.0,
-                "mae": 0.0,
-                "r2": 0.0
-            }
-
-        try:
-            # 1. Split into training and validation
-            train_ts = ts.iloc[:-val_size]
-            val_ts = ts.iloc[-val_size:]
-
-            # 2. Run forecasting on training set
-            val_preds = self._forecast_classical_decomposition(train_ts, val_size)
-            actuals = val_ts.values
-            preds = np.array(val_preds)
-
-            # 3. Calculate metrics
-            mae = float(np.mean(np.abs(actuals - preds)))
-            
-            # Avoid division by zero for MAPE
-            non_zero_mask = actuals > 0
-            if np.sum(non_zero_mask) > 0:
-                mape = float(np.mean(np.abs((actuals[non_zero_mask] - preds[non_zero_mask]) / actuals[non_zero_mask])) * 100)
-            else:
-                mape = 0.0
-
-            # R-squared (coefficient of determination)
-            ss_res = np.sum((actuals - preds) ** 2)
-            ss_tot = np.sum((actuals - np.mean(actuals)) ** 2)
-            r2 = float(1.0 - (ss_res / ss_tot)) if ss_tot > 0 else 1.0
-
-            return {
-                "model_name": "ACCA Classical Decomposition",
-                "mape": min(100.0, max(0.0, mape)),
-                "mae": mae,
-                "r2": min(1.0, max(0.0, r2))
-            }
-        except Exception as e:
-            print(f"[ERROR] Accuracy evaluation failed: {e}")
-            return {
-                "model_name": "Naive Mean (Fallback)",
-                "mape": 0.0,
-                "mae": 0.0,
-                "r2": 0.0
-            }
-
-    def _forecast_classical_decomposition(
-        self, ts: pd.Series, periods: int, seasonal_period: int = 4
-    ) -> list:
-        """
-        Classical multiplicative decomposition forecasting using OLS regression and moving average.
-        """
-        n = len(ts)
-        if n < seasonal_period * 2:
-            # Không đủ dữ liệu để tính toán mùa vụ, chỉ dùng Hồi quy tuyến tính đơn giản
-            x = np.arange(n)
-            y = ts.values
-            try:
-                slope, intercept = np.polyfit(x, y, 1)
-                future_x = np.arange(n, n + periods)
-                preds = slope * future_x + intercept
-                return [max(0.0, float(v)) for v in preds]
-            except Exception:
-                return [max(0.0, float(ts.mean()))] * periods
-
-        # 1. Tính toán Xu hướng bằng Trung bình trượt (Moving Average)
-        ma = ts.rolling(window=seasonal_period, center=True).mean()
-        # Đắp bù các phần đầu và cuối bị NaN bằng nội suy tuyến tính/ngoại suy
-        ma = ma.interpolate(method="linear", limit_direction="both").fillna(ts.mean())
-
-        # 2. Tách chỉ số mùa vụ dạng nhân tử (Multiplicative Seasonality: Y_t / Trend_t)
-        seasonal_ratios = ts / ma
-        
-        seasonal_factors = [0.0] * seasonal_period
-        for i in range(seasonal_period):
-            indices = [idx for idx in range(i, n, seasonal_period)]
-            ratios_for_week = [float(seasonal_ratios.iloc[idx]) for idx in indices if not pd.isna(seasonal_ratios.iloc[idx])]
-            if ratios_for_week:
-                seasonal_factors[i] = np.mean(ratios_for_week)
-            else:
-                seasonal_factors[i] = 1.0
-
-        # Chuẩn hóa để trung bình các nhân tử mùa vụ = 1.0
-        sum_factors = sum(seasonal_factors)
-        if sum_factors > 0:
-            seasonal_factors = [f * (seasonal_period / sum_factors) for f in seasonal_factors]
-        else:
-            seasonal_factors = [1.0] * seasonal_period
-
-        # 3. Khử mùa vụ (Deseasonalize) để thực hiện Hồi quy tuyến tính
-        deseasonalized = ts.copy()
-        for idx in range(n):
-            sf = seasonal_factors[idx % seasonal_period]
-            deseasonalized.iloc[idx] = ts.iloc[idx] / sf if sf > 0 else ts.iloc[idx]
-
-        # Khớp đường xu hướng tuyến tính (Linear Regression) trên chuỗi đã khử mùa vụ
-        t_indices = np.arange(n)
-        try:
-            slope, intercept = np.polyfit(t_indices, deseasonalized.values, 1)
-        except Exception:
-            slope, intercept = 0.0, float(deseasonalized.mean())
-
-        # 4. Dự báo các tuần tương lai t + h
-        forecast_values = []
-        for h in range(1, periods + 1):
-            future_t = n + h - 1
-            trend_val = slope * future_t + intercept
-            seasonal_factor = seasonal_factors[future_t % seasonal_period]
-            pred_val = trend_val * seasonal_factor
-            forecast_values.append(max(0.0, float(pred_val)))
-
-        return forecast_values
 
 
     async def analyze_sales_forecast(self, organization_id: str, history: list) -> SalesForecastResponse:
         """
-        Forecast weekly sales for the next 4 weeks using the ACCA Classical Decomposition method.
+        Dự báo doanh số cho 4 tuần tiếp theo bằng SARIMA/ETS auto-select.
+        Yêu cầu tối thiểu 28 ngày có doanh thu để kích hoạt dự báo.
         """
         print(f"[DEBUG] analyze_sales_forecast received history size: {len(history)}")
 
-        # --- Step 1: Collect daily revenue for the past 180 days ---
-        end_date = datetime.datetime.now()
-        daily_revenue = {}
-        for day_idx in range(180):
-            d_str = (end_date - datetime.timedelta(days=day_idx)).strftime("%Y-%m-%d")
-            daily_revenue[d_str] = 0.0
+        # --- Bước 1: Thu thập dữ liệu doanh số hàng ngày từ history ---
+        if not history:
+            return SalesForecastResponse(
+                summary="Insufficient sales data to generate a forecast. No historical data found.",
+                forecast_30d_total_revenue=0.0,
+                forecast_points=[],
+                insights=["⚠️ Not enough data: No sales history was found."]
+            )
 
+        parsed_history = []
         for row in history:
             d = row.get("date")
             if d:
                 d_str = d.replace("T", " ").split(" ")[0]
-                if d_str in daily_revenue:
-                    daily_revenue[d_str] += float(row.get("revenue") or 0.0)
+                rev = float(row.get("revenue") or 0.0)
+                parsed_history.append((d_str, rev))
+
+        if not parsed_history:
+            return SalesForecastResponse(
+                summary="Insufficient sales data to generate a forecast. No valid sales dates found.",
+                forecast_30d_total_revenue=0.0,
+                forecast_points=[],
+                insights=["⚠️ Not enough data: No valid sales dates found."]
+            )
+
+        # Tìm ngày cũ nhất và tạo chuỗi thời gian liên tục đến hôm nay
+        min_date_str = min(d for d, _ in parsed_history)
+        min_date = datetime.datetime.strptime(min_date_str, "%Y-%m-%d")
+        end_date = datetime.datetime.now()
+
+        daily_revenue = {}
+        curr = min_date
+        while curr <= end_date:
+            daily_revenue[curr.strftime("%Y-%m-%d")] = 0.0
+            curr += datetime.timedelta(days=1)
+
+        for d_str, rev in parsed_history:
+            if d_str in daily_revenue:
+                daily_revenue[d_str] += rev
 
         non_zero_days = sum(1 for v in daily_revenue.values() if v > 0.0)
-        print(f"[DEBUG] Found {non_zero_days} non-zero sales days in the last 180 days.")
+        print(f"[DEBUG] Found {non_zero_days} non-zero sales days in total history.")
 
-        # --- Step 2: Create daily time series, then resample to weekly ---
+        # --- Guard: Không đủ dữ liệu để dự báo ---
+        MIN_NON_ZERO_DAYS = 28  # Cần tối thiểu 4 chu kỳ tuần
+        if non_zero_days < MIN_NON_ZERO_DAYS:
+            return SalesForecastResponse(
+                summary=(
+                    f"Insufficient sales data to generate a forecast. "
+                    f"Only {non_zero_days} days with revenue were found in the historical data. "
+                    f"At least {MIN_NON_ZERO_DAYS} days are required."
+                ),
+                forecast_30d_total_revenue=0.0,
+                forecast_points=[],
+                insights=[f"⚠️ Not enough data: {non_zero_days}/{MIN_NON_ZERO_DAYS} minimum days required."]
+            )
+
+        # --- Bước 2: Tạo chuỗi thời gian hàng ngày ---
         sorted_dates = sorted(daily_revenue.keys())
         y_hist = [daily_revenue[d] for d in sorted_dates]
 
@@ -219,10 +103,10 @@ class AnalysisService:
         df_daily = df_daily.asfreq("D", fill_value=0.0)
         daily_ts = df_daily["revenue"]
 
-        # Resample to weekly starting on Monday (W-MON)
+        # Resample sang chuỗi tuần để lấy thông tin hiển thị lịch sử trên biểu đồ
         weekly_ts = daily_ts.resample("W-MON", closed="left", label="left").sum()
 
-        # Remove current week if it is incomplete
+        # Loại bỏ tuần hiện tại nếu chưa kết thúc hoàn toàn
         today = pd.Timestamp.now(tz=None).normalize()
         current_week_start = today - pd.Timedelta(days=today.weekday())
         if len(weekly_ts) > 0 and weekly_ts.index[-1] >= current_week_start:
@@ -231,7 +115,7 @@ class AnalysisService:
         num_weeks = len(weekly_ts)
         print(f"[DEBUG] Weekly series: {num_weeks} complete weeks available.")
 
-        # --- Step 3: Get last 12 weeks of history as forecast points ---
+        # --- Bước 3: Lấy dữ liệu 12 tuần lịch sử gần nhất để hiển thị biểu đồ ---
         forecast_points = []
         for idx in range(max(0, num_weeks - 12), num_weeks):
             forecast_points.append(
@@ -242,40 +126,87 @@ class AnalysisService:
                 )
             )
 
-        # --- Step 4: Forecast sales for the next 4 weeks ---
-        forecast_revenue_total = 0.0
-        forecast_values, model_info_str = self._select_best_forecast(
-            weekly_ts, val_size=4, periods=4
+        # --- Bước 4: Chạy RevenueForecasterPipeline (fit → forecast) ---
+        # ✅ FIX: Không dùng use_boxcox=True, không gọi decompose()
+        try:
+            pipeline = RevenueForecasterPipeline(seasonal_period=7, auto_select=True)
+            pipeline.load_from_series(daily_ts)
+            pipeline.fit_trend_model()
+            daily_forecast = pipeline.forecast(steps=28)
+            val_metrics = pipeline.evaluate(test_days=14)
+
+            # --- Log thông tin pipeline sau khi chạy ---
+            _days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+            _sf_str = "  ".join(
+                f"{_days[i]}:{pipeline.seasonal_factors_[i]:.3f}"
+                for i in range(min(7, len(pipeline.seasonal_factors_)))
+            ) if pipeline.seasonal_factors_ else "N/A"
+            
+            best_model_name = val_metrics.get("model_name", "SARIMA/ETS")
+            print(
+                f"\n[PIPELINE] mode={best_model_name}\n"
+                f"  Seasonal factors: {_sf_str}\n"
+            )
+
+        except Exception as e:
+            print(f"[ERROR] Pipeline failed: {e}")
+            return SalesForecastResponse(
+                summary=f"Forecast generation failed: {str(e)}",
+                forecast_30d_total_revenue=0.0,
+                forecast_points=forecast_points,
+                insights=[f"⚠️ Error: {str(e)}"]
+            )
+
+        # Doanh thu dự báo cho 4 tuần tiếp theo
+        forecast_30d_total_revenue = float(daily_forecast.sum())
+        print(
+            f"[PIPELINE] Forecast 28d total: {forecast_30d_total_revenue:,.2f}  |  "
+            f"Daily avg: {forecast_30d_total_revenue / 28:,.2f}"
         )
-        print(f"[INFO] Selected model: {model_info_str}")
 
+        # Gom nhóm kết quả dự báo thành 4 tuần tương lai bắt đầu từ tuần tiếp theo sau tuần lịch sử cuối cùng
         last_week_start = weekly_ts.index[-1]
-        for i, pred_val in enumerate(forecast_values, 1):
-            pred_y = float(pred_val)
-            forecast_date = last_week_start + datetime.timedelta(weeks=i)
-
-            forecast_revenue_total += pred_y
+        forecast_revenue_total = 0.0
+        
+        for i in range(1, 5):
+            week_start_date = last_week_start + datetime.timedelta(weeks=i)
+            week_end_date = week_start_date + datetime.timedelta(days=6)
+            
+            # Tính tổng doanh số dự báo trong khoảng thời gian của tuần đó
+            try:
+                week_pred_val = float(daily_forecast.loc[week_start_date:week_end_date].sum())
+            except Exception:
+                # ✅ FIX: Handle trường hợp index vượt quá phạm vi
+                week_pred_val = 0.0
+            
+            forecast_revenue_total += week_pred_val
+            
             forecast_points.append(
                 ForecastPoint(
-                    date=forecast_date.strftime("%Y-%m-%d"),
+                    date=week_start_date.strftime("%Y-%m-%d"),
                     historical_revenue=None,
-                    predicted_revenue=round(pred_y, 2)
+                    predicted_revenue=round(week_pred_val, 2)
                 )
             )
 
-        # --- Bước 5: LLM tạo tóm tắt nhận xét ---
+        # --- Bước 5: Sử dụng LLM để viết nhận xét và đề xuất kinh doanh ---
         hist_total = float(weekly_ts.sum())
         hist_weekly_avg = hist_total / num_weeks if num_weeks > 0 else 0.0
         forecast_weekly_avg = forecast_revenue_total / 4.0
 
+        # Lấy trung bình doanh thu của 4 tuần gần nhất để so sánh xu hướng thực tế sát hơn
+        recent_weeks = weekly_ts.iloc[-4:] if len(weekly_ts) >= 4 else weekly_ts
+        recent_weekly_avg = float(recent_weeks.mean()) if len(recent_weeks) > 0 else 0.0
+
         prompt = (
             f"Here is the weekly sales forecast summary for our organization:\n"
-            f"- Historical period: Last {num_weeks} weeks (~180 days). "
-            f"Total revenue: {hist_total:,.2f} USD (Weekly Average: {hist_weekly_avg:,.2f} USD/week)\n"
-            f"- Forecast period: Next 4 weeks. "
+            f"- Recent historical performance (Average of last 4 weeks): {recent_weekly_avg:,.2f} USD/week\n"
+            f"- Overall historical period: Last {num_weeks} weeks (~{num_weeks * 7} days). "
+            f"Total revenue: {hist_total:,.2f} USD (Overall Weekly Average: {hist_weekly_avg:,.2f} USD/week)\n"
+            f"- Forecast period: Next 4 weeks (28 days). "
             f"Forecasted total revenue: {forecast_revenue_total:,.2f} USD (Weekly Average: {forecast_weekly_avg:,.2f} USD/week)\n"
-            f"Note: Compare the WEEKLY AVERAGES ({hist_weekly_avg:,.2f} vs {forecast_weekly_avg:,.2f} USD/week) "
-            f"to determine if the sales trend is growing or declining.\n"
+            f"Note: Compare the RECENT WEEKLY AVERAGE ({recent_weekly_avg:,.2f} vs {forecast_weekly_avg:,.2f} USD/week) "
+            f"to determine if the sales trend is growing or declining compared to our current performance.\n"
             f"Please write a brief business report (3-4 sentences) identifying the sales trend and "
             f"suggesting 3 concrete recommendations to optimize sales strategy. "
             f"Use plain English for employees. Do NOT mention model names, equations, or technical jargon. "
@@ -294,16 +225,17 @@ class AnalysisService:
 
         llm_resp = response.choices[0].message.parsed
 
-        # --- Bước 6: Đánh giá độ chính xác mô hình và đưa vào insights ---
-        val_metrics = self._validate_model_accuracy(weekly_ts)
+        # --- Bước 6: Đưa accuracy metrics từ pipeline vào insights ---
         insights_list = list(llm_resp.insights or [])
-        insights_list.append(f"📊 [Accuracy] Algorithm: {val_metrics['model_name']}")
-        insights_list.append(f"📊 [Accuracy] MAPE: {val_metrics['mape']:.2f}%")
-        insights_list.append(f"📊 [Accuracy] R2: {val_metrics['r2']:.2f}")
+        insights_list.append(f"📊 [Accuracy] Algorithm: {val_metrics.get('model_name', 'SARIMA/ETS')}")
+        if val_metrics.get('wape', 0.0) > 0.0 or val_metrics.get('smape', 0.0) > 0.0:
+            insights_list.append(f"📊 [Accuracy] WAPE: {val_metrics.get('wape', 0.0):.2f}%  |  sMAPE: {val_metrics.get('smape', 0.0):.2f}%")
+            insights_list.append(f"📊 [Accuracy] MAE: {val_metrics.get('mae', 0.0):.2f}  |  RMSE: {val_metrics.get('rmse', 0.0):.2f}")
+        insights_list.append(f"📊 [Accuracy] CV Splits: {val_metrics.get('cv_splits', 0)}")
 
         parsed_resp = SalesForecastResponse(
             summary=llm_resp.summary,
-            forecast_30d_total_revenue=round(forecast_revenue_total, 2),
+            forecast_30d_total_revenue=round(forecast_30d_total_revenue, 2),
             forecast_points=forecast_points,
             insights=insights_list
         )
@@ -400,7 +332,7 @@ class AnalysisService:
             name = product_names.get(pid, f"Product {pid[:8]}")
             curr_stock = product_stock.get(pid, 0.0)
 
-            # Analyze daily sales demand
+            # Analyze daily sales demand (last 90 days)
             daily_sales_dict = product_daily_sales.get(pid, {})
             sales_values = [daily_sales_dict.get((end_date - datetime.timedelta(days=i)).strftime("%Y-%m-%d"), 0.0) for i in range(90)]
             
@@ -408,8 +340,8 @@ class AnalysisService:
             variance = sum((x - mu) ** 2 for x in sales_values) / 90.0
             sigma = math.sqrt(variance)
 
-            # --- Connect AI Sales Forecast with Demand-Driven Inventory Optimization ---
-            # Get 180 days of product sales history resampled to weekly for ACCA
+            # ✅ FIX: Connect AI Sales Forecast with Demand-Driven Inventory Optimization
+            # Get 180 days of product sales history resampled to weekly
             history_days = 180
             product_daily_series = [daily_sales_dict.get((end_date - datetime.timedelta(days=i)).strftime("%Y-%m-%d"), 0.0) for i in range(history_days)]
             product_daily_series.reverse()  # Sắp xếp từ cũ nhất đến mới nhất
@@ -422,10 +354,18 @@ class AnalysisService:
             
             mu_adjusted = mu
             demand_ratio = 1.0
-            # Perform forecast adjustment only if sufficient history exists (min 12 weeks)
+            
+            # ✅ FIX: Perform forecast adjustment only if sufficient history exists (min 12 weeks)
             if len(weekly_prod_ts) >= 12 and weekly_prod_ts.sum() > 0:
                 try:
-                    forecast_vals = self._forecast_classical_decomposition(weekly_prod_ts, periods=4)
+                    # Dùng RevenueForecasterPipeline với seasonal_period=4 (chu kỳ 4 tuần)
+                    inv_pipeline = RevenueForecasterPipeline(seasonal_period=4, auto_select=True)
+                    inv_pipeline.load_from_series(weekly_prod_ts)
+                    inv_pipeline.fit_trend_model()
+                    
+                    # ✅ FIX: forecast() trả về pandas Series, không cần .tolist()
+                    forecast_vals = inv_pipeline.forecast(steps=4).values
+                    
                     historical_weekly_avg = weekly_prod_ts.iloc[-8:].mean()  # average of last 8 weeks
                     forecasted_weekly_avg = np.mean(forecast_vals)
                     
@@ -434,9 +374,16 @@ class AnalysisService:
                         # Clamp ratio between 0.5 and 2.0 to prevent extreme volatility
                         demand_ratio = max(0.5, min(2.0, demand_ratio))
                         mu_adjusted = mu * demand_ratio
-                        print(f"[DEMAND ADJUSTMENT] Product: {name}, Hist Weekly Avg: {historical_weekly_avg:.2f}, Forecast Weekly Avg: {forecasted_weekly_avg:.2f}, Ratio: {demand_ratio:.2f}, Adjusted mu: {mu_adjusted:.4f}")
+                        print(
+                            f"[DEMAND ADJUSTMENT] Product: {name}\n"
+                            f"  Historical Weekly Avg: {historical_weekly_avg:.2f}\n"
+                            f"  Forecasted Weekly Avg: {forecasted_weekly_avg:.2f}\n"
+                            f"  Demand Ratio: {demand_ratio:.2f}\n"
+                            f"  Adjusted mu: {mu_adjusted:.4f}"
+                        )
                 except Exception as e:
                     print(f"[WARNING] Failed to calculate demand adjustment for product {name}: {e}")
+                    mu_adjusted = mu
 
             # Classify XYZ based on coefficient of variation
             cv = sigma / mu if mu > 0 else 9.9
@@ -656,13 +603,14 @@ class AnalysisService:
             
             critical_count = inv.critical_stock_count
             predicted_sales = sales.forecast_30d_total_revenue
-        except Exception:
+        except Exception as e:
+            print(f"[WARNING] Dashboard summary error: {e}")
             critical_count = 0
             predicted_sales = 0.0
 
         prompt = (
             f"Please compose a Daily Brief in clear business English, extremely concise (about 3 sentences), for the CEO:\n"
-            f"- Forecasted sales for the next 30 days: {predicted_sales:,.2f} USD\n"
+            f"- Forecasted sales for the next 4 weeks (28 days): {predicted_sales:,.2f} USD\n"
             f"- Stock alerts: {critical_count} products are running low below the ROP.\n"
             f"Use an inspiring, concise tone, highlighting the immediate action to take today."
         )

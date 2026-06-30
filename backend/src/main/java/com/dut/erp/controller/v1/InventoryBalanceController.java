@@ -7,6 +7,8 @@ import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.InventoryBalanceService;
 import jakarta.validation.Valid;
+import com.dut.erp.dto.response.StockLayerResponse;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -65,5 +67,24 @@ public class InventoryBalanceController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
         inventoryBalanceService.getBalanceById(organizationId, warehouseId, id));
+  }
+
+  /**
+   * GET /api/v1/organizations/{organizationId}/warehouses/{warehouseId}/balances/products/{productId}/layers
+   * Returns the list of active stock layers (virtual lots) for a product in a warehouse.
+   */
+  @GetMapping("/products/{productId}/layers")
+  @PreAuthorize("""
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('warehouses:select', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<List<StockLayerResponse>> getActiveLayers(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID warehouseId,
+      @PathVariable UUID productId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(
+        inventoryBalanceService.getActiveLayers(organizationId, warehouseId, productId));
   }
 }

@@ -7,14 +7,16 @@ import {
   getAiInventoryAnalysis,
   getAiReorderRecommendations,
   confirmAiReorders,
+  getStockLayers,
   ProductAbcXyz,
   AiInventoryAnalysisResponse,
-  AiReorderItem
+  AiReorderItem,
+  StockLayer,
 } from '@/features/inventory/services/inventoryService';
 import { Warehouse, InventoryBalance } from '@/features/inventory/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, RefreshCcw, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, Brain, ShoppingCart, Check, Loader2 } from 'lucide-react';
+import { Search, Filter, RefreshCcw, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle, CheckCircle, Brain, ShoppingCart, Check, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { TablePagination } from '@/components/ui/table-pagination';
@@ -41,6 +43,34 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
   const [reorderRecs, setReorderRecs] = useState<AiReorderItem[]>([]);
   const [isLoadingRecs, setIsLoadingRecs] = useState(false);
   const [isConfirmingReorder, setIsConfirmingReorder] = useState(false);
+
+  // Expanded Stock Layers State
+  const [expandedProductIds, setExpandedProductIds] = useState<Record<string, boolean>>({});
+  const [productLayers, setProductLayers] = useState<Record<string, StockLayer[]>>({});
+  const [isLoadingLayers, setIsLoadingLayers] = useState<Record<string, boolean>>({});
+
+  const toggleProductExpand = async (productId: string) => {
+    if (!productId) return;
+    const isExpanded = expandedProductIds[productId];
+    
+    if (!isExpanded && !productLayers[productId]) {
+      setIsLoadingLayers(prev => ({ ...prev, [productId]: true }));
+      try {
+        const layers = await getStockLayers(orgId, selectedWarehouseId, productId);
+        setProductLayers(prev => ({ ...prev, [productId]: layers }));
+      } catch (err) {
+        console.error("Failed to load stock layers", err);
+        toast.error("Failed to load detailed stock layers.");
+      } finally {
+        setIsLoadingLayers(prev => ({ ...prev, [productId]: false }));
+      }
+    }
+    
+    setExpandedProductIds(prev => ({
+      ...prev,
+      [productId]: !isExpanded
+    }));
+  };
 
   // Load warehouses first
   useEffect(() => {
@@ -302,6 +332,7 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white border-b border-[#e0e0e0]">
+                  <th className="w-10 py-3 px-4"></th>
                   <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">SKU Code</th>
                   <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Product Name</th>
                   <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider text-right">Unit Price</th>
@@ -313,14 +344,14 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-[#898989] text-[13px]">
+                    <td colSpan={7} className="py-12 text-center text-[#898989] text-[13px]">
                       <RefreshCcw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#0066cc]" />
                       Fetching inventory balances...
                     </td>
                   </tr>
                 ) : balances.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-[#898989] text-[13px]">
+                    <td colSpan={7} className="py-12 text-center text-[#898989] text-[13px]">
                       No stock balance records found in this warehouse.
                     </td>
                   </tr>
@@ -329,56 +360,120 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
                     const qty = bal.quantity || 0;
                     const isLowStock = qty <= 5;
                     const formattedDate = new Date(bal.updatedAt).toLocaleString();
+                    const productId = bal.product?.id || '';
+                    const isExpanded = expandedProductIds[productId] || false;
+                    const layers = productLayers[productId] || [];
+                    const isLoadingLayersForProduct = isLoadingLayers[productId] || false;
 
                     return (
-                      <tr
-                        key={bal.id}
-                        className="border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f9fafb] transition-colors"
-                      >
-                        <td className="py-3.5 px-4 font-mono text-[12px] font-[600] text-[#0066cc]">
-                          {bal.product?.sku || 'N/A'}
-                        </td>
-                        <td className="py-3.5 px-4 text-[13px] font-[500] text-[#242424]">
-                          {bal.product?.name || 'Unknown Product'}
-                        </td>
-                        <td className="py-3.5 px-4 text-[13px] text-right font-[500] text-[#4a4a4a]">
-                          ${(bal.product?.purchasePrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <span className={cn(
-                            "text-[14px] font-[700]",
-                            isLowStock ? "text-[#dc3545]" : "text-[#242424]"
-                          )}>
-                            {qty.toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <span className={cn(
-                            "inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-[4px] min-w-[110px] justify-center text-[11px] font-[600]",
-                            qty === 0
-                              ? "bg-[#fbe5d6] text-[#c65911]"
-                              : isLowStock
-                                ? "bg-[#fff2cc] text-[#d68100]"
-                                : "bg-[#e2f0d9] text-[#385723]"
-                          )}>
-                            {qty === 0 ? (
-                              <>Out of Stock</>
-                            ) : isLowStock ? (
-                              <><AlertTriangle className="w-3 h-3 mr-1" /> Low Stock</>
-                            ) : (
-                              <><CheckCircle className="w-3 h-3 mr-1" /> In Stock</>
-                            )}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-[12px] text-[#898989]">
-                          {formattedDate}
-                          {bal.updatedBy && (
-                            <span className="block text-[10px] text-[#b0b0b0]">
-                              by {bal.updatedBy.firstName} {bal.updatedBy.lastName}
-                            </span>
+                      <React.Fragment key={bal.id}>
+                        <tr
+                          className={cn(
+                            "border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f9fafb] transition-colors cursor-pointer",
+                            isExpanded && "bg-[#f8faff]"
                           )}
-                        </td>
-                      </tr>
+                          onClick={() => toggleProductExpand(productId)}
+                        >
+                          <td className="py-3.5 px-4 text-center">
+                            <button className="text-[#898989] hover:text-[#0066cc] focus:outline-none" onClick={(e) => { e.stopPropagation(); toggleProductExpand(productId); }}>
+                              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                            </button>
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-[12px] font-[600] text-[#0066cc]">
+                            {bal.product?.sku || 'N/A'}
+                          </td>
+                          <td className="py-3.5 px-4 text-[13px] font-[500] text-[#242424]">
+                            {bal.product?.name || 'Unknown Product'}
+                          </td>
+                          <td className="py-3.5 px-4 text-[13px] text-right font-[500] text-[#4a4a4a]">
+                            ${(bal.product?.purchasePrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <span className={cn(
+                              "text-[14px] font-[700]",
+                              isLowStock ? "text-[#dc3545]" : "text-[#242424]"
+                            )}>
+                              {qty.toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <span className={cn(
+                              "inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-[4px] min-w-[110px] justify-center text-[11px] font-[600]",
+                              qty === 0
+                                ? "bg-[#fbe5d6] text-[#c65911]"
+                                : isLowStock
+                                  ? "bg-[#fff2cc] text-[#d68100]"
+                                  : "bg-[#e2f0d9] text-[#385723]"
+                            )}>
+                              {qty === 0 ? (
+                                <>Out of Stock</>
+                              ) : isLowStock ? (
+                                <><AlertTriangle className="w-3 h-3 mr-1" /> Low Stock</>
+                              ) : (
+                                <><CheckCircle className="w-3 h-3 mr-1" /> In Stock</>
+                              )}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-[12px] text-[#898989]">
+                            {formattedDate}
+                            {bal.updatedBy && (
+                              <span className="block text-[10px] text-[#b0b0b0]">
+                                by {bal.updatedBy.firstName} {bal.updatedBy.lastName}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr className="bg-[#fcfcfc] border-b border-[#e0e0e0]">
+                            <td colSpan={7} className="py-3 px-8">
+                              <div className="bg-white border border-[#e0e0e0] rounded p-4 shadow-inner space-y-3">
+                                <div className="flex justify-between items-center border-b border-[#f5f5f5] pb-2">
+                                  <span className="text-[12px] font-[700] text-[#242424]">Cost Layers Breakdown (FIFO Virtual Lots)</span>
+                                  <span className="text-[11px] text-[#898989]">Chronological list of receipts currently holding remaining stock</span>
+                                </div>
+                                
+                                {isLoadingLayersForProduct ? (
+                                  <div className="flex items-center justify-center py-6 text-[12px] text-[#898989]">
+                                    <Loader2 className="w-4 h-4 animate-spin text-[#0066cc] mr-2" />
+                                    Loading stock layers...
+                                  </div>
+                                ) : layers.length === 0 ? (
+                                  <div className="text-center py-6 text-[12px] text-[#898989]">
+                                    No active cost layers found. Default purchase price will be used for calculations.
+                                  </div>
+                                ) : (
+                                  <table className="w-full text-left border-collapse text-[11px] bg-white border border-[#e0e0e0]">
+                                    <thead>
+                                      <tr className="bg-[#f9f9f9] border-b border-[#e0e0e0] text-[#898989]">
+                                        <th className="py-2 px-3 font-[600]">Source Receipt / Document</th>
+                                        <th className="py-2 px-3 font-[600]">Receive Date</th>
+                                        <th className="py-2 px-3 text-right font-[600]">Original Qty</th>
+                                        <th className="py-2 px-3 text-right font-[600] text-[#0066cc]">Remaining Qty</th>
+                                        <th className="py-2 px-3 text-right font-[600]">Layer Unit Cost</th>
+                                        <th className="py-2 px-3 text-right font-[600]">Total Asset Value</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {layers.map((layer) => (
+                                        <tr key={layer.documentLineId} className="border-b border-[#f5f5f5] last:border-b-0">
+                                          <td className="py-2 px-3 font-[500] text-[#242424] font-mono">{layer.documentName}</td>
+                                          <td className="py-2 px-3 text-[#4a4a4a]">{new Date(layer.dateDone).toLocaleString()}</td>
+                                          <td className="py-2 px-3 text-right">{layer.originalQuantity.toLocaleString()}</td>
+                                          <td className="py-2 px-3 text-right font-[700] text-[#0066cc]">{layer.remainingQuantity.toLocaleString()}</td>
+                                          <td className="py-2 px-3 text-right font-mono">${layer.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                          <td className="py-2 px-3 text-right font-mono font-[600] text-[#28a745]">
+                                            ${(layer.remainingQuantity * layer.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   })
                 )}

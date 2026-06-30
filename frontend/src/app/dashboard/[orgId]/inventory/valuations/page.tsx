@@ -58,7 +58,7 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
   // Load confirmed sales orders for easy lookup select dropdown
   useEffect(() => {
     setIsLoadingOrders(true);
-    getOrders(orgId, { limit: 50 })
+    getOrders(orgId, { status: 'COMPLETED' })
       .then(res => {
         setSalesOrders(res.data || []);
       })
@@ -169,48 +169,7 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
         <span className="text-[14px] text-[#898989]">Trace product cost valuations, margins, and sales order cost of goods sold (COGS)</span>
       </div>
 
-      {/* KPI Overview row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6 shrink-0">
-        <div className="border border-[#e0e0e0] rounded-[4px] p-4 bg-[#fcfcfc] flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Total Warehouse Value</span>
-            <span className="text-[20px] font-[700] text-[#242424]">${totalWarehouseValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          <div className="w-10 h-10 bg-[#f0f4ff] rounded-[4px] flex items-center justify-center text-[#0066cc]">
-            <DollarSign className="w-5 h-5" />
-          </div>
-        </div>
 
-        <div className="border border-[#e0e0e0] rounded-[4px] p-4 bg-[#fcfcfc] flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Valuation Method</span>
-            <span className="text-[20px] font-[700] text-[#0066cc]">FIFO</span>
-          </div>
-          <div className="w-10 h-10 bg-[#f5f5f5] rounded-[4px] flex items-center justify-center text-[#898989]">
-            <Layers className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="border border-[#e0e0e0] rounded-[4px] p-4 bg-[#fcfcfc] flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Active SKU Categories</span>
-            <span className="text-[20px] font-[700] text-[#242424]">{activeCategoriesCount} categories</span>
-          </div>
-          <div className="w-10 h-10 bg-[#f5f5f5] rounded-[4px] flex items-center justify-center text-[#898989]">
-            <PieIcon className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="border border-[#e0e0e0] rounded-[4px] p-4 bg-[#fcfcfc] flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-[600] text-[#898989] uppercase tracking-wider block mb-1">Avg Gross Margin</span>
-            <span className="text-[20px] font-[700] text-[#28a745]">32.4%</span>
-          </div>
-          <div className="w-10 h-10 bg-[#e2f0d9] rounded-[4px] flex items-center justify-center text-[#385723]">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
 
       {/* Main Charts & Lookup sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -317,50 +276,37 @@ export default function ValuationsPage({ params }: { params: Promise<{ orgId: st
                     <tr className="bg-[#f5f5f5] border-b border-[#e0e0e0]">
                       <th className="py-2 px-3 font-[600]">Product Name</th>
                       <th className="py-2 px-3 text-right font-[600]">Qty Sold</th>
-                      <th className="py-2 px-3 text-right font-[600]">Unit Cost</th>
-                      <th className="py-2 px-3 text-right font-[600]">Total Value</th>
-                      <th className="py-2 px-3 text-center font-[600]">Method</th>
+                      <th className="py-2 px-3 text-right font-[600]">Sale Price</th>
+                      <th className="py-2 px-3 text-right font-[600]">Total Sales</th>
+                      <th className="py-2 px-3 text-right font-[600]">Purchase Price (COGS)</th>
+                      <th className="py-2 px-3 text-right font-[600]">Total COGS</th>
+                      <th className="py-2 px-3 text-right font-[600]">Gross Profit</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {valuations.map((val) => (
-                      <tr key={val.id} className="border-b border-[#f5f5f5] last:border-b-0">
-                        <td className="py-2 px-3 font-[500] text-[#242424]">{val.productName}</td>
-                        <td className="py-2 px-3 text-right">{val.quantity.toLocaleString()}</td>
-                        <td className="py-2 px-3 text-right font-mono">${val.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                        <td className="py-2 px-3 text-right font-mono font-[600] text-[#dc3545]">${val.totalValuation.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                        <td className="py-2 px-3 text-center">
-                          <span className="bg-[#f0f4ff] text-[#0066cc] px-1.5 py-0.5 rounded text-[10px] font-mono uppercase font-[600]">
-                            {val.method}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {valuations.map((val) => {
+                      const totalSales = (val.salesPrice || 0) * val.quantity;
+                      const totalCogs = (val.unitCost || 0) * val.quantity;
+                      const profit = totalSales - totalCogs;
+                      return (
+                        <tr key={val.id} className="border-b border-[#f5f5f5] last:border-b-0">
+                          <td className="py-2 px-3 font-[500] text-[#242424]">{val.productName}</td>
+                          <td className="py-2 px-3 text-right">{val.quantity.toLocaleString()}</td>
+                          <td className="py-2 px-3 text-right font-mono">${(val.salesPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          <td className="py-2 px-3 text-right font-mono font-[600] text-[#242424]">${totalSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          <td className="py-2 px-3 text-right font-mono">${(val.unitCost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          <td className="py-2 px-3 text-right font-mono font-[600] text-[#dc3545]">${totalCogs.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          <td className="py-2 px-3 text-right font-mono font-[600] text-[#28a745]">${profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
 
-          {/* Bar Chart: Stock Valuation Trend */}
-          <div className="border border-[#e0e0e0] rounded-[4px] p-5 bg-white shadow-sm">
-            <h3 className="text-[14px] font-[700] text-[#242424] mb-4">Stock Valuation Trend (Last 6 Months)</h3>
-            <div className="h-[220px]">
-              {chartTrendData.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-[#898989]">No trend data available</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartTrendData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
-                    <XAxis dataKey="month" stroke="#898989" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#898989" fontSize={11} tickLine={false} />
-                    <Tooltip formatter={(value, name) => [`$${Number(value).toLocaleString()}`, name === 'value' ? 'Valuation' : name.toString().toUpperCase()]} />
-                    <Bar dataKey="value" name="Valuation" fill="#0066cc" radius={[2, 2, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
+
 
         </div>
 

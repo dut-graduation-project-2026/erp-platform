@@ -83,8 +83,13 @@ public interface InventoryDocumentRepository extends JpaRepository<InventoryDocu
 
   List<InventoryDocument> findAllByWarehouseIdAndDocumentStatus(UUID warehouseId, DocumentStatus documentStatus);
 
-  Optional<InventoryDocument> findByReferenceTypeAndReferenceIdAndDocumentType(
+  Optional<InventoryDocument> findFirstByReferenceTypeAndReferenceIdAndDocumentTypeOrderByCreatedAtDesc(
       ReferenceType referenceType, UUID referenceId, DocumentType documentType);
+
+  default Optional<InventoryDocument> findByReferenceTypeAndReferenceIdAndDocumentType(
+      ReferenceType referenceType, UUID referenceId, DocumentType documentType) {
+    return findFirstByReferenceTypeAndReferenceIdAndDocumentTypeOrderByCreatedAtDesc(referenceType, referenceId, documentType);
+  }
 
   @Query("""
       SELECT d FROM InventoryDocument d

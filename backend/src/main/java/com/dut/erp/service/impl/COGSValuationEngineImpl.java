@@ -200,4 +200,58 @@ public class COGSValuationEngineImpl implements COGSValuationEngine {
       inventoryDocumentLineRepository.saveAll(updatedLines);
     }
   }
+
+  @Override
+  public BigDecimal estimateUnitCost(Product product, UUID warehouseId, BigDecimal quantity) {
+    CogsMethod method = product.getCogsMethod() != null ? product.getCogsMethod() : CogsMethod.FIFO;
+    BigDecimal qtyToValuate = quantity.abs();
+
+    if (qtyToValuate.compareTo(BigDecimal.ZERO) <= 0) {
+      return product.getPurchasePrice();
+    }
+
+    if (method == CogsMethod.AVERAGE) {
+      List<InventoryDocumentLine> layers = inventoryDocumentLineRepository
+          .findAvailableInboundLayersFifo(product.getId(), warehouseId);
+
+      BigDecimal totalValuation = BigDecimal.ZERO;
+      BigDecimal totalQty = BigDecimal.ZERO;
+
+      for (InventoryDocumentLine layer : layers) {
+        totalValuation = totalValuation.add(layer.getRemainingQuantity().multiply(layer.getUnitCost()));
+        totalQty = totalQty.add(layer.getRemainingQuantity());
+      }
+
+      if (totalQty.compareTo(BigDecimal.ZERO) > 0) {
+        return totalValuation.divide(totalQty, 4, RoundingMode.HALF_UP);
+      }
+      return product.getPurchasePrice();
+    } else {
+      List<InventoryDocumentLine> layers = (method == CogsMethod.LIFO)
+          ? inventoryDocumentLineRepository.findAvailableInboundLayersLifo(product.getId(), warehouseId)
+          : inventoryDocumentLineRepository.findAvailableInboundLayersFifo(product.getId(), warehouseId);
+
+      BigDecimal remainingToValuate = qtyToValuate;
+      BigDecimal totalValuation = BigDecimal.ZERO;
+
+      for (InventoryDocumentLine layer : layers) {
+        if (remainingToValuate.compareTo(BigDecimal.ZERO) <= 0) {
+          break;
+        }
+        BigDecimal available = layer.getRemainingQuantity();
+        BigDecimal quantityFromLayer = available.min(remainingToValuate);
+
+        BigDecimal layerCost = layer.getUnitCost();
+        totalValuation = totalValuation.add(quantityFromLayer.multiply(layerCost));
+        remainingToValuate = remainingToValuate.subtract(quantityFromLayer);
+      }
+
+      if (remainingToValuate.compareTo(BigDecimal.ZERO) > 0) {
+        BigDecimal fallbackCost = product.getPurchasePrice();
+        totalValuation = totalValuation.add(remainingToValuate.multiply(fallbackCost));
+      }
+
+      return totalValuation.divide(qtyToValuate, 4, RoundingMode.HALF_UP);
+    }
+  }
 }

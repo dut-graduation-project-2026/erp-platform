@@ -465,8 +465,18 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
       return mapToResponse(doc);
     }
 
-    if (doc.getDocumentStatus() != DocumentStatus.CONFIRMED) {
-      throw new BadRequestException("Document must be in CONFIRMED status to be completed. Current status: " + doc.getDocumentStatus());
+    if (doc.getDocumentStatus() != DocumentStatus.CONFIRMED && doc.getDocumentStatus() != DocumentStatus.SENT) {
+      throw new BadRequestException("Document must be in CONFIRMED or SENT status to be completed. Current status: " + doc.getDocumentStatus());
+    }
+
+    if (doc.getDocumentStatus() == DocumentStatus.SENT) {
+      doc.setDocumentStatus(DocumentStatus.COMPLETED);
+      doc.setDateDone(Instant.now());
+      doc = inventoryDocumentRepository.save(doc);
+      if (doc.getDocumentType() == DocumentType.ISSUE && doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
+        checkAndCompleteOrder(doc.getReferenceId());
+      }
+      return mapToResponse(doc);
     }
 
     boolean hasPositiveAdjustment = false;
@@ -504,7 +514,7 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
     }
 
     if (doc.getDocumentType() == DocumentType.ISSUE || doc.getDocumentType() == DocumentType.TRANSFER_OUT) {
-      throw new BadRequestException("Outbound documents can only be sent, not completed. Use SENT action.");
+      throw new BadRequestException("Outbound documents must be sent first before they can be completed.");
     }
 
     // Calculate COGS and initialize remaining quantities
@@ -642,10 +652,26 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
     if (doc.getReferenceType() == ReferenceType.REPLENISHMENT && doc.getReferenceId() != null) {
       replenishmentRequestRepository.findById(doc.getReferenceId()).ifPresent(req -> {
+        ReplenishmentStatus oldReqStatus = req.getStatus();
         req.setStatus(ReplenishmentStatus.CANCELED);
         replenishmentRequestRepository.save(req);
+        applicationEventPublisher.publishEvent(new ReplenishmentRequestStatusChangedEvent(
+            req.getId(), oldReqStatus, ReplenishmentStatus.CANCELED));
       });
     }
+
+    // Also cancel any replenishment request created from this source document
+    final UUID finalDocId = doc.getId();
+    replenishmentRequestRepository.findByInventoryDocumentId(finalDocId).ifPresent(req -> {
+      if (req.getStatus() != ReplenishmentStatus.CANCELED) {
+        ReplenishmentStatus oldReqStatus = req.getStatus();
+        req.setStatus(ReplenishmentStatus.CANCELED);
+        replenishmentRequestRepository.save(req);
+        applicationEventPublisher.publishEvent(new ReplenishmentRequestStatusChangedEvent(
+            req.getId(), oldReqStatus, ReplenishmentStatus.CANCELED));
+        log.info("Automatically cancelled replenishment request {} because its source inventory document {} was CANCELLED", req.getId(), finalDocId);
+      }
+    });
 
     if (doc.getReferenceType() == ReferenceType.SALES_ORDER) {
       Order order = orderRepository.findById(doc.getReferenceId())
@@ -788,6 +814,15 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         doc.setDocumentStatus(DocumentStatus.CONFIRMED);
         inventoryDocumentRepository.save(doc);
         
+        if (doc.getDocumentType() == DocumentType.ISSUE && doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
+          orderRepository.findById(doc.getReferenceId()).ifPresent(order -> {
+            OrderStatus oldStatus = order.getStatus();
+            order.setStatus(OrderStatus.CONFIRMED);
+            orderRepository.save(order);
+            applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.CONFIRMED));
+          });
+        }
+        
         if (doc.getDocumentType() == DocumentType.TRANSFER_OUT && doc.getReferenceId() != null) {
           inventoryDocumentRepository.findById(doc.getReferenceId()).ifPresent(docIn -> {
             if (docIn.getDocumentStatus() == DocumentStatus.DRAFT) {
@@ -799,6 +834,15 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
       } else {
         doc.setDocumentStatus(DocumentStatus.WAITING_FOR_STOCK);
         inventoryDocumentRepository.save(doc);
+
+        if (doc.getDocumentType() == DocumentType.ISSUE && doc.getReferenceType() == ReferenceType.SALES_ORDER && doc.getReferenceId() != null) {
+          orderRepository.findById(doc.getReferenceId()).ifPresent(order -> {
+            OrderStatus oldStatus = order.getStatus();
+            order.setStatus(OrderStatus.WAITING_FOR_STOCK);
+            orderRepository.save(order);
+            applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.WAITING_FOR_STOCK));
+          });
+        }
 
         if (replenishmentRequestRepository.findByInventoryDocumentId(doc.getId()).isEmpty()) {
           ReplenishmentRequest replenishmentRequest = ReplenishmentRequest.builder()
@@ -940,13 +984,34 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
 
   private InventoryDocumentResponse mapToResponse(InventoryDocument doc) {
     List<InventoryDocumentLineResponse> lines = doc.getLines().stream()
-        .map(move -> new InventoryDocumentLineResponse(
-            move.getId(),
-            move.getProduct().getId(),
-            move.getProduct().getName(),
-            move.getQuantity(),
-            move.getUnitCost(),
-            move.getValuation()))
+        .map(move -> {
+            java.math.BigDecimal estimatedCost = move.getUnitCost();
+            java.math.BigDecimal estimatedValuation = move.getValuation();
+            
+            if (doc.getDocumentStatus() == DocumentStatus.DRAFT || 
+                doc.getDocumentStatus() == DocumentStatus.CONFIRMED || 
+                doc.getDocumentStatus() == DocumentStatus.WAITING_FOR_STOCK) {
+                if (doc.getDocumentType() == DocumentType.ISSUE || 
+                    doc.getDocumentType() == DocumentType.TRANSFER_OUT || 
+                    (doc.getDocumentType() == DocumentType.ADJUSTMENT && move.getQuantity().compareTo(java.math.BigDecimal.ZERO) < 0)) {
+                    estimatedCost = cogsValuationEngine.estimateUnitCost(
+                        move.getProduct(), 
+                        doc.getWarehouse().getId(), 
+                        move.getQuantity()
+                    );
+                    estimatedValuation = move.getQuantity().abs().multiply(estimatedCost);
+                }
+            }
+            
+            return new InventoryDocumentLineResponse(
+                move.getId(),
+                move.getProduct().getId(),
+                move.getProduct().getName(),
+                move.getQuantity(),
+                estimatedCost,
+                estimatedValuation
+            );
+        })
         .collect(Collectors.toList());
 
     UserBaseResponse createdByResp = doc.getCreatedBy() != null
@@ -1039,6 +1104,14 @@ public class InventoryDocumentServiceImpl implements InventoryDocumentService {
         orderRepository.save(order);
         log.info("Automatically completed order {} because both delivery and payment are completed.", order.getOrderNumber());
         applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.COMPLETED));
+      }
+    } else if (isDeliveryCompleted) {
+      OrderStatus oldStatus = order.getStatus();
+      if (oldStatus != OrderStatus.SENT && oldStatus != OrderStatus.COMPLETED) {
+        order.setStatus(OrderStatus.SENT);
+        orderRepository.save(order);
+        log.info("Order {} transitioned to SENT status because delivery is sent but invoice is not paid.", order.getOrderNumber());
+        applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.SENT));
       }
     }
   }

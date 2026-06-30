@@ -35,7 +35,11 @@ public interface ReplenishmentRequestRepository extends JpaRepository<Replenishm
 
   List<ReplenishmentRequest> findAllByWarehouseId(UUID warehouseId);
 
-  Optional<ReplenishmentRequest> findByInventoryDocumentId(UUID inventoryDocumentId);
+  Optional<ReplenishmentRequest> findFirstByInventoryDocumentId(UUID inventoryDocumentId);
+
+  default Optional<ReplenishmentRequest> findByInventoryDocumentId(UUID inventoryDocumentId) {
+    return findFirstByInventoryDocumentId(inventoryDocumentId);
+  }
 
   @Query("""
       SELECT r.id FROM ReplenishmentRequest r

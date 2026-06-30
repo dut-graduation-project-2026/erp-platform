@@ -51,46 +51,49 @@ class OpenAIClient:
             if not user_msg_found:
                 messages.append({"role": "user", "content": json_instruction})
 
-            # Try using completions.parse first
-            try:
-                kwargs["response_format"] = response_format
-                return await self.client.chat.completions.parse(**kwargs)
-            except Exception as parse_err:
-                logger.warning(f"completions.parse failed: {parse_err}. Falling back to completions.create with manual parsing.")
+            is_official_openai = "api.openai.com" in str(self.client.base_url).lower()
+
+            # Try using completions.parse first if official OpenAI endpoint
+            if is_official_openai:
+                try:
+                    kwargs["response_format"] = response_format
+                    return await self.client.chat.completions.parse(**kwargs)
+                except Exception as parse_err:
+                    logger.warning(f"completions.parse failed: {parse_err}. Falling back to completions.create with manual parsing.")
+            
+            # Fallback: request as a json_object for non-official endpoints or when parse fails
+            kwargs["response_format"] = {"type": "json_object"}
+            res = await self.client.chat.completions.create(**kwargs)
+            content = res.choices[0].message.content
+            
+            # Clean and parse content
+            if content:
+                content_clean = content.strip()
+                if content_clean.startswith("```"):
+                    content_clean = re.sub(r"^```(?:json)?\n", "", content_clean)
+                    content_clean = re.sub(r"\n```$", "", content_clean)
+                    content_clean = content_clean.strip()
                 
-                # Fallback: request as a json_object
-                kwargs["response_format"] = {"type": "json_object"}
-                res = await self.client.chat.completions.create(**kwargs)
-                content = res.choices[0].message.content
-                
-                # Clean and parse content
-                if content:
-                    content_clean = content.strip()
-                    if content_clean.startswith("```"):
-                        content_clean = re.sub(r"^```(?:json)?\n", "", content_clean)
-                        content_clean = re.sub(r"\n```$", "", content_clean)
-                        content_clean = content_clean.strip()
+                try:
+                    parsed_data = json.loads(content_clean)
+                    validated_model = response_format.model_validate(parsed_data)
                     
-                    try:
-                        parsed_data = json.loads(content_clean)
-                        validated_model = response_format.model_validate(parsed_data)
-                        
-                        class MockMessage:
-                            def __init__(self, parsed):
-                                self.parsed = parsed
-                                
-                        class MockChoice:
-                            def __init__(self, parsed):
-                                self.message = MockMessage(parsed)
-                                
-                        class MockResponse:
-                            def __init__(self, parsed):
-                                self.choices = [MockChoice(parsed)]
-                                
-                        return MockResponse(validated_model)
-                    except Exception as val_err:
-                        logger.error(f"Manual validation failed for content: {content}. Error: {val_err}")
-                        raise val_err
+                    class MockMessage:
+                        def __init__(self, parsed):
+                            self.parsed = parsed
+                            
+                    class MockChoice:
+                        def __init__(self, parsed):
+                            self.message = MockMessage(parsed)
+                            
+                    class MockResponse:
+                        def __init__(self, parsed):
+                            self.choices = [MockChoice(parsed)]
+                            
+                    return MockResponse(validated_model)
+                except Exception as val_err:
+                    logger.error(f"Manual validation failed for content: {content}. Error: {val_err}")
+                    raise val_err
 
         return await self.client.chat.completions.create(**kwargs)
 

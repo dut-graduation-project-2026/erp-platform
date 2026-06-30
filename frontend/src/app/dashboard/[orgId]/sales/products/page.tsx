@@ -145,12 +145,14 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
     if (product) {
       setSelectedProduct({
         ...product,
+        cogsMethod: product.cogsMethod || 'FIFO',
         categoryId: product.categoryId || product.category?.id || ''
       });
     } else {
       setSelectedProduct({
         name: '', sku: '', description: '',
         salesPrice: 0, purchasePrice: 0,
+        cogsMethod: 'FIFO',
         isActive: true, categoryId: categories[0]?.id || ''
       });
     }
@@ -544,8 +546,8 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                  </select>
                </div>
 
-               {/* Pricing — two columns */}
-               <div className="grid grid-cols-2 gap-6">
+               {/* Pricing & Valuation Method — three columns */}
+               <div className="grid grid-cols-3 gap-6">
                  <div>
                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sales Price ($) <span className="text-red-500">*</span></label>
                    <Input
@@ -563,6 +565,18 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                      onChange={e => setSelectedProduct({...selectedProduct, purchasePrice: Number(e.target.value)})}
                      className="h-10 border-[#d0d0d0] rounded-[4px] font-mono focus-visible:ring-0 focus-visible:border-[#0066cc]"
                    />
+                 </div>
+                 <div>
+                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Valuation Method <span className="text-red-500">*</span></label>
+                   <select
+                     value={selectedProduct.cogsMethod || 'FIFO'}
+                     onChange={e => setSelectedProduct({...selectedProduct, cogsMethod: e.target.value as any})}
+                     className="w-full h-10 px-3 border border-[#d0d0d0] rounded-[4px] bg-white text-[14px] focus:outline-none focus:border-[#0066cc]"
+                   >
+                     <option value="FIFO">FIFO (First-In, First-Out)</option>
+                     <option value="LIFO">LIFO (Last-In, First-Out)</option>
+                     <option value="AVERAGE">AVCO (Weighted Average)</option>
+                   </select>
                  </div>
                </div>
 

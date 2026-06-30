@@ -44,6 +44,7 @@ export interface Product {
   description: string;
   salesPrice: number;
   purchasePrice: number;
+  cogsMethod?: 'FIFO' | 'LIFO' | 'AVERAGE';
   isActive?: boolean;
   isArchived?: boolean;
   categoryId?: string;

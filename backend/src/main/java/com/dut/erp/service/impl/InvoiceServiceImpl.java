@@ -288,11 +288,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         .map(inv -> inv.getStatus() == InvoiceStatus.PAID)
         .orElse(false);
 
-    // 2. Check if the active warehouse issue document is completed
+    // 2. Check if the active warehouse issue document is completed or sent
     boolean isDeliveryCompleted = inventoryDocumentRepository
         .findByReferenceTypeAndReferenceIdAndDocumentType(
             ReferenceType.SALES_ORDER, order.getId(), DocumentType.ISSUE)
-        .map(doc -> doc.getDocumentStatus() == DocumentStatus.COMPLETED)
+        .map(doc -> doc.getDocumentStatus() == DocumentStatus.COMPLETED || doc.getDocumentStatus() == DocumentStatus.SENT)
         .orElse(false);
 
     // 3. If both are completed/paid -> Close the order
@@ -306,6 +306,14 @@ public class InvoiceServiceImpl implements InvoiceService {
         orderRepository.save(order);
         log.info("Automatically completed order {} because both delivery and payment are completed.", order.getOrderNumber());
         applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.COMPLETED));
+      }
+    } else if (isDeliveryCompleted) {
+      OrderStatus oldStatus = order.getStatus();
+      if (oldStatus != OrderStatus.SENT && oldStatus != OrderStatus.COMPLETED) {
+        order.setStatus(OrderStatus.SENT);
+        orderRepository.save(order);
+        log.info("Order {} transitioned to SENT status because delivery is sent but invoice is not paid.", order.getOrderNumber());
+        applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.SENT));
       }
     }
   }

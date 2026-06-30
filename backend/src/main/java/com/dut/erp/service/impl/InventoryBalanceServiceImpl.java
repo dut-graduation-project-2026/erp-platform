@@ -12,6 +12,8 @@ import com.dut.erp.mapper.InventoryBalanceMapper;
 import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.WarehouseRepository;
 import com.dut.erp.service.InventoryBalanceService;
+import com.dut.erp.dto.response.StockLayerResponse;
+import com.dut.erp.repository.InventoryDocumentLineRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +38,7 @@ public class InventoryBalanceServiceImpl implements InventoryBalanceService {
   private final InventoryBalanceRepository inventoryBalanceRepository;
   private final WarehouseRepository warehouseRepository;
   private final InventoryBalanceMapper inventoryBalanceMapper;
+  private final InventoryDocumentLineRepository inventoryDocumentLineRepository;
 
   @Override
   public PagedEntityResponse<InventoryBalanceBaseResponse> getBalancesByWarehouse(
@@ -102,6 +105,26 @@ public class InventoryBalanceServiceImpl implements InventoryBalanceService {
                         "Inventory balance not found with id: " + balanceId));
 
     return inventoryBalanceMapper.toResponse(balance);
+  }
+
+  @Override
+  public List<StockLayerResponse> getActiveLayers(UUID organizationId, UUID warehouseId, UUID productId) {
+    log.info("Fetching active stock layers for product {} in warehouse {} of organization {}", 
+        productId, warehouseId, organizationId);
+    
+    validateWarehouseBelongsToOrg(warehouseId, organizationId);
+
+    return inventoryDocumentLineRepository.findAvailableInboundLayersFifo(productId, warehouseId)
+        .stream()
+        .map(line -> new StockLayerResponse(
+            line.getId(),
+            line.getInventoryDocument().getName(),
+            line.getInventoryDocument().getDateDone(),
+            line.getQuantity(),
+            line.getRemainingQuantity(),
+            line.getUnitCost()
+        ))
+        .collect(Collectors.toList());
   }
 
   // ---- Private helpers ----

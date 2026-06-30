@@ -109,6 +109,7 @@ public class ProductServiceImpl implements ProductService {
             .purchasePrice(request.purchasePrice())
             .salesPrice(request.salesPrice())
             .description(request.description())
+            .cogsMethod(request.cogsMethod() != null ? request.cogsMethod() : com.dut.erp.enums.CogsMethod.FIFO)
             .image(request.image())
             .build();
 
@@ -151,6 +152,7 @@ public class ProductServiceImpl implements ProductService {
     product.setSalesPrice(request.salesPrice());
     product.setDescription(request.description());
     product.setCategory(category);
+    product.setCogsMethod(request.cogsMethod() != null ? request.cogsMethod() : com.dut.erp.enums.CogsMethod.FIFO);
     product.setImage(request.image());
 
     product = productRepository.save(product);

@@ -15,6 +15,7 @@ public record StockValuationResponse(
     BigDecimal quantity,
     BigDecimal unitCost,
     BigDecimal totalValuation,
+    BigDecimal salesPrice,
     CogsMethod method,
     Instant createdAt
 ) {}

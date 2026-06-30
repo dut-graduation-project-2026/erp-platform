@@ -12,6 +12,7 @@ import {
   StockValuation,
   RouteProposalResponse,
   ConfirmRouteRequest,
+  StockLayer,
 } from '../types';
 
 // ─── WAREHOUSE CRUD ──────────────────────────────────────────────────────────
@@ -372,5 +373,16 @@ export const confirmAiReorders = async (
     recommendations,
     { params: { warehouseId } }
   );
+};
+
+export const getStockLayers = async (
+  orgId: string,
+  warehouseId: string,
+  productId: string
+): Promise<StockLayer[]> => {
+  const response = await apiClient.get<StockLayer[]>(
+    `/organizations/${orgId}/warehouses/${warehouseId}/balances/products/${productId}/layers`
+  );
+  return response.data;
 };
 
