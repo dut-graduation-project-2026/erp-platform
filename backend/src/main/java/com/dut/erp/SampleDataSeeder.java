@@ -1610,7 +1610,7 @@ public class SampleDataSeeder implements CommandLineRunner {
         permissionsByCode, warehousesModule, "warehouses:delete", "Delete warehouses");
 
     // Inventory Documents module
-    ErpModule invDocsModule = getOrCreateModule(modulesByCode, "Inventory Documents", "inventory_documents", "Inventory documents management");
+    ErpModule invDocsModule = getOrCreateModule(modulesByCode, "Inventory Documents", "inventory-documents", "Inventory documents management");
     createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:create", "Create inventory documents");
     createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:read", "Read and list inventory documents");
     createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:select", "Select inventory document details");
@@ -1618,7 +1618,7 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:delete", "Delete inventory documents");
 
     // Inventory Transactions module
-    ErpModule invTransModule = getOrCreateModule(modulesByCode, "Inventory Transactions", "inventory_transactions", "Inventory transactions management");
+    ErpModule invTransModule = getOrCreateModule(modulesByCode, "Inventory Transactions", "inventory-transactions", "Inventory transactions management");
     createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:create", "Create inventory transactions");
     createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:read", "Read and list inventory transactions");
     createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:select", "Select inventory transaction details");
@@ -1626,7 +1626,7 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:delete", "Delete inventory transactions");
 
     // Replenishment Requests module
-    ErpModule replenishmentModule = getOrCreateModule(modulesByCode, "Replenishment Requests", "replenishment_requests", "Replenishment requests management");
+    ErpModule replenishmentModule = getOrCreateModule(modulesByCode, "Replenishment Requests", "replenishment-requests", "Replenishment requests management");
     createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:create", "Create replenishment requests");
     createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:read", "Read and list replenishment requests");
     createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:select", "Select replenishment request details");
@@ -1634,7 +1634,7 @@ public class SampleDataSeeder implements CommandLineRunner {
     createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:delete", "Delete replenishment requests");
 
     // Stock Valuations module
-    ErpModule stockValuationsModule = getOrCreateModule(modulesByCode, "Stock Valuations", "stock_valuations", "Stock valuations management");
+    ErpModule stockValuationsModule = getOrCreateModule(modulesByCode, "Stock Valuations", "stock-valuations", "Stock valuations management");
     createPermissionIfNotExists(permissionsByCode, stockValuationsModule, "stock-valuations:create", "Create stock valuations");
     createPermissionIfNotExists(permissionsByCode, stockValuationsModule, "stock-valuations:read", "Read and list stock valuations");
     createPermissionIfNotExists(permissionsByCode, stockValuationsModule, "stock-valuations:select", "Select stock valuation details");
