@@ -328,8 +328,8 @@ export default function BalancesListPage({ params }: { params: Promise<{ orgId: 
       {/* ────────────────── TAB 1: REAL-TIME BALANCES ────────────────── */}
       {activeTab === 'balances' && (
         <div className="flex-1 overflow-auto bg-[#f8f8f8] p-4 -mx-6 -mb-6 border-t border-[#e0e0e0] flex flex-col justify-between">
-          <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-hidden">
-            <table className="w-full text-left border-collapse">
+          <div className="bg-white border border-[#e0e0e0] rounded-[4px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
                 <tr className="bg-white border-b border-[#e0e0e0]">
                   <th className="w-10 py-3 px-4"></th>

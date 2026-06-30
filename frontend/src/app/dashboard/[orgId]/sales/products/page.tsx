@@ -280,8 +280,8 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
               }}
               className="h-10 px-3 border border-[#d0d0d0] rounded-[4px] bg-white text-[13px] font-[500] text-[#242424] focus:outline-none focus:border-[#0066cc]"
             >
-              <option value="active">Active Products</option>
-              <option value="archived">Archived Products</option>
+              <option value="active">Active</option>
+              <option value="archived">Inactive</option>
             </select>
             {(hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.READ) || hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.SELECT)) && (
               <Button 
@@ -555,8 +555,8 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                  </select>
                </div>
 
-               {/* Pricing & Valuation Method — three columns */}
-               <div className="grid grid-cols-3 gap-6">
+               {/* Pricing - two columns */}
+               <div className="grid grid-cols-2 gap-6">
                  <div>
                    <label className="block text-[14px] font-[600] text-[#242424] mb-1">Sales Price ($) <span className="text-red-500">*</span></label>
                    <Input
@@ -575,18 +575,20 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                      className="h-10 border-[#d0d0d0] rounded-[4px] font-mono focus-visible:ring-0 focus-visible:border-[#0066cc]"
                    />
                  </div>
-                 <div>
-                   <label className="block text-[14px] font-[600] text-[#242424] mb-1">Valuation Method <span className="text-red-500">*</span></label>
-                   <select
-                     value={selectedProduct.cogsMethod || 'FIFO'}
-                     onChange={e => setSelectedProduct({...selectedProduct, cogsMethod: e.target.value as any})}
-                     className="w-full h-10 px-3 border border-[#d0d0d0] rounded-[4px] bg-white text-[14px] focus:outline-none focus:border-[#0066cc]"
-                   >
-                     <option value="FIFO">FIFO (First-In, First-Out)</option>
-                     <option value="LIFO">LIFO (Last-In, First-Out)</option>
-                     <option value="AVERAGE">AVCO (Weighted Average)</option>
-                   </select>
-                 </div>
+               </div>
+
+               {/* Valuation Method - full width */}
+               <div>
+                 <label className="block text-[14px] font-[600] text-[#242424] mb-1">Valuation Method <span className="text-red-500">*</span></label>
+                 <select
+                   value={selectedProduct.cogsMethod || 'FIFO'}
+                   onChange={e => setSelectedProduct({...selectedProduct, cogsMethod: e.target.value as any})}
+                   className="w-full h-10 px-3 border border-[#d0d0d0] rounded-[4px] bg-white text-[14px] focus:outline-none focus:border-[#0066cc]"
+                 >
+                   <option value="FIFO">FIFO (First-In, First-Out)</option>
+                   <option value="LIFO">LIFO (Last-In, First-Out)</option>
+                   <option value="AVERAGE">AVCO (Weighted Average)</option>
+                 </select>
                </div>
 
                {!!selectedProduct.id && (

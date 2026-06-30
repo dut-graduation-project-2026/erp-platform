@@ -12,6 +12,7 @@ import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Product;
 import com.dut.erp.entity.ProductCategory;
 import com.dut.erp.entity.Warehouse;
+import com.dut.erp.entity.OrderItem;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.ProductMapper;
 import com.dut.erp.repository.InventoryBalanceRepository;
@@ -19,7 +20,10 @@ import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.ProductCategoryRepository;
 import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.repository.WarehouseRepository;
+import com.dut.erp.repository.OrderItemRepository;
+import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.service.ProductService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,6 +50,8 @@ public class ProductServiceImpl implements ProductService {
   private final ProductCategoryRepository productCategoryRepository;
   private final WarehouseRepository warehouseRepository;
   private final InventoryBalanceRepository inventoryBalanceRepository;
+  private final OrderItemRepository orderItemRepository;
+  private final OrderRepository orderRepository;
   private final ProductMapper productMapper;
 
   @Override
@@ -168,6 +174,25 @@ public class ProductServiceImpl implements ProductService {
     product.setArchived(isArchived);
     product = productRepository.save(product);
     log.info("Updated archive status for product {} in organization {}", productId, organizationId);
+
+    if (isArchived) {
+      List<OrderItem> itemsToDelete = orderItemRepository.findByProductIdAndOrderStatus(productId, com.dut.erp.enums.OrderStatus.DRAFT);
+      if (!itemsToDelete.isEmpty()) {
+        java.util.Set<com.dut.erp.entity.Order> ordersToRecalculate = itemsToDelete.stream()
+            .map(OrderItem::getOrder)
+            .collect(Collectors.toSet());
+
+        orderItemRepository.deleteAll(itemsToDelete);
+
+        for (com.dut.erp.entity.Order order : ordersToRecalculate) {
+          BigDecimal newTotal = orderItemRepository.sumSubtotalByOrderId(order.getId());
+          order.setTotalAmount(newTotal);
+          orderRepository.save(order);
+          log.info("Recalculated totalAmount for draft order {} to {}", order.getOrderNumber(), newTotal);
+        }
+      }
+    }
+
     return productMapper.toResponse(product);
   }
 
