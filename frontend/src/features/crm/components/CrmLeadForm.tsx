@@ -11,7 +11,6 @@ import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getSaleTeams, getSaleTeamById } from '../services/crmService';
 import { getPartners, createPartner } from '@/features/sales/services/salesService';
-import { fetchUsersApi } from '@/features/organization/services/userService';
 import { toast } from 'sonner';
 import { PERMISSIONS } from '@/config/permissions';
 import { APP_ROUTES } from '@/config/constants';
@@ -41,7 +40,6 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
 
   const [saleTeams, setSaleTeams] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState<any>({ name: '', type: 'INDIVIDUAL', code: '', email: '', phone: '', address: '', taxCode: '', contacts: [] });
@@ -58,11 +56,6 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
     getPartners(orgId, { limit: 100 })
       .then(res => setPartners(res.data || []))
       .catch(err => console.error("Failed to load partners", err));
-
-    // Load Users (Salespersons)
-    fetchUsersApi({ organizationId: orgId, limit: 100 })
-      .then(res => setUsers(res.data || []))
-      .catch(err => console.error("Failed to load users", err));
 
     // Load initial team members if a team is already selected
     if (formData.saleTeamId) {

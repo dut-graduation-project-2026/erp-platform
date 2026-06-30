@@ -85,9 +85,13 @@ public class LeadServiceImpl implements LeadService {
           ? leadRepository.findIdsByOrganizationIdAndSearch(organizationId, search, pageable)
           : leadRepository.findIdsByOrganizationId(organizationId, pageable);
     } else {
+      List<UUID> teamIds = saleTeamRepository.findIdsByOrganizationIdAndUserId(organizationId, currentUser.getId());
+      if (teamIds.isEmpty()) {
+        teamIds = List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+      }
       ids = (search != null && !search.trim().isEmpty())
-          ? leadRepository.findIdsByOrganizationIdAndSearchAndUser(organizationId, search, currentUser.getId(), pageable)
-          : leadRepository.findIdsByOrganizationIdAndUser(organizationId, currentUser.getId(), pageable);
+          ? leadRepository.findIdsByOrganizationIdAndSearchAndUser(organizationId, search, currentUser.getId(), teamIds, pageable)
+          : leadRepository.findIdsByOrganizationIdAndUser(organizationId, currentUser.getId(), teamIds, pageable);
     }
 
     if (ids.isEmpty()) {

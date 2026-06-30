@@ -75,6 +75,15 @@ export const getSaleTeams = async (
   return response.data;
 };
 
+export const getMySaleTeams = async (
+  orgId: string
+): Promise<SaleTeamResponse[]> => {
+  const response = await apiClient.get<SaleTeamResponse[]>(
+    `${API_ENDPOINTS.CRM.SALE_TEAMS(orgId)}/me`
+  );
+  return response.data;
+};
+
 export const getSaleTeamById = async (orgId: string, id: string): Promise<SaleTeamResponse> => {
   const response = await apiClient.get<SaleTeamResponse>(`${API_ENDPOINTS.CRM.SALE_TEAMS(orgId)}/${id}`);
   return response.data;

@@ -131,10 +131,10 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // 🟠 BƯỚC 4: Handle 403 - Access denied (permission issue)
-    if (error.response?.status === 403) {
-      toast.error('Access denied. You do not have permission to perform this action.');
-    }
+    // // 🟠 BƯỚC 4: Handle 403 - Access denied (permission issue)
+    // if (error.response?.status === 403) {
+    //   toast.error('Access denied. You do not have permission to perform this action.');
+    // }
 
     // Generic error handling for other HTTP errors
     if (error.response) {

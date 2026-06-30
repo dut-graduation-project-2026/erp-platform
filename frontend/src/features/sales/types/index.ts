@@ -142,6 +142,8 @@ export interface SaleOrder {
   invoiceId?: string;
   invoiceNumber?: string;
   invoiceStatus?: InvoiceStatus;
+  saleTeamId?: string;
+  saleTeamName?: string;
 }
 
 // ─── Invoice (Tích hợp thực tế backend) ───────────────────────────

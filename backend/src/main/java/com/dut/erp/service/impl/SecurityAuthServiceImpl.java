@@ -134,11 +134,18 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
     if (hasReadAllPermission) {
       return true;
     }
+    if (lead.getCreatedBy() != null && lead.getCreatedBy().getId().equals(userDetails.getId())) {
+      return true;
+    }
     if (lead.getSalePerson() != null && lead.getSalePerson().getId().equals(userDetails.getId())) {
       return true;
     }
     if (lead.getSaleTeam() != null && lead.getSaleTeam().getLeader() != null
         && lead.getSaleTeam().getLeader().getId().equals(userDetails.getId())) {
+      return true;
+    }
+    if (lead.getSaleTeam() != null && lead.getSaleTeam().getMembers() != null
+        && lead.getSaleTeam().getMembers().stream().anyMatch(m -> m.getId().equals(userDetails.getId()))) {
       return true;
     }
     log.warn("User {} denied access to lead {}", userDetails.getId(), lead.getId());
@@ -162,11 +169,18 @@ public class SecurityAuthServiceImpl implements SecurityAuthService {
     }
     if (order.getLead() != null) {
       Lead lead = order.getLead();
+      if (lead.getCreatedBy() != null && lead.getCreatedBy().getId().equals(userDetails.getId())) {
+        return true;
+      }
       if (lead.getSalePerson() != null && lead.getSalePerson().getId().equals(userDetails.getId())) {
         return true;
       }
       if (lead.getSaleTeam() != null && lead.getSaleTeam().getLeader() != null
           && lead.getSaleTeam().getLeader().getId().equals(userDetails.getId())) {
+        return true;
+      }
+      if (lead.getSaleTeam() != null && lead.getSaleTeam().getMembers() != null
+          && lead.getSaleTeam().getMembers().stream().anyMatch(m -> m.getId().equals(userDetails.getId()))) {
         return true;
       }
     }

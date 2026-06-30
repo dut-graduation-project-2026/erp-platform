@@ -446,7 +446,7 @@ export function SaleOrderForm({ order, orgId }: Props) {
                       </td>
                       <td className="py-2 px-4">
                         <input
-                          type="number" min={0.0001}
+                          type="number" min={1}
                           value={line.quantity}
                           onChange={(e) => handleLineChange(idx, 'quantity', Number(e.target.value))}
                           disabled={localStatus !== 'DRAFT'}

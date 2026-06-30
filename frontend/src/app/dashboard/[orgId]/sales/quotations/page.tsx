@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { PERMISSIONS } from '@/config/permissions';
 import { APP_ROUTES } from '@/config/constants';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { getSaleTeams, getMySaleTeams, SaleTeamResponse } from '@/features/crm/services/crmService';
 
 export default function QuotationsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const router = useRouter();
@@ -23,6 +24,10 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
 
   const { hasPermission } = usePermissions();
 
+  // Sales Teams State
+  const [saleTeams, setSaleTeams] = useState<SaleTeamResponse[]>([]);
+  const [selectedSaleTeamId, setSelectedSaleTeamId] = useState<string>('');
+
   // Pagination State
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -30,11 +35,31 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
   const [limit, setLimit] = useState(10);
 
   useEffect(() => {
+    const fetchSaleTeams = async () => {
+      try {
+        if (hasPermission(PERMISSIONS.ORDERS.READ_ALL)) {
+          const res = await getSaleTeams(orgId, { limit: 100 });
+          setSaleTeams(res.data || []);
+        } else {
+          const res = await getMySaleTeams(orgId);
+          setSaleTeams(res || []);
+        }
+      } catch (err) {
+        console.error('Error fetching sale teams:', err);
+      }
+    };
+    if (orgId) {
+      fetchSaleTeams();
+    }
+  }, [orgId]);
+
+  useEffect(() => {
     setIsLoading(true);
     getQuotations(orgId, {
       search: appliedSearch.trim(),
       page,
-      limit
+      limit,
+      saleTeamId: selectedSaleTeamId || undefined
     })
       .then(res => {
         setOrders(res.data || []);
@@ -43,7 +68,7 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [orgId, page, appliedSearch, limit]);
+  }, [orgId, page, appliedSearch, limit, selectedSaleTeamId]);
 
   const filteredOrders = useMemo(() => {
     return orders;
@@ -86,6 +111,23 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
               className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
             />
           </div>
+
+          <select
+            value={selectedSaleTeamId}
+            onChange={(e) => {
+              setSelectedSaleTeamId(e.target.value);
+              setPage(1);
+            }}
+            className="h-10 border border-[#d0d0d0] hover:border-[#a0a0a0] focus:border-[#0066cc] rounded-[4px] px-3 text-[13px] outline-none bg-white transition-colors min-w-[160px]"
+          >
+            <option value="">All Sales Teams</option>
+            {saleTeams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+
           {hasPermission(PERMISSIONS.ORDERS.CREATE) && (
             <Button
               onClick={() => router.push(APP_ROUTES.SALES.QUOTATION_NEW(orgId))}
@@ -104,6 +146,7 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
               <tr>
                 <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0] w-[120px]">Number</th>
                 <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0]">Customer</th>
+                <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0] w-[150px]">Sales Team</th>
                 <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0] w-[150px]">Order Date</th>
                 <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] border-r border-[#e0e0e0] w-[150px] text-right">Total</th>
                 <th className="px-4 py-3 text-[13px] font-[600] text-[#242424] w-[120px] text-center">Status</th>
@@ -111,9 +154,9 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={5} className="p-4 text-center text-[#898989]">Loading...</td></tr>
+                <tr><td colSpan={6} className="p-4 text-center text-[#898989]">Loading...</td></tr>
               ) : filteredOrders.length === 0 ? (
-                <tr><td colSpan={5} className="p-4 text-center text-[#898989]">No quotations found</td></tr>
+                <tr><td colSpan={6} className="p-4 text-center text-[#898989]">No quotations found</td></tr>
               ) : (
                 filteredOrders.map((order, idx) => (
                   <tr
@@ -123,6 +166,7 @@ export default function QuotationsListPage({ params }: { params: Promise<{ orgId
                   >
                     <td className="px-4 py-3 text-[13px] text-[#242424] font-[600] border-r border-[#e0e0e0]">{order.orderNumber || order.code}</td>
                     <td className="px-4 py-3 text-[13px] text-[#242424] border-r border-[#e0e0e0]">{order.partner?.name ?? order.lead?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#242424] border-r border-[#e0e0e0]">{order.saleTeamName ?? order.lead?.saleTeam?.name ?? '—'}</td>
                     <td className="px-4 py-3 text-[13px] text-[#242424] border-r border-[#e0e0e0]">{order.createdAt?.split('T')[0] || '—'}</td>
                     <td className="px-4 py-3 text-[13px] text-[#242424] text-right font-mono border-r border-[#e0e0e0]">${Number(order.totalAmount ?? 0).toLocaleString()}</td>
                     <td className="px-4 py-3 text-center">

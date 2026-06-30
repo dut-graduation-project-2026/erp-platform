@@ -49,25 +49,19 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       """
       SELECT o.id
       FROM Order o
-      WHERE o.organization.id = :organizationId
-      AND o.status = com.dut.erp.enums.OrderStatus.DRAFT
-      """)
-  Page<UUID> findQuotationIdsByOrganizationId(
-      @Param("organizationId") UUID organizationId, Pageable pageable);
-
-  @Query(
-      """
-      SELECT o.id
-      FROM Order o
+      LEFT JOIN o.lead l
       LEFT JOIN o.partner p
       WHERE o.organization.id = :organizationId
       AND o.status = com.dut.erp.enums.OrderStatus.DRAFT
-      AND (LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+      AND (:search IS NULL OR :search = '' 
+           OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+      AND (:saleTeamId IS NULL OR l.saleTeam.id = :saleTeamId)
       """)
-  Page<UUID> findQuotationIdsByOrganizationIdAndSearch(
+  Page<UUID> findQuotationIdsWithFilters(
       @Param("organizationId") UUID organizationId,
       @Param("search") String search,
+      @Param("saleTeamId") UUID saleTeamId,
       Pageable pageable);
 
   @Query(
@@ -75,35 +69,25 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       SELECT o.id
       FROM Order o
       LEFT JOIN o.lead l
-      LEFT JOIN l.salePerson sp
-      LEFT JOIN l.saleTeam st
-      WHERE o.organization.id = :organizationId
-      AND o.status = com.dut.erp.enums.OrderStatus.DRAFT
-      AND (sp.id = :userId OR st.leader.id = :userId)
-      """)
-  Page<UUID> findQuotationIdsByOrganizationIdAndUser(
-      @Param("organizationId") UUID organizationId,
-      @Param("userId") UUID userId,
-      Pageable pageable);
-
-  @Query(
-      """
-      SELECT o.id
-      FROM Order o
-      LEFT JOIN o.lead l
-      LEFT JOIN l.salePerson sp
-      LEFT JOIN l.saleTeam st
       LEFT JOIN o.partner p
       WHERE o.organization.id = :organizationId
       AND o.status = com.dut.erp.enums.OrderStatus.DRAFT
-      AND (sp.id = :userId OR st.leader.id = :userId)
-      AND (LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+      AND (
+        o.createdBy.id = :userId 
+        OR l.salePerson.id = :userId 
+        OR l.saleTeam.id IN :teamIds
+      )
+      AND (:search IS NULL OR :search = '' 
+           OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+      AND (:saleTeamId IS NULL OR l.saleTeam.id = :saleTeamId)
       """)
-  Page<UUID> findQuotationIdsByOrganizationIdAndSearchAndUser(
+  Page<UUID> findQuotationIdsWithFiltersAndUser(
       @Param("organizationId") UUID organizationId,
       @Param("search") String search,
+      @Param("saleTeamId") UUID saleTeamId,
       @Param("userId") UUID userId,
+      @Param("teamIds") List<UUID> teamIds,
       Pageable pageable);
 
   // --- Orders (status != DRAFT) ---
@@ -147,8 +131,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       SELECT o.id
       FROM Order o
       LEFT JOIN o.lead l
-      LEFT JOIN l.salePerson sp
-      LEFT JOIN l.saleTeam st
       LEFT JOIN o.partner p
       WHERE o.organization.id = :organizationId
       AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
@@ -157,8 +139,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
            OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
       AND (:status IS NULL OR o.status = :status)
       AND (:partnerId IS NULL OR o.partner.id = :partnerId)
-      AND (:salePersonId IS NULL OR sp.id = :salePersonId)
-      AND (:saleTeamId IS NULL OR st.id = :saleTeamId)
+      AND (:salePersonId IS NULL OR l.salePerson.id = :salePersonId)
+      AND (:saleTeamId IS NULL OR l.saleTeam.id = :saleTeamId)
       AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
       AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
       """)
@@ -178,19 +160,21 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       SELECT o.id
       FROM Order o
       LEFT JOIN o.lead l
-      LEFT JOIN l.salePerson sp
-      LEFT JOIN l.saleTeam st
       LEFT JOIN o.partner p
       WHERE o.organization.id = :organizationId
       AND o.status <> com.dut.erp.enums.OrderStatus.DRAFT
-      AND (sp.id = :userId OR st.leader.id = :userId)
+      AND (
+        o.createdBy.id = :userId 
+        OR l.salePerson.id = :userId 
+        OR l.saleTeam.id IN :teamIds
+      )
       AND (:search IS NULL OR :search = '' 
            OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
       AND (:status IS NULL OR o.status = :status)
       AND (:partnerId IS NULL OR o.partner.id = :partnerId)
-      AND (:salePersonId IS NULL OR sp.id = :salePersonId)
-      AND (:saleTeamId IS NULL OR st.id = :saleTeamId)
+      AND (:salePersonId IS NULL OR l.salePerson.id = :salePersonId)
+      AND (:saleTeamId IS NULL OR l.saleTeam.id = :saleTeamId)
       AND (cast(:startDate as timestamp) IS NULL OR o.createdAt >= :startDate)
       AND (cast(:endDate as timestamp) IS NULL OR o.createdAt <= :endDate)
       """)
@@ -204,6 +188,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("startDate") Instant startDate,
       @Param("endDate") Instant endDate,
       @Param("userId") UUID userId,
+      @Param("teamIds") List<UUID> teamIds,
       Pageable pageable);
 
   @Query(
@@ -235,16 +220,19 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       SELECT o.id
       FROM Order o
       LEFT JOIN o.lead l
-      LEFT JOIN l.salePerson sp
-      LEFT JOIN l.saleTeam st
       WHERE o.organization.id = :organizationId
       AND o.status = :status
-      AND (sp.id = :userId OR st.leader.id = :userId)
+      AND (
+        o.createdBy.id = :userId 
+        OR l.salePerson.id = :userId 
+        OR l.saleTeam.id IN :teamIds
+      )
       """)
   Page<UUID> findIdsByOrganizationIdAndStatusAndUser(
       @Param("organizationId") UUID organizationId,
       @Param("status") com.dut.erp.enums.OrderStatus status,
       @Param("userId") UUID userId,
+      @Param("teamIds") List<UUID> teamIds,
       Pageable pageable);
 
   @Query(

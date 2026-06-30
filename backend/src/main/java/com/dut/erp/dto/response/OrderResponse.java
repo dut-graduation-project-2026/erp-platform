@@ -27,5 +27,7 @@ public record OrderResponse(
     String warehouseName,
     UUID invoiceId,
     String invoiceNumber,
-    com.dut.erp.enums.InvoiceStatus invoiceStatus) {}
+    com.dut.erp.enums.InvoiceStatus invoiceStatus,
+    UUID saleTeamId,
+    String saleTeamName) {}
 

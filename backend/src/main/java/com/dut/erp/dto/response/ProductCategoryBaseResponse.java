@@ -6,5 +6,6 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ProductCategoryBaseResponse(
     UUID id,
-    String name
+    String name,
+    String description
 ) {}

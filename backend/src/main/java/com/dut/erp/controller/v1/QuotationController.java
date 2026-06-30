@@ -45,11 +45,12 @@ public class QuotationController {
   public ResponseEntity<PagedEntityResponse<OrderBaseResponse>> getQuotations(
       @PathVariable UUID organizationId,
       @RequestParam(required = false) String search,
+      @RequestParam(required = false) UUID saleTeamId,
       @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     return ResponseEntity.ok(
         orderService.getQuotationsWithFilterByOrganizationId(
-            organizationId, search, paginationRequest));
+            organizationId, search, saleTeamId, paginationRequest));
   }
 
   @GetMapping("/{id}")

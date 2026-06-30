@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 058-create-leads-indexes
+      author: halwins
+      changes:
+        - createIndex:
+            tableName: leads
+            indexName: idx_leads_organization_id
+            columns:
+              - column:
+                  name: organization_id
+        - createIndex:
+            tableName: leads
+            indexName: idx_leads_sale_team_id
+            columns:
+              - column:
+                  name: sale_team_id
+        - createIndex:
+            tableName: leads
+            indexName: idx_leads_sale_person_id
+            columns:
+              - column:
+                  name: sale_person_id
+        - createIndex:
+            tableName: leads
+            indexName: idx_leads_created_by
+            columns:
+              - column:
+                  name: created_by

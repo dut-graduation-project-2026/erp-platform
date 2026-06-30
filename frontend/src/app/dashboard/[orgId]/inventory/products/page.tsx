@@ -1,10 +1,17 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
-import { getProducts, getProductCategories, ProductCategory } from '@/features/sales/services/salesService';
+import { 
+  getProducts, 
+  getProductCategories, 
+  ProductCategory,
+  createProductCategory,
+  updateProductCategory,
+  deleteProductCategory
+} from '@/features/sales/services/salesService';
 import { Product } from '@/features/sales/types';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, Filter, X, Save, LayoutGrid, List } from 'lucide-react';
+import { Plus, Search, Filter, X, Save, LayoutGrid, List, Edit2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +20,7 @@ import { API_ENDPOINTS } from '@/config/constants';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { toast } from 'sonner';
 
 export default function ProductsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -35,13 +43,15 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Partial<Product> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'active' | 'archived'>('active');
 
   const loadProducts = () => {
     setIsLoading(true);
     getProducts(orgId, {
       search: appliedSearch.trim(),
       page,
-      limit
+      limit,
+      isArchived: statusFilter === 'archived'
     })
       .then(res => {
         setProducts(res.data || []);
@@ -54,13 +64,82 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
 
   useEffect(() => {
     loadProducts();
-  }, [orgId, page, appliedSearch, limit]);
+  }, [orgId, page, appliedSearch, limit, statusFilter]);
 
-  useEffect(() => {
+  // Category Management Modal State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
+  const [categoryName, setCategoryName] = useState('');
+  const [categoryDescription, setCategoryDescription] = useState('');
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+
+  const loadCategories = () => {
     getProductCategories(orgId)
       .then(res => setCategories(res.data || []))
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    loadCategories();
   }, [orgId]);
+
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryName.trim()) {
+      toast.error('Category name is required.');
+      return;
+    }
+    setIsSavingCategory(true);
+    try {
+      if (editingCategory) {
+        // Update
+        await updateProductCategory(orgId, editingCategory.id, {
+          name: categoryName.trim(),
+          description: categoryDescription.trim()
+        });
+        toast.success('Category updated successfully');
+      } else {
+        // Create
+        await createProductCategory(orgId, {
+          name: categoryName.trim(),
+          description: categoryDescription.trim()
+        });
+        toast.success('Category created successfully');
+      }
+      setCategoryName('');
+      setCategoryDescription('');
+      setEditingCategory(null);
+      loadCategories();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save category.');
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
+
+  const handleEditCategoryClick = (cat: ProductCategory) => {
+    setEditingCategory(cat);
+    setCategoryName(cat.name);
+    setCategoryDescription(cat.description || '');
+  };
+
+  const handleDeleteCategoryClick = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    try {
+      await deleteProductCategory(orgId, id);
+      toast.success('Category deleted successfully');
+      loadCategories();
+      if (editingCategory?.id === id) {
+        setEditingCategory(null);
+        setCategoryName('');
+        setCategoryDescription('');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete category. It might be used by products.');
+    }
+  };
 
   const handleOpenModal = (product?: Product) => {
     if (product) {
@@ -92,9 +171,20 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
       if (selectedProduct.id) {
         // Update
         await apiClient.put(`${API_ENDPOINTS.SALES.PRODUCTS(orgId)}/${selectedProduct.id}`, selectedProduct);
+        const originalProduct = products.find(p => p.id === selectedProduct.id);
+        if (originalProduct && originalProduct.isActive !== selectedProduct.isActive) {
+          await apiClient.patch(`${API_ENDPOINTS.SALES.PRODUCTS(orgId)}/${selectedProduct.id}/archive-status`, {
+            isArchived: !selectedProduct.isActive
+          });
+        }
       } else {
         // Create
-        await apiClient.post(API_ENDPOINTS.SALES.PRODUCTS(orgId), selectedProduct);
+        const res = await apiClient.post<any>(API_ENDPOINTS.SALES.PRODUCTS(orgId), selectedProduct);
+        if (selectedProduct.isActive === false && res.data?.id) {
+          await apiClient.patch(`${API_ENDPOINTS.SALES.PRODUCTS(orgId)}/${res.data.id}/archive-status`, {
+            isArchived: true
+          });
+        }
       }
       loadProducts();
       handleCloseModal();
@@ -171,9 +261,26 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                 className="pl-9 h-10 w-[250px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]" 
               />
             </div>
-            <Button variant="outline" className="border-[#d0d0d0] text-[#242424] h-10 px-3 bg-white rounded-[4px] font-[500] text-[13px]">
-              <Filter className="w-4 h-4" />
-            </Button>
+            <select
+              value={statusFilter}
+              onChange={e => {
+                setStatusFilter(e.target.value as 'active' | 'archived');
+                setPage(1);
+              }}
+              className="h-10 px-3 border border-[#d0d0d0] rounded-[4px] bg-white text-[13px] font-[500] text-[#242424] focus:outline-none focus:border-[#0066cc]"
+            >
+              <option value="active">Active Products</option>
+              <option value="archived">Archived Products</option>
+            </select>
+            {(hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.READ) || hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.SELECT)) && (
+              <Button 
+                variant="outline"
+                onClick={() => setIsCategoryModalOpen(true)}
+                className="border-[#d0d0d0] text-[#242424] h-10 px-4 bg-white rounded-[4px] font-[600] text-[13px]"
+              >
+                Manage Categories
+              </Button>
+            )}
             {hasPermission(PERMISSIONS.PRODUCTS.CREATE) && (
               <Button 
                 onClick={() => handleOpenModal()}
@@ -492,6 +599,129 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
                   </Button>
                 )}
              </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-[8px] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] w-full max-w-[700px] flex flex-col max-h-[85vh]">
+            <div className="px-6 py-4 border-b border-[#e0e0e0] flex justify-between items-center bg-[#f8f8f8]">
+              <h2 className="text-[20px] font-[700] text-[#242424]">Manage Product Categories</h2>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => {
+                  setIsCategoryModalOpen(false);
+                  setEditingCategory(null);
+                  setCategoryName('');
+                  setCategoryDescription('');
+                }} 
+                className="h-8 w-8 text-[#898989] hover:text-[#242424]"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex flex-col md:flex-row gap-6">
+              {/* Form Side - only if has create/write permission */}
+              {(hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.CREATE) || hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.WRITE)) && (
+                <div className="w-full md:w-[260px] shrink-0 border-r border-[#e0e0e0] pr-6">
+                  <h3 className="text-[14px] font-[700] text-[#242424] mb-3">
+                    {editingCategory ? 'Edit Category' : 'Create Category'}
+                  </h3>
+                  <form onSubmit={handleSaveCategory} className="space-y-4">
+                    <div>
+                      <label className="block text-[12px] font-[600] text-[#242424] mb-1">
+                        Category Name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        value={categoryName}
+                        onChange={e => setCategoryName(e.target.value)}
+                        placeholder="e.g. Software"
+                        className="h-9 border-[#d0d0d0] rounded-[4px] text-[13px]"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-[600] text-[#242424] mb-1">Description</label>
+                      <Textarea
+                        value={categoryDescription}
+                        onChange={e => setCategoryDescription(e.target.value)}
+                        placeholder="Optional description"
+                        className="border-[#d0d0d0] rounded-[4px] text-[13px] min-h-[70px]"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        disabled={isSavingCategory}
+                        className="bg-[#0066cc] hover:bg-[#004499] text-white h-9 px-3 text-[12px] font-[600] flex-1"
+                      >
+                        <Save className="w-3.5 h-3.5 mr-1" />
+                        {isSavingCategory ? 'Saving...' : editingCategory ? 'Save' : 'Add'}
+                      </Button>
+                      {editingCategory && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingCategory(null);
+                            setCategoryName('');
+                            setCategoryDescription('');
+                          }}
+                          className="h-9 px-3 text-[12px] border-[#d0d0d0] text-[#242424]"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* List Side */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[14px] font-[700] text-[#242424] mb-3">Categories List</h3>
+                {categories.length === 0 ? (
+                  <div className="text-[#898989] text-[13px] text-center py-8">No categories found.</div>
+                ) : (
+                  <div className="border border-[#e0e0e0] rounded-[4px] overflow-hidden">
+                    <table className="w-full text-left border-collapse text-[13px] table-fixed">
+                      <thead>
+                        <tr className="bg-[#f8f8f8] border-b border-[#e0e0e0]">
+                          <th className="py-2 px-3 font-[600] text-[#242424] w-[140px]">Name</th>
+                          <th className="py-2 px-3 font-[600] text-[#242424]">Description</th>
+                          {hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.WRITE) && (
+                            <th className="py-2 px-3 font-[600] text-[#242424] text-center w-[60px]">Actions</th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#e0e0e0]">
+                        {categories.map(cat => (
+                          <tr key={cat.id} className="hover:bg-gray-50">
+                            <td className="py-2 px-3 font-[600] text-[#242424] truncate" title={cat.name}>{cat.name}</td>
+                            <td className="py-2 px-3 text-[#898989] truncate" title={cat.description || ''}>{cat.description || '-'}</td>
+                            {hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.WRITE) && (
+                              <td className="py-2 px-3 text-center">
+                                <button
+                                  onClick={() => handleEditCategoryClick(cat)}
+                                  className="p-1 text-[#898989] hover:text-[#0066cc] rounded transition-colors"
+                                  title="Edit"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

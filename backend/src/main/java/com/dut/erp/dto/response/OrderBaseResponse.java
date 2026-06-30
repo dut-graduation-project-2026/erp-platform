@@ -15,4 +15,6 @@ public record OrderBaseResponse(
     BigDecimal totalAmount,
     Instant createdAt,
     UUID warehouseId,
-    String warehouseName) {}
+    String warehouseName,
+    UUID saleTeamId,
+    String saleTeamName) {}

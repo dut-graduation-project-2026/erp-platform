@@ -44,11 +44,16 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
       SELECT l.id
       FROM Lead l
       WHERE l.organization.id = :organizationId
-      AND (l.salePerson.id = :userId OR l.saleTeam.leader.id = :userId)
+      AND (
+        l.createdBy.id = :userId 
+        OR l.salePerson.id = :userId 
+        OR l.saleTeam.id IN :teamIds
+      )
       """)
   Page<UUID> findIdsByOrganizationIdAndUser(
       @Param("organizationId") UUID organizationId,
       @Param("userId") UUID userId,
+      @Param("teamIds") List<UUID> teamIds,
       Pageable pageable);
 
   @Query(
@@ -56,7 +61,11 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
       SELECT l.id
       FROM Lead l
       WHERE l.organization.id = :organizationId
-      AND (l.salePerson.id = :userId OR l.saleTeam.leader.id = :userId)
+      AND (
+        l.createdBy.id = :userId 
+        OR l.salePerson.id = :userId 
+        OR l.saleTeam.id IN :teamIds
+      )
       AND (
         LOWER(l.name) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(l.email) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -67,6 +76,7 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
       @Param("organizationId") UUID organizationId,
       @Param("search") String search,
       @Param("userId") UUID userId,
+      @Param("teamIds") List<UUID> teamIds,
       Pageable pageable);
 
   @Query(

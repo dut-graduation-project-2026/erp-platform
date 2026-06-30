@@ -16,6 +16,8 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 public interface OrderMapper {
   @Mapping(target = "warehouseId", ignore = true)
   @Mapping(target = "warehouseName", ignore = true)
+  @Mapping(source = "lead.saleTeam.id", target = "saleTeamId")
+  @Mapping(source = "lead.saleTeam.name", target = "saleTeamName")
   OrderBaseResponse toBaseResponse(Order entity);
 
   @Mapping(target = "warehouseId", ignore = true)
@@ -23,5 +25,7 @@ public interface OrderMapper {
   @Mapping(target = "invoiceId", ignore = true)
   @Mapping(target = "invoiceNumber", ignore = true)
   @Mapping(target = "invoiceStatus", ignore = true)
+  @Mapping(source = "lead.saleTeam.id", target = "saleTeamId")
+  @Mapping(source = "lead.saleTeam.name", target = "saleTeamName")
   OrderResponse toResponse(Order entity);
 }

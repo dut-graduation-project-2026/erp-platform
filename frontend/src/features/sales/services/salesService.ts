@@ -32,7 +32,7 @@ export interface PagedEntityResponse<T> {
 // ─────────────────────────────────────────────────────────────────────────────
 export const getQuotations = async (
   orgId: string,
-  params?: { search?: string; page?: number; limit?: number }
+  params?: { search?: string; page?: number; limit?: number; saleTeamId?: string }
 ): Promise<PagedEntityResponse<SaleOrder>> => {
   const response = await apiClient.get<PagedEntityResponse<SaleOrder>>(
     API_ENDPOINTS.SALES.QUOTATIONS(orgId),
@@ -99,7 +99,7 @@ export const createSaleOrder = createQuotation;
 // ─────────────────────────────────────────────────────────────────────────────
 export const getOrders = async (
   orgId: string,
-  params?: { search?: string; status?: string; page?: number; limit?: number }
+  params?: { search?: string; status?: string; page?: number; limit?: number; saleTeamId?: string }
 ): Promise<PagedEntityResponse<SaleOrder>> => {
   const response = await apiClient.get<PagedEntityResponse<SaleOrder>>(
     API_ENDPOINTS.SALES.ORDERS(orgId),
@@ -296,6 +296,7 @@ export const getProducts = async (
     response.data.data = response.data.data.map((p: any) => ({
       ...p,
       sku: p.sku ?? p.code,
+      isActive: !p.isArchived,
     }));
   }
   return response.data;
@@ -304,8 +305,9 @@ export const getProducts = async (
 export const getProductById = async (orgId: string, id: string): Promise<Product> => {
   const response = await apiClient.get<Product>(`${API_ENDPOINTS.SALES.PRODUCTS(orgId)}/${id}`);
   const p = response.data as any;
-  return { ...p, sku: p.sku ?? p.code };
+  return { ...p, sku: p.sku ?? p.code, isActive: !p.isArchived };
 };
+
 
 
 // ─── INVOICES ────────────────────────────────────────────────────────────────
@@ -479,10 +481,42 @@ export const getProductCategories = async (
   params?: { search?: string; page?: number; limit?: number }
 ): Promise<PagedEntityResponse<ProductCategory>> => {
   const response = await apiClient.get<PagedEntityResponse<ProductCategory>>(
-    `/organizations/${orgId}/product-categories`,
+    API_ENDPOINTS.SALES.PRODUCT_CATEGORIES(orgId),
     { params }
   );
   return response.data;
+};
+
+export const createProductCategory = async (
+  orgId: string,
+  category: Omit<ProductCategory, 'id'>
+): Promise<ProductCategory> => {
+  const response = await apiClient.post<ProductCategory>(
+    API_ENDPOINTS.SALES.PRODUCT_CATEGORIES(orgId),
+    category
+  );
+  return response.data;
+};
+
+export const updateProductCategory = async (
+  orgId: string,
+  id: string,
+  category: Omit<ProductCategory, 'id'>
+): Promise<ProductCategory> => {
+  const response = await apiClient.put<ProductCategory>(
+    API_ENDPOINTS.SALES.PRODUCT_CATEGORY_DETAIL(orgId, id),
+    category
+  );
+  return response.data;
+};
+
+export const deleteProductCategory = async (
+  orgId: string,
+  id: string
+): Promise<void> => {
+  await apiClient.delete(
+    API_ENDPOINTS.SALES.PRODUCT_CATEGORY_DETAIL(orgId, id)
+  );
 };
 // ─────────────────────────────────────────────────────────────────────────────
 // ACTIONABLE AI: SALES FORECASTING

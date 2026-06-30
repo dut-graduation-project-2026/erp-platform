@@ -52,6 +52,13 @@ export const PERMISSIONS = {
     CREATE: 'products:create',
     DELETE: 'products:delete',
   },
+  PRODUCT_CATEGORIES: {
+    SELECT: 'product_categories:select',
+    READ: 'product_categories:read',
+    WRITE: 'product_categories:write',
+    CREATE: 'product_categories:create',
+    DELETE: 'product_categories:delete',
+  },
   SALE_TEAMS: {
     SELECT: 'sale_teams:select',
     READ: 'sale_teams:read',

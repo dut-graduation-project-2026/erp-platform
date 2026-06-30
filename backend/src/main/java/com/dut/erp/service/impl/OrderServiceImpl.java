@@ -31,6 +31,7 @@ import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.LeadRepository;
 import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.repository.OrganizationRepository;
+import com.dut.erp.repository.SaleTeamRepository;
 import com.dut.erp.service.OrderService;
 import com.dut.erp.service.SalesOrderIntegrationService;
 import com.dut.erp.service.SecurityAuthService;
@@ -67,6 +68,7 @@ public class OrderServiceImpl implements OrderService {
   private final OrganizationRepository organizationRepository;
   private final OrderRepository orderRepository;
   private final LeadRepository leadRepository;
+  private final SaleTeamRepository saleTeamRepository;
   private final OrderMapper orderMapper;
   private final InvoiceRepository invoiceRepository;
   private final InventoryDocumentRepository inventoryDocumentRepository;
@@ -78,7 +80,7 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   public PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
-      UUID organizationId, String search, PaginationRequest paginationRequest) {
+      UUID organizationId, String search, UUID saleTeamId, PaginationRequest paginationRequest) {
     log.info("Fetching quotations for organization {}", organizationId);
 
     Pageable pageable =
@@ -95,13 +97,23 @@ public class OrderServiceImpl implements OrderService {
 
     Page<UUID> ids;
     if (isAllOrders) {
-      ids = (search != null && !search.trim().isEmpty())
-          ? orderRepository.findQuotationIdsByOrganizationIdAndSearch(organizationId, search, pageable)
-          : orderRepository.findQuotationIdsByOrganizationId(organizationId, pageable);
+      ids = orderRepository.findQuotationIdsWithFilters(
+          organizationId,
+          (search != null && !search.trim().isEmpty()) ? search : null,
+          saleTeamId,
+          pageable);
     } else {
-      ids = (search != null && !search.trim().isEmpty())
-          ? orderRepository.findQuotationIdsByOrganizationIdAndSearchAndUser(organizationId, search, currentUser.getId(), pageable)
-          : orderRepository.findQuotationIdsByOrganizationIdAndUser(organizationId, currentUser.getId(), pageable);
+      List<UUID> teamIds = saleTeamRepository.findIdsByOrganizationIdAndUserId(organizationId, currentUser.getId());
+      if (teamIds.isEmpty()) {
+        teamIds = List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+      }
+      ids = orderRepository.findQuotationIdsWithFiltersAndUser(
+          organizationId,
+          (search != null && !search.trim().isEmpty()) ? search : null,
+          saleTeamId,
+          currentUser.getId(),
+          teamIds,
+          pageable);
     }
 
     return getPagedResponseFromIds(ids, pageable);
@@ -145,6 +157,10 @@ public class OrderServiceImpl implements OrderService {
               endDate,
               pageable);
     } else {
+      List<UUID> teamIds = saleTeamRepository.findIdsByOrganizationIdAndUserId(organizationId, currentUser.getId());
+      if (teamIds.isEmpty()) {
+        teamIds = List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+      }
       ids = orderRepository.findOrderIdsWithFiltersAndUser(
               organizationId,
               (search != null && !search.trim().isEmpty()) ? search : null,
@@ -155,6 +171,7 @@ public class OrderServiceImpl implements OrderService {
               startDate,
               endDate,
               currentUser.getId(),
+              teamIds,
               pageable);
     }
 
@@ -182,7 +199,11 @@ public class OrderServiceImpl implements OrderService {
     if (isAllOrders) {
       ids = orderRepository.findIdsByOrganizationIdAndStatus(organizationId, status, pageable);
     } else {
-      ids = orderRepository.findIdsByOrganizationIdAndStatusAndUser(organizationId, status, currentUser.getId(), pageable);
+      List<UUID> teamIds = saleTeamRepository.findIdsByOrganizationIdAndUserId(organizationId, currentUser.getId());
+      if (teamIds.isEmpty()) {
+        teamIds = List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+      }
+      ids = orderRepository.findIdsByOrganizationIdAndStatusAndUser(organizationId, status, currentUser.getId(), teamIds, pageable);
     }
 
     return getPagedResponseFromIds(ids, pageable);
@@ -224,7 +245,9 @@ public class OrderServiceImpl implements OrderService {
                     base.totalAmount(),
                     base.createdAt(),
                     doc.getWarehouse().getId(),
-                    doc.getWarehouse().getName()
+                    doc.getWarehouse().getName(),
+                    base.saleTeamId(),
+                    base.saleTeamName()
                 );
               }
               return base;
@@ -609,7 +632,9 @@ public class OrderServiceImpl implements OrderService {
         warehouseName,
         invoiceId,
         invoiceNumber,
-        invoiceStatus
+        invoiceStatus,
+        response.saleTeamId(),
+        response.saleTeamName()
     );
   }
 }

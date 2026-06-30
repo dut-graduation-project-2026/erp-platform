@@ -13,7 +13,7 @@ import java.util.UUID;
 public interface OrderService {
 
   PagedEntityResponse<OrderBaseResponse> getQuotationsWithFilterByOrganizationId(
-      UUID organizationId, String search, PaginationRequest paginationRequest);
+      UUID organizationId, String search, UUID saleTeamId, PaginationRequest paginationRequest);
 
   PagedEntityResponse<OrderBaseResponse> getOrdersWithFilterByOrganizationId(
       UUID organizationId,

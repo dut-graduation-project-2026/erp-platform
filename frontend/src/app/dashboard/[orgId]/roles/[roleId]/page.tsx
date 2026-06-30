@@ -33,6 +33,37 @@ export default function RoleFormPage() {
   // Active Tab State
   const [activeTab, setActiveTab] = useState<string>("crm");
 
+  // Derived modules list with virtualized product_categories module split out from products
+  const derivedModules = React.useMemo(() => {
+    // Clone to avoid mutating original state/props
+    const list = modules.map(m => ({
+      ...m,
+      permissions: m.permissions ? [...m.permissions] : []
+    }));
+
+    const productsModule = list.find(m => m.code === "products");
+    if (productsModule) {
+      const categoryPerms = productsModule.permissions.filter(p => p.code.startsWith("product_categories:"));
+      const productPerms = productsModule.permissions.filter(p => !p.code.startsWith("product_categories:"));
+
+      // Update products module to only have products:* permissions
+      productsModule.permissions = productPerms;
+
+      // Add virtual product_categories module to modules list
+      const hasCategories = list.some(m => m.code === "product_categories");
+      if (!hasCategories && categoryPerms.length > 0) {
+        list.push({
+          id: "product_categories_virtual",
+          code: "product_categories",
+          name: "Product Categories",
+          description: "Manage product categories",
+          permissions: categoryPerms
+        });
+      }
+    }
+    return list;
+  }, [modules]);
+
   useEffect(() => {
     if (role && !isNew) {
       setRoleName(role.name || "");
@@ -68,7 +99,7 @@ export default function RoleFormPage() {
 
     // Map permission codes back to their UUIDs
     const permissionIds: string[] = [];
-    modules.forEach(module => {
+    derivedModules.forEach(module => {
       module.permissions?.forEach(perm => {
         if (permissions.has(perm.code)) {
           permissionIds.push(perm.id);
@@ -240,7 +271,7 @@ export default function RoleFormPage() {
  
                         const activeGroup = PERMISSION_GROUPS.find(g => g.id === activeTab) || PERMISSION_GROUPS[0];
                         const groupModules = activeGroup.resources
-                          .map(code => modules.find(m => m.code === code))
+                          .map(code => derivedModules.find(m => m.code === code))
                           .filter((m): m is Exclude<typeof m, undefined> => m !== undefined);
  
                         if (groupModules.length === 0) {
