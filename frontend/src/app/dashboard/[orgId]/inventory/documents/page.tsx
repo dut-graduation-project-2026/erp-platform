@@ -244,6 +244,35 @@ export default function DocumentsListPage() {
     setItems(updated);
   };
 
+  const handleReplenishmentChange = (val: string) => {
+    setLinkedReplenishmentId(val);
+    if (!val) {
+      if (notes.startsWith('[Replenishment Move]')) {
+        setNotes('');
+      }
+      return;
+    }
+
+    const rep = openReplenishments.find(r => r.id === val);
+    if (!rep) return;
+
+    getInventoryDocumentById(orgId, selectedWarehouseId, rep.inventoryDocumentId)
+      .then(res => {
+        if (res && res.lines) {
+          const prefilledItems = res.lines.map(line => ({
+            productId: line.productId,
+            quantity: line.quantity
+          }));
+          setItems(prefilledItems);
+          setNotes(`[Replenishment Move] Replenishing stock for outbound ticket ${res.name}.`);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load replenishment document lines", err);
+        toast.error("Failed to load items from original document");
+      });
+  };
+
   const handleSaveDocument = async () => {
     // Validate
     if (items.length === 0) return toast.error('At least one item is required.');
@@ -561,7 +590,7 @@ export default function DocumentsListPage() {
       {/* Manual Stock Move Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/55 z-50 flex items-center justify-center animate-in fade-in duration-200">
-          <div className="bg-white rounded-[8px] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] w-full max-w-[720px] flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-[8px] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] w-full max-w-[1000px] flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-[#e0e0e0] flex justify-between items-center bg-[#f8f8f8] shrink-0">
               <h2 className="text-[18px] font-[700] text-[#242424]">Create Stock Move Document</h2>
               <Button variant="ghost" size="icon" onClick={() => setIsModalOpen(false)} className="h-8 w-8 text-[#898989] hover:text-[#242424]">
@@ -569,144 +598,162 @@ export default function DocumentsListPage() {
               </Button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-5">
-              <div className="grid grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Operation Type</label>
-                  <select
-                    value={docType}
-                    onChange={e => setDocType(e.target.value as DocumentType)}
-                    className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc]"
-                  >
-                    <option value={DOCUMENT_TYPE.RECEIPT}>INBOUND: Stock Receipt</option>
-                    <option value={DOCUMENT_TYPE.ISSUE}>OUTBOUND: Stock Issue</option>
-                    <option value={DOCUMENT_TYPE.TRANSFER_OUT}>INTERNAL: Stock Transfer (Send)</option>
-                    <option value={DOCUMENT_TYPE.TRANSFER_IN}>INTERNAL: Stock Request (Receive)</option>
-                    <option value={DOCUMENT_TYPE.ADJUSTMENT}>AUDIT: Inventory Adjustment</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Scheduled Date</label>
-                  <input
-                    type="datetime-local"
-                    value={scheduledDate}
-                    onChange={e => setScheduledDate(e.target.value)}
-                    className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] focus:outline-none focus:border-[#0066cc]"
-                  />
-                </div>
-              </div>
-
-              {/* Source/Dest warehouse selector if Internal Transfer */}
-              {(docType === DOCUMENT_TYPE.TRANSFER_OUT || docType === DOCUMENT_TYPE.TRANSFER_IN) && (
-                <div>
-                  <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">
-                    {docType === DOCUMENT_TYPE.TRANSFER_OUT ? 'Destination Warehouse Location' : 'Source Warehouse Location'}
-                  </label>
-                  <select
-                    value={srcWhId}
-                    onChange={e => setSrcWhId(e.target.value)}
-                    className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc]"
-                  >
-                    <option value="">
-                      {docType === DOCUMENT_TYPE.TRANSFER_OUT ? '-- Select Destination --' : '-- Select Source --'}
-                    </option>
-                    {getFilteredSourceWarehouses().map(wh => (
-                      <option key={wh.id} value={wh.id}>
-                        [{wh.code}] {wh.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Replenishment Request Link (Optional) */}
-              {(docType === DOCUMENT_TYPE.RECEIPT || docType === DOCUMENT_TYPE.TRANSFER_IN) && openReplenishments.length > 0 && (
-                <div>
-                  <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">
-                    Link to Replenishment Request (Optional)
-                  </label>
-                  <select
-                    value={linkedReplenishmentId}
-                    onChange={e => setLinkedReplenishmentId(e.target.value)}
-                    className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc]"
-                  >
-                    <option value="">-- No Link --</option>
-                    {openReplenishments.map(req => (
-                      <option key={req.id} value={req.id}>
-                        [{req.inventoryDocumentName}] {req.notes ? req.notes.substring(0, 40) : 'No notes'} (#{req.id.substring(0, 8)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Notes</label>
-                <Textarea 
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  placeholder="Describe the reason for this stock movement..."
-                  rows={2}
-                  className="border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc]"
-                />
-              </div>
-
-              {/* Document Items Table */}
-              <div className="border-t border-[#e0e0e0] pt-4">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-[14px] font-[700] text-[#242424]">Products to Move</h3>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleAddItemRow}
-                    className="h-8 text-[12px] border-[#d0d0d0]"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Add Product
-                  </Button>
-                </div>
-
-                <div className="space-y-3">
-                  {items.map((item, idx) => (
-                    <div key={idx} className="flex items-center space-x-3 bg-[#f8f8f8] p-3 rounded border border-[#e0e0e0]">
-                      <div className="flex-1">
-                        <select
-                          value={item.productId}
-                          onChange={e => handleItemChange(idx, 'productId', e.target.value)}
-                          className="w-full h-9 border border-[#d0d0d0] rounded-[4px] px-2.5 text-[12px] bg-white focus:outline-none focus:border-[#0066cc]"
-                        >
-                          <option value="">-- Select SKU Product --</option>
-                          {productsList.map(p => (
-                            <option key={p.id} value={p.id}>
-                              [{p.sku || p.code}] {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div className="w-[140px]">
-                        <Input 
-                          type="number" 
-                          min={1}
-                          value={item.quantity}
-                          onChange={e => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                          placeholder="Quantity"
-                          className="h-9 text-[13px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0"
-                        />
-                      </div>
-
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleRemoveItemRow(idx)}
-                        disabled={items.length === 1}
-                        className="h-9 w-9 text-[#dc3545] hover:bg-[#fff0f0] rounded-[4px]"
+            <div className="p-6 overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                
+                {/* Left Column: General Information */}
+                <div className="space-y-4">
+                  <h3 className="text-[14px] font-[700] text-[#242424] pb-2 border-b border-[#e0e0e0] uppercase tracking-wider">
+                    General Information
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Operation Type</label>
+                      <select
+                        value={docType}
+                        onChange={e => setDocType(e.target.value as DocumentType)}
+                        className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc]"
                       >
-                        <X className="w-4 h-4" />
-                      </Button>
+                        <option value={DOCUMENT_TYPE.RECEIPT}>INBOUND: Stock Receipt</option>
+                        <option value={DOCUMENT_TYPE.ISSUE}>OUTBOUND: Stock Issue</option>
+                        <option value={DOCUMENT_TYPE.TRANSFER_OUT}>INTERNAL: Stock Transfer (Send)</option>
+                        <option value={DOCUMENT_TYPE.TRANSFER_IN}>INTERNAL: Stock Request (Receive)</option>
+                        <option value={DOCUMENT_TYPE.ADJUSTMENT}>AUDIT: Inventory Adjustment</option>
+                      </select>
                     </div>
-                  ))}
+                    <div>
+                      <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Scheduled Date</label>
+                      <input
+                        type="datetime-local"
+                        value={scheduledDate}
+                        onChange={e => setScheduledDate(e.target.value)}
+                        className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Source/Dest warehouse selector if Internal Transfer */}
+                  {(docType === DOCUMENT_TYPE.TRANSFER_OUT || docType === DOCUMENT_TYPE.TRANSFER_IN) && (
+                    <div>
+                      <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">
+                        {docType === DOCUMENT_TYPE.TRANSFER_OUT ? 'Destination Warehouse Location' : 'Source Warehouse Location'}
+                      </label>
+                      <select
+                        value={srcWhId}
+                        onChange={e => setSrcWhId(e.target.value)}
+                        className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc]"
+                      >
+                        <option value="">
+                          {docType === DOCUMENT_TYPE.TRANSFER_OUT ? '-- Select Destination --' : '-- Select Source --'}
+                        </option>
+                        {getFilteredSourceWarehouses().map(wh => (
+                          <option key={wh.id} value={wh.id}>
+                            [{wh.code}] {wh.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Replenishment Request Link (Optional) */}
+                  {(docType === DOCUMENT_TYPE.RECEIPT || docType === DOCUMENT_TYPE.TRANSFER_IN) && openReplenishments.length > 0 && (
+                    <div>
+                      <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">
+                        Link to Replenishment Request (Optional)
+                      </label>
+                      <select
+                        value={linkedReplenishmentId}
+                        onChange={e => handleReplenishmentChange(e.target.value)}
+                        className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc]"
+                      >
+                        <option value="">-- No Link --</option>
+                        {openReplenishments.map(req => (
+                          <option key={req.id} value={req.id}>
+                            [{req.inventoryDocumentName}] {req.notes ? req.notes.substring(0, 40) : 'No notes'} (#{req.id.substring(0, 8)})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Notes</label>
+                    <Textarea 
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      placeholder="Describe the reason for this stock movement..."
+                      rows={3}
+                      className="border-[#d0d0d0] rounded-[4px] focus-visible:ring-0 focus-visible:border-[#0066cc] resize-none"
+                    />
+                  </div>
                 </div>
+
+                {/* Right Column: Products to Move */}
+                <div className="space-y-4 lg:border-l lg:pl-6 lg:border-[#e0e0e0] flex flex-col">
+                  <div className="flex justify-between items-center pb-2 border-b border-[#e0e0e0]">
+                    <h3 className="text-[14px] font-[700] text-[#242424] uppercase tracking-wider">
+                      Products to Move
+                    </h3>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleAddItemRow}
+                      className="h-8 text-[12px] border-[#d0d0d0] hover:bg-[#f0f4ff] transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add Product
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                    {items.map((item, idx) => (
+                      <div key={idx} className="flex items-center space-x-3 bg-[#f8f8f8] p-3 rounded border border-[#e0e0e0] hover:border-[#b0b0b0] transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <select
+                            value={item.productId}
+                            onChange={e => handleItemChange(idx, 'productId', e.target.value)}
+                            className="w-full h-9 border border-[#d0d0d0] rounded-[4px] px-2.5 pr-8 text-[12px] bg-white focus:outline-none focus:border-[#0066cc] truncate"
+                            title={
+                              productsList.find(p => p.id === item.productId)
+                                ? `[${productsList.find(p => p.id === item.productId)?.sku || productsList.find(p => p.id === item.productId)?.code}] ${productsList.find(p => p.id === item.productId)?.name}`
+                                : '-- Select SKU Product --'
+                            }
+                          >
+                            <option value="">-- Select SKU Product --</option>
+                            {productsList.map(p => (
+                              <option key={p.id} value={p.id}>
+                                [{p.sku || p.code}] {p.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div className="w-[85px] shrink-0">
+                          <Input 
+                            type="number" 
+                            min={1}
+                            value={item.quantity}
+                            onChange={e => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                            placeholder="Qty"
+                            className="h-9 text-[13px] border-[#d0d0d0] rounded-[4px] focus-visible:ring-0"
+                          />
+                        </div>
+
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleRemoveItemRow(idx)}
+                          disabled={items.length === 1}
+                          className="h-9 w-9 text-[#dc3545] hover:bg-[#fff0f0] rounded-[4px] shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </div>
 

@@ -21,6 +21,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { toast } from 'sonner';
+import { PermissionGuard } from '@/components/rbac/PermissionGuard';
+import { AccessDenied } from '@/components/shared/AccessDenied';
 
 export default function ProductsListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = use(params);
@@ -74,6 +76,9 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
   const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   const loadCategories = () => {
+    if (!hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.READ) && !hasPermission(PERMISSIONS.PRODUCT_CATEGORIES.SELECT)) {
+      return;
+    }
     getProductCategories(orgId)
       .then(res => setCategories(res.data || []))
       .catch(console.error);
@@ -209,7 +214,11 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
   };
 
   return (
-    <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white relative">
+    <PermissionGuard
+      permission={PERMISSIONS.PRODUCTS.READ}
+      fallback={<AccessDenied title="Không Có Quyền Xem Sản Phẩm" description="Tài khoản của bạn không được cấp quyền để xem danh sách sản phẩm." />}
+    >
+      <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white relative">
       <div className="flex justify-between items-center mb-6 shrink-0">
          <div>
             <h1 className="text-[24px] font-[600] text-[#242424] mb-1">Products Master Data</h1>
@@ -739,6 +748,7 @@ export default function ProductsListPage({ params }: { params: Promise<{ orgId: 
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

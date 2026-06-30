@@ -6,6 +6,7 @@ import { Target, BarChart2, Calendar, Users, ChevronLeft, ChevronRight } from 'l
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
+import { AccessDenied } from '@/components/shared/AccessDenied';
 import { PERMISSIONS } from '@/config/permissions';
 import { APP_ROUTES } from '@/config/constants';
 
@@ -36,44 +37,51 @@ export default function CrmLayout({
   };
 
   const crmItems = [
-    { name: 'Pipeline', href: basePath, icon: Target },
-    { name: 'Sales Teams', href: `${basePath}/teams`, icon: Calendar },
+    { name: 'Pipeline', href: basePath, icon: Target, permission: PERMISSIONS.CRM.READ },
+    { name: 'Sales Teams', href: `${basePath}/teams`, icon: Calendar, permission: PERMISSIONS.SALE_TEAMS.READ },
   ];
 
   const masterItems = [
-    { name: 'Customers', href: `${basePath}/customers`, icon: Users },
+    { name: 'Customers', href: `${basePath}/customers`, icon: Users, permission: PERMISSIONS.PARTNERS.READ },
   ];
 
   const reportItems = [
-    { name: 'Reporting', href: `${basePath}/reporting`, icon: BarChart2 },
+    { name: 'Reporting', href: `${basePath}/reporting`, icon: BarChart2, permission: PERMISSIONS.CRM.READ },
   ];
 
-  const renderNavItem = (item: { name: string; href: string; icon: React.ElementType }) => {
+  const allNavItems = [...crmItems, ...masterItems, ...reportItems];
+  const activeNavItem = allNavItems
+    .filter(item => item.href !== basePath)
+    .find(item => pathname.startsWith(item.href));
+  const requiredPermission = activeNavItem ? activeNavItem.permission : PERMISSIONS.CRM.READ;
+
+  const renderNavItem = (item: { name: string; href: string; icon: React.ElementType; permission: string }) => {
     const isActive = item.href === basePath 
       ? pathname === basePath || pathname.startsWith(basePath + '/leads/')
       : pathname === item.href || pathname.startsWith(item.href + '/');
     const Icon = item.icon;
     return (
-      <Link
-        key={item.name}
-        href={item.href}
-        title={isCollapsed ? item.name : undefined}
-        className={cn(
-          "flex items-center rounded-[6px] text-[13px] font-[500] transition-all duration-300 select-none",
-          isCollapsed ? "justify-center p-2.5 mx-auto w-10 h-10" : "px-3 py-2.5 mx-1",
-          isActive 
-            ? "bg-[#f0f4ff] text-[#0066cc] font-[600]" 
-            : "text-[#4a4a4a] hover:bg-[#f5f5f5] hover:text-[#242424]"
-        )}
-      >
-        <Icon className={cn("w-4 h-4 shrink-0 transition-transform duration-300", isActive ? "text-[#0066cc]" : "text-[#898989]", isCollapsed && "scale-110")} />
-        <span className={cn(
-          "transition-all duration-300 ease-in-out truncate origin-left",
-          isCollapsed ? "w-0 opacity-0 scale-95 pointer-events-none ml-0 hidden" : "w-auto opacity-100 scale-100 ml-3"
-        )}>
-          {item.name}
-        </span>
-      </Link>
+      <PermissionGuard key={item.name} permission={item.permission}>
+        <Link
+          href={item.href}
+          title={isCollapsed ? item.name : undefined}
+          className={cn(
+            "flex items-center rounded-[6px] text-[13px] font-[500] transition-all duration-300 select-none",
+            isCollapsed ? "justify-center p-2.5 mx-auto w-10 h-10" : "px-3 py-2.5 mx-1",
+            isActive 
+              ? "bg-[#f0f4ff] text-[#0066cc] font-[600]" 
+              : "text-[#4a4a4a] hover:bg-[#f5f5f5] hover:text-[#242424]"
+          )}
+        >
+          <Icon className={cn("w-4 h-4 shrink-0 transition-transform duration-300", isActive ? "text-[#0066cc]" : "text-[#898989]", isCollapsed && "scale-110")} />
+          <span className={cn(
+            "transition-all duration-300 ease-in-out truncate origin-left",
+            isCollapsed ? "w-0 opacity-0 scale-95 pointer-events-none ml-0 hidden" : "w-auto opacity-100 scale-100 ml-3"
+          )}>
+            {item.name}
+          </span>
+        </Link>
+      </PermissionGuard>
     );
   };
 
@@ -147,14 +155,10 @@ export default function CrmLayout({
       </aside>
 
       {/* Main Module Content */}
-      <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#f8f8f8]">
+      <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#f8f8f8] relative">
         <PermissionGuard 
-          permission={PERMISSIONS.CRM.READ}
-          fallback={
-            <div className="flex-1 flex items-center justify-center text-red-500 font-medium bg-white">
-              Access Denied. You do not have permission to access CRM.
-            </div>
-          }
+          permission={requiredPermission}
+          fallback={<AccessDenied title="Access denied" description="Your account does not have permission to access this feature." />}
         >
           <div className="flex-1 overflow-auto bg-white">
             {children}

@@ -304,11 +304,12 @@ export default function PendingOrdersPage() {
                   <tbody className="divide-y divide-[#e0e0e0]">
                     {verifyingOrder.items?.map(item => {
                       const required = item.quantity;
-                      const available = stockBalances[item.product.id] || 0;
+                      const productId = item.product?.id || item.productId;
+                      const available = productId ? (stockBalances[productId] || 0) : 0;
                       const shortage = required > available ? required - available : 0;
                       return (
                         <tr key={item.id} className={shortage > 0 ? "bg-[#fff0f0]" : ""}>
-                          <td className="px-4 py-3 font-[500] text-[#242424]">{item.product.name}</td>
+                          <td className="px-4 py-3 font-[500] text-[#242424]">{item.product?.name || 'Unknown Product'}</td>
                           <td className="px-4 py-3 text-right font-[600]">{required}</td>
                           <td className="px-4 py-3 text-right text-[#0066cc] font-[600]">{available}</td>
                           <td className={`px-4 py-3 text-right font-[600] ${shortage > 0 ? 'text-[#dc3545]' : 'text-[#28a745]'}`}>
@@ -321,7 +322,11 @@ export default function PendingOrdersPage() {
                 </table>
               )}
               
-              {!isVerifyingLoading && verifyingOrder.items?.some(item => item.quantity > (stockBalances[item.product.id] || 0)) && (
+              {!isVerifyingLoading && verifyingOrder.items?.some(item => {
+                const productId = item.product?.id || item.productId;
+                const available = productId ? (stockBalances[productId] || 0) : 0;
+                return item.quantity > available;
+              }) && (
                 <div className="mt-4 p-3 bg-[#fff3cd] border border-[#ffeeba] text-[#856404] rounded-[4px] text-[13px]">
                   <strong>Warning:</strong> Some items have insufficient stock. If you proceed, the system will create a <strong>Waiting for Stock</strong> Delivery Order.
                 </div>

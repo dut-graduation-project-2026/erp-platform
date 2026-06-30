@@ -297,7 +297,11 @@ public class SampleDataSeeder implements CommandLineRunner {
         "taxes:read",
         "taxes:select",
         "invoices:read",
-        "invoices:select")) {
+        "invoices:select",
+        "invoices:create",
+        "invoices:write",
+        "invoices:delete",
+        "users:read")) {
       Permission p = permissions.get(permCode);
       if (p != null)
         salesPerms.add(p);
@@ -313,13 +317,34 @@ public class SampleDataSeeder implements CommandLineRunner {
         "warehouses:create",
         "warehouses:write",
         "warehouses:delete",
+        "inventory-documents:read",
+        "inventory-documents:select",
+        "inventory-documents:create",
+        "inventory-documents:write",
+        "inventory-documents:delete",
+        "inventory-transactions:read",
+        "inventory-transactions:select",
+        "inventory-transactions:create",
+        "inventory-transactions:write",
+        "inventory-transactions:delete",
+        "replenishment-requests:read",
+        "replenishment-requests:select",
+        "replenishment-requests:create",
+        "replenishment-requests:write",
+        "replenishment-requests:delete",
+        "stock-valuations:read",
+        "stock-valuations:select",
+        "stock-valuations:create",
+        "stock-valuations:write",
+        "stock-valuations:delete",
         "products:read",
         "products:select",
         "products:create",
         "products:write",
         "products:delete",
         "orders:read",
-        "orders:select")) {
+        "orders:select",
+        "users:read")) {
       Permission p = permissions.get(permCode);
       if (p != null)
         whPerms.add(p);
@@ -1512,6 +1537,7 @@ public class SampleDataSeeder implements CommandLineRunner {
     // Users module
     ErpModule usersModule = getOrCreateModule(modulesByCode, "Users", "users", "User management");
     createPermissionIfNotExists(permissionsByCode, usersModule, "users:read", "Read users");
+    createPermissionIfNotExists(permissionsByCode, usersModule, "users:select", "Select users");
 
     // Leads module
     ErpModule leadsModule = getOrCreateModule(modulesByCode, "Leads", "leads", "Lead management");
@@ -1582,6 +1608,38 @@ public class SampleDataSeeder implements CommandLineRunner {
         permissionsByCode, warehousesModule, "warehouses:write_all", "Update all warehouses in the organization");
     createPermissionIfNotExists(
         permissionsByCode, warehousesModule, "warehouses:delete", "Delete warehouses");
+
+    // Inventory Documents module
+    ErpModule invDocsModule = getOrCreateModule(modulesByCode, "Inventory Documents", "inventory_documents", "Inventory documents management");
+    createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:create", "Create inventory documents");
+    createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:read", "Read and list inventory documents");
+    createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:select", "Select inventory document details");
+    createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:write", "Update inventory documents");
+    createPermissionIfNotExists(permissionsByCode, invDocsModule, "inventory-documents:delete", "Delete inventory documents");
+
+    // Inventory Transactions module
+    ErpModule invTransModule = getOrCreateModule(modulesByCode, "Inventory Transactions", "inventory_transactions", "Inventory transactions management");
+    createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:create", "Create inventory transactions");
+    createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:read", "Read and list inventory transactions");
+    createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:select", "Select inventory transaction details");
+    createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:write", "Update inventory transactions");
+    createPermissionIfNotExists(permissionsByCode, invTransModule, "inventory-transactions:delete", "Delete inventory transactions");
+
+    // Replenishment Requests module
+    ErpModule replenishmentModule = getOrCreateModule(modulesByCode, "Replenishment Requests", "replenishment_requests", "Replenishment requests management");
+    createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:create", "Create replenishment requests");
+    createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:read", "Read and list replenishment requests");
+    createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:select", "Select replenishment request details");
+    createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:write", "Update replenishment requests");
+    createPermissionIfNotExists(permissionsByCode, replenishmentModule, "replenishment-requests:delete", "Delete replenishment requests");
+
+    // Stock Valuations module
+    ErpModule stockValuationsModule = getOrCreateModule(modulesByCode, "Stock Valuations", "stock_valuations", "Stock valuations management");
+    createPermissionIfNotExists(permissionsByCode, stockValuationsModule, "stock-valuations:create", "Create stock valuations");
+    createPermissionIfNotExists(permissionsByCode, stockValuationsModule, "stock-valuations:read", "Read and list stock valuations");
+    createPermissionIfNotExists(permissionsByCode, stockValuationsModule, "stock-valuations:select", "Select stock valuation details");
+    createPermissionIfNotExists(permissionsByCode, stockValuationsModule, "stock-valuations:write", "Update stock valuations");
+    createPermissionIfNotExists(permissionsByCode, stockValuationsModule, "stock-valuations:delete", "Delete stock valuations");
 
     // Sale Teams module
     ErpModule saleTeamsModule = getOrCreateModule(modulesByCode, "Sale Teams", "sale_teams", "Sale teams management");

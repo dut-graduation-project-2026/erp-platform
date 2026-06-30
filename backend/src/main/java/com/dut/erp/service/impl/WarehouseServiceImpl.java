@@ -268,6 +268,7 @@ public class WarehouseServiceImpl implements WarehouseService {
   public com.dut.erp.dto.response.WarehouseMetricsResponse getWarehouseMetrics(UUID organizationId, UUID warehouseId) {
     log.info("Fetching metrics for warehouse {} in organization {}", warehouseId, organizationId);
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
+    securityAuthService.isWarehouseStaffOrManagerOrAdmin(warehouse, SecurityUtils.getCurrentUser());
 
     // 1. Receipts Metrics
     long receiptsToProcess = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(

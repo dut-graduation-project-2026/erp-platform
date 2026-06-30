@@ -51,7 +51,7 @@ export const APP_MODULES: ModuleConfig[] = [
     name: 'Users',
     icon: Users,
     route: '/users',
-    permission: PERMISSIONS.USERS.READ,
+    permission: PERMISSIONS.USERS.WRITE,
     bgColor: 'bg-teal-700',
   },
   {

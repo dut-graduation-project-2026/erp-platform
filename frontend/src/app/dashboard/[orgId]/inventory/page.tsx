@@ -6,7 +6,7 @@ import { Building, Package, ArrowRightLeft, Clock, Search, ExternalLink, Setting
 import { getWarehouses, getWarehouseMetrics, getInventoryDocuments } from '@/features/inventory/services/inventoryService';
 import { Warehouse, InventoryDocument } from '@/features/inventory/types';
 import { usePermissions } from '@/hooks/use-permissions';
-import { PERMISSIONS } from '@/config/permissions';
+import { PERMISSIONS } from '@/config/permissions'; 
 import { DOCUMENT_TYPE, DOCUMENT_STATUS, ORDER_STATUS, APP_ROUTES } from '@/config/constants';
 import Link from 'next/link';
 
@@ -57,7 +57,7 @@ export default function InventoryDashboard() {
       const res = await getInventoryDocuments(orgId, selectedWarehouseId, { type, limit: 300 });
       const activeDocs = (res.data || []).filter(d => d.documentStatus !== 'COMPLETED' && d.documentStatus !== 'CANCELLED');
       
-      let filtered = [];
+      let filtered: InventoryDocument[] = [];
       if (filter === 'WAITING' || filter === 'BACKORDER') {
         filtered = activeDocs.filter(d => d.documentStatus === 'WAITING_FOR_STOCK');
       } else if (filter === 'LATE') {
@@ -233,14 +233,6 @@ export default function InventoryDashboard() {
                     )}
                   </div>
                 </div>
-                <div className="px-5 py-3 bg-[#fbfbfb] border-t border-[#f0f0f0]">
-                  <button 
-                    onClick={() => router.push(`${APP_ROUTES.INVENTORY.RECEIPTS_NEW(orgId)}?warehouseId=${selectedWarehouseId}`)} 
-                    className="text-[13px] font-[600] text-[#0066cc] hover:underline"
-                  >
-                    New Receipt
-                  </button>
-                </div>
               </div>
 
               {/* Delivery Orders Card */}
@@ -325,14 +317,6 @@ export default function InventoryDashboard() {
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="px-5 py-3 bg-[#fbfbfb] border-t border-[#f0f0f0]">
-                  <button 
-                    onClick={() => router.push(`${APP_ROUTES.INVENTORY.TRANSFERS_NEW(orgId)}?warehouseId=${selectedWarehouseId}`)} 
-                    className="text-[13px] font-[600] text-[#0066cc] hover:underline"
-                  >
-                    New Transfer
-                  </button>
                 </div>
               </div>
 
@@ -439,7 +423,7 @@ export default function InventoryDashboard() {
                             {doc.scheduledDate ? new Date(doc.scheduledDate).toLocaleDateString() : '-'}
                           </td>
                           <td className="px-6 py-3 text-[#242424]">
-                            {doc.partner?.name || '-'}
+                            {doc.partnerName || '-'}
                           </td>
                         </tr>
                       ))

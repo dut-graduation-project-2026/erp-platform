@@ -24,8 +24,7 @@ export const usePermissions = () => {
 
     if (action === 'read' || action === 'select') {
       return permissions.includes(`${module}:read_all`) || 
-             permissions.includes(`${module}:write_all`) ||
-             permissions.includes(`${module}:write`);
+             permissions.includes(`${module}:write_all`);
     }
     if (action === 'write' || action === 'create' || action === 'delete') {
       return permissions.includes(`${module}:write_all`);

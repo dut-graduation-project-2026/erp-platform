@@ -7,6 +7,7 @@ export interface AppRequestConfig extends AxiosRequestConfig {
   skipAuth?: boolean;
   _retry?: boolean;
   _isRetryAttempt?: boolean;
+  _permissionRetry?: boolean;
 }
 
 export const apiClient = axios.create({
@@ -131,10 +132,30 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // // 🟠 BƯỚC 4: Handle 403 - Access denied (permission issue)
-    // if (error.response?.status === 403) {
-    //   toast.error('Access denied. You do not have permission to perform this action.');
-    // }
+    // 🟠 BƯỚC 4: Handle 403 - Access denied (permission issue)
+    if (error.response?.status === 403) {
+      if (!originalRequest._permissionRetry) {
+        originalRequest._permissionRetry = true;
+        const { currentOrgId, setPermissions } = useAuthStore.getState();
+        if (currentOrgId) {
+          try {
+            console.log("403 FORBIDDEN ENCOUNTERED. RE-FETCHING PERMISSIONS TO SYNC...");
+            const { fetchMyPermissionsApi } = await import('@/features/auth/services/authService');
+            const newPermissions = await fetchMyPermissionsApi(currentOrgId);
+            setPermissions(newPermissions);
+            console.log("PERMISSIONS SYNCED SUCCESSFULLY. UI will update via PermissionGuard.");
+            // Do NOT retry the request — the permission is genuinely revoked.
+            // Let PermissionGuard re-render and show <AccessDenied /> instead.
+            toast.error('Access permissions have been changed. The interface has been updated..');
+            return Promise.reject(error);
+          } catch (permError) {
+            console.error("Failed to sync permissions on 403:", permError);
+          }
+        }
+      }
+      toast.error(error.response.data?.message || 'Access denied. You do not have permission to perform this action.');
+      return Promise.reject(error);
+    }
 
     // Generic error handling for other HTTP errors
     if (error.response) {

@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
+import { AccessDenied } from '@/components/shared/AccessDenied';
 import { OrganizationList } from '@/features/administration/components/OrganizationList';
 import { OrganizationForm } from '@/features/administration/components/OrganizationForm';
 import { DefineRole } from '@/features/administration/components/DefineRole';
@@ -21,14 +22,7 @@ export default function AdministrationPage() {
   return (
     <PermissionGuard
       permission="administration:read"
-      fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-            <p className="text-gray-600">You don&apos;t have permission to access the administration panel.</p>
-          </div>
-        </div>
-      }
+      fallback={<AccessDenied title="Không Có Quyền Quản Trị Hệ Thống" description="Tài khoản của bạn không được cấp quyền truy cập vào bảng Quản Trị Hệ Thống." />}
     >
       <AdministrationContent />
     </PermissionGuard>

@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input';
 import { PERMISSIONS } from '@/config/permissions';
 import { INVOICE_STATUS, APP_ROUTES } from '@/config/constants';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { PermissionGuard } from '@/components/rbac/PermissionGuard';
+import { AccessDenied } from '@/components/shared/AccessDenied';
 
 export default function InvoicesListPage({ params }: { params: Promise<{ orgId: string }> }) {
   const router = useRouter();
@@ -51,6 +53,10 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
   const filteredInvoices = invoices;
 
   return (
+    <PermissionGuard
+      permission={PERMISSIONS.INVOICES.READ}
+      fallback={<AccessDenied title="Không Có Quyền Xem Hóa Đơn" description="Tài khoản của bạn không được cấp quyền để xem danh sách hóa đơn. Vui lòng liên hệ quản trị viên." />}
+    >
     <div className="p-6 h-full flex flex-col min-h-0 overflow-hidden font-['Segoe_UI'] bg-white">
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
@@ -192,5 +198,6 @@ export default function InvoicesListPage({ params }: { params: Promise<{ orgId: 
         />
       )}
     </div>
+    </PermissionGuard>
   );
 }

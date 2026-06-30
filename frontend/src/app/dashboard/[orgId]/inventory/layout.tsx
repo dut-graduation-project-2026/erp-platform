@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PermissionGuard } from '@/components/rbac/PermissionGuard';
+import { AccessDenied } from '@/components/shared/AccessDenied';
 import { PERMISSIONS } from '@/config/permissions';
 import { APP_ROUTES } from '@/config/constants';
 
@@ -44,48 +45,55 @@ export default function InventoryLayout({
   };
 
   const operationsItems = [
-    { name: 'Overview', href: `${basePath}`, icon: Activity },
-    { name: 'Stock Moves', href: `${basePath}/documents`, icon: FileText },
-    { name: 'Replenishments', href: `${basePath}/replenishments`, icon: Boxes },
-    { name: 'Adjustments', href: `${basePath}/adjustments`, icon: FileText },
+    { name: 'Overview', href: `${basePath}`, icon: Activity, permission: PERMISSIONS.INVENTORY.ACCESS },
+    { name: 'Stock Moves', href: `${basePath}/documents`, icon: FileText, permission: PERMISSIONS.INVENTORY_DOCUMENTS.READ },
+    { name: 'Replenishments', href: `${basePath}/replenishments`, icon: Boxes, permission: PERMISSIONS.REPLENISHMENT_REQUESTS.READ },
+    { name: 'Adjustments', href: `${basePath}/adjustments`, icon: FileText, permission: PERMISSIONS.INVENTORY_DOCUMENTS.READ },
   ];
 
   const masterDataItems = [
-    { name: 'Warehouses', href: `${basePath}/warehouses`, icon: Warehouse },
-    { name: 'Stock Balances', href: `${basePath}/balances`, icon: Activity },
-    { name: 'Products', href: `${basePath}/products`, icon: Package },
+    { name: 'Warehouses', href: `${basePath}/warehouses`, icon: Warehouse, permission: PERMISSIONS.WAREHOUSES.READ },
+    { name: 'Stock Balances', href: `${basePath}/balances`, icon: Activity, permission: PERMISSIONS.WAREHOUSES.READ },
+    { name: 'Products', href: `${basePath}/products`, icon: Package, permission: PERMISSIONS.PRODUCTS.READ },
   ];
 
   const reportItems = [
-    { name: 'COGS & Valuations', href: `${basePath}/valuations`, icon: DollarSign },
+    { name: 'COGS & Valuations', href: `${basePath}/valuations`, icon: DollarSign, permission: PERMISSIONS.STOCK_VALUATIONS.READ },
   ];
 
-  const renderNavItem = (item: { name: string; href: string; icon: React.ElementType }) => {
+  const allNavItems = [...operationsItems, ...masterDataItems, ...reportItems];
+  const activeNavItem = allNavItems
+    .filter(item => item.href !== basePath)
+    .find(item => pathname.startsWith(item.href));
+  const requiredPermission = activeNavItem ? activeNavItem.permission : PERMISSIONS.INVENTORY.ACCESS;
+
+  const renderNavItem = (item: { name: string; href: string; icon: React.ElementType; permission: string }) => {
     const isActive = item.name === 'Overview'
       ? pathname === item.href
       : (pathname === item.href || pathname.startsWith(item.href + '/'));
     const Icon = item.icon;
     return (
-      <Link
-        key={item.name}
-        href={item.href}
-        title={isCollapsed ? item.name : undefined}
-        className={cn(
-          "flex items-center rounded-[6px] text-[13px] font-[500] transition-all duration-300 select-none",
-          isCollapsed ? "justify-center p-2.5 mx-auto w-10 h-10" : "px-3 py-2.5 mx-1",
-          isActive
-            ? "bg-[#f0f4ff] text-[#0066cc] font-[600]"
-            : "text-[#4a4a4a] hover:bg-[#f5f5f5] hover:text-[#242424]"
-        )}
-      >
-        <Icon className={cn("w-4 h-4 shrink-0 transition-transform duration-300", isActive ? "text-[#0066cc]" : "text-[#898989]", isCollapsed && "scale-110")} />
-        <span className={cn(
-          "transition-all duration-300 ease-in-out truncate origin-left",
-          isCollapsed ? "w-0 opacity-0 scale-95 pointer-events-none ml-0 hidden" : "w-auto opacity-100 scale-100 ml-3"
-        )}>
-          {item.name}
-        </span>
-      </Link>
+      <PermissionGuard key={item.name} permission={item.permission}>
+        <Link
+          href={item.href}
+          title={isCollapsed ? item.name : undefined}
+          className={cn(
+            "flex items-center rounded-[6px] text-[13px] font-[500] transition-all duration-300 select-none",
+            isCollapsed ? "justify-center p-2.5 mx-auto w-10 h-10" : "px-3 py-2.5 mx-1",
+            isActive
+              ? "bg-[#f0f4ff] text-[#0066cc] font-[600]"
+              : "text-[#4a4a4a] hover:bg-[#f5f5f5] hover:text-[#242424]"
+          )}
+        >
+          <Icon className={cn("w-4 h-4 shrink-0 transition-transform duration-300", isActive ? "text-[#0066cc]" : "text-[#898989]", isCollapsed && "scale-110")} />
+          <span className={cn(
+            "transition-all duration-300 ease-in-out truncate origin-left",
+            isCollapsed ? "w-0 opacity-0 scale-95 pointer-events-none ml-0 hidden" : "w-auto opacity-100 scale-100 ml-3"
+          )}>
+            {item.name}
+          </span>
+        </Link>
+      </PermissionGuard>
     );
   };
 
@@ -159,15 +167,11 @@ export default function InventoryLayout({
       </aside>
 
       {/* Main Module Content */}
-      <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#f8f8f8]">
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#f8f8f8] relative">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           <PermissionGuard
-            permission={PERMISSIONS.INVENTORY.ACCESS}
-            fallback={
-              <div className="flex-1 flex items-center justify-center text-red-500 font-medium bg-white">
-                Access Denied. You do not have permission to access Inventory.
-              </div>
-            }
+            permission={requiredPermission}
+            fallback={<AccessDenied title="Access denied" description="Your account does not have permission to access this feature." />}
           >
             {children}
           </PermissionGuard>

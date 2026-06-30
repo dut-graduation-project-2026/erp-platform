@@ -14,8 +14,9 @@
  *   </PermissionGuard>
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useAuthStore } from '@/store/use-auth-store';
 
 interface PermissionGuardProps {
   permission: string;
@@ -28,7 +29,21 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
   fallback = null,
   children,
 }) => {
+  const [mounted, setMounted] = useState(false);
   const { hasPermission } = usePermissions();
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   if (!hasPermission(permission)) {
     return <>{fallback}</>;
