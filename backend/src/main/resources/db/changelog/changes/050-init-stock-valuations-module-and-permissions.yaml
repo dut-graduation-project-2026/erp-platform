@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 050-init-stock-valuations-module-and-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: erp_modules
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: Stock Valuations
+              - column:
+                  name: code
+                  value: stock-valuations
+              - column:
+                  name: description
+                  value: Manage stock valuations and inventory costs.
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: stock-valuations:select
+              - column:
+                  name: code
+                  value: stock-valuations:select
+              - column:
+                  name: description
+                  value: Allow selecting stock valuations in lookups and filters.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'stock-valuations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: stock-valuations:read
+              - column:
+                  name: code
+                  value: stock-valuations:read
+              - column:
+                  name: description
+                  value: Allow reading stock valuations information.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'stock-valuations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: stock-valuations:write
+              - column:
+                  name: code
+                  value: stock-valuations:write
+              - column:
+                  name: description
+                  value: Allow writing/updating existing stock valuations data.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'stock-valuations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: stock-valuations:create
+              - column:
+                  name: code
+                  value: stock-valuations:create
+              - column:
+                  name: description
+                  value: Allow creating new stock valuations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'stock-valuations')
+
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: stock-valuations:delete
+              - column:
+                  name: code
+                  value: stock-valuations:delete
+              - column:
+                  name: description
+                  value: Allow deleting stock valuations.
+              - column:
+                  name: module_id
+                  valueComputed: (SELECT id FROM erp_modules WHERE code = 'stock-valuations')

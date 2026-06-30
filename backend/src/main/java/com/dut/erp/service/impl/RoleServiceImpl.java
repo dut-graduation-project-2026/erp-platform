@@ -37,7 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
-@Service
+@Service("roleService")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RoleServiceImpl implements RoleService {
@@ -104,9 +104,15 @@ public class RoleServiceImpl implements RoleService {
 
   @Override
   public boolean isRoleBelongsToOrganization(UUID roleId, UUID organizationId) {
-    Role role = findRoleById(roleId);
-    return role.getOrganization().getId().equals(organizationId);
+    // Use findByIdWithOrganization (JOIN FETCH) to avoid LazyInitializationException
+    // inside @PreAuthorize SpEL context (which runs outside of any transaction).
+    // Returns false (→ 403) instead of throwing an exception (→ 400).
+    return roleRepository.findByIdWithOrganization(roleId)
+        .map(role -> role.getOrganization() != null
+            && role.getOrganization().getId().equals(organizationId))
+        .orElse(false);
   }
+
 
   @Override
   @Transactional

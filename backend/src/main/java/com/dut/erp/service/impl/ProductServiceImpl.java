@@ -10,14 +10,20 @@ import com.dut.erp.dto.response.ProductResponse;
 import com.dut.erp.entity.InventoryBalance;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.Product;
+import com.dut.erp.entity.ProductCategory;
 import com.dut.erp.entity.Warehouse;
+import com.dut.erp.entity.OrderItem;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.ProductMapper;
 import com.dut.erp.repository.InventoryBalanceRepository;
 import com.dut.erp.repository.OrganizationRepository;
+import com.dut.erp.repository.ProductCategoryRepository;
 import com.dut.erp.repository.ProductRepository;
 import com.dut.erp.repository.WarehouseRepository;
+import com.dut.erp.repository.OrderItemRepository;
+import com.dut.erp.repository.OrderRepository;
 import com.dut.erp.service.ProductService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,8 +47,11 @@ public class ProductServiceImpl implements ProductService {
 
   private final OrganizationRepository organizationRepository;
   private final ProductRepository productRepository;
+  private final ProductCategoryRepository productCategoryRepository;
   private final WarehouseRepository warehouseRepository;
   private final InventoryBalanceRepository inventoryBalanceRepository;
+  private final OrderItemRepository orderItemRepository;
+  private final OrderRepository orderRepository;
   private final ProductMapper productMapper;
 
   @Override
@@ -90,13 +99,24 @@ public class ProductServiceImpl implements ProductService {
   @Transactional
   public ProductResponse createProduct(UUID organizationId, UpsertProductRequest request) {
     Organization organization = findOrganizationById(organizationId);
+    ProductCategory category = productCategoryRepository.findByIdAndOrganizationId(request.categoryId(), organizationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Product category not found with id: " + request.categoryId()));
+
+    if (productRepository.existsByOrganizationIdAndSkuIgnoreCase(organizationId, request.sku().trim())) {
+      throw new com.dut.erp.exception.BadRequestException("SKU '" + request.sku() + "' is already in use in this organization.");
+    }
 
     Product product =
         Product.builder()
             .organization(organization)
+            .category(category)
             .name(request.name())
-            .price(request.price())
+            .sku(request.sku().trim().toUpperCase())
+            .purchasePrice(request.purchasePrice())
+            .salesPrice(request.salesPrice())
             .description(request.description())
+            .cogsMethod(request.cogsMethod() != null ? request.cogsMethod() : com.dut.erp.enums.CogsMethod.FIFO)
+            .image(request.image())
             .build();
 
     product = productRepository.save(product);
@@ -125,10 +145,21 @@ public class ProductServiceImpl implements ProductService {
   public ProductResponse updateProduct(
       UUID organizationId, UUID productId, UpsertProductRequest request) {
     Product product = findProductByIdAndOrganizationId(productId, organizationId);
+    ProductCategory category = productCategoryRepository.findByIdAndOrganizationId(request.categoryId(), organizationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Product category not found with id: " + request.categoryId()));
+
+    if (productRepository.existsByOrganizationIdAndSkuIgnoreCaseAndIdNot(organizationId, request.sku().trim(), productId)) {
+      throw new com.dut.erp.exception.BadRequestException("SKU '" + request.sku() + "' is already in use by another product in this organization.");
+    }
 
     product.setName(request.name());
-    product.setPrice(request.price());
+    product.setSku(request.sku().trim().toUpperCase());
+    product.setPurchasePrice(request.purchasePrice());
+    product.setSalesPrice(request.salesPrice());
     product.setDescription(request.description());
+    product.setCategory(category);
+    product.setCogsMethod(request.cogsMethod() != null ? request.cogsMethod() : com.dut.erp.enums.CogsMethod.FIFO);
+    product.setImage(request.image());
 
     product = productRepository.save(product);
     log.info("Updated product {} in organization {}", productId, organizationId);
@@ -143,6 +174,25 @@ public class ProductServiceImpl implements ProductService {
     product.setArchived(isArchived);
     product = productRepository.save(product);
     log.info("Updated archive status for product {} in organization {}", productId, organizationId);
+
+    if (isArchived) {
+      List<OrderItem> itemsToDelete = orderItemRepository.findByProductIdAndOrderStatus(productId, com.dut.erp.enums.OrderStatus.DRAFT);
+      if (!itemsToDelete.isEmpty()) {
+        java.util.Set<com.dut.erp.entity.Order> ordersToRecalculate = itemsToDelete.stream()
+            .map(OrderItem::getOrder)
+            .collect(Collectors.toSet());
+
+        orderItemRepository.deleteAll(itemsToDelete);
+
+        for (com.dut.erp.entity.Order order : ordersToRecalculate) {
+          BigDecimal newTotal = orderItemRepository.sumSubtotalByOrderId(order.getId());
+          order.setTotalAmount(newTotal);
+          orderRepository.save(order);
+          log.info("Recalculated totalAmount for draft order {} to {}", order.getOrderNumber(), newTotal);
+        }
+      }
+    }
+
     return productMapper.toResponse(product);
   }
 

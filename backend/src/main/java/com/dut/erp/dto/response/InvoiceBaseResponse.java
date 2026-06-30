@@ -9,6 +9,8 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record InvoiceBaseResponse(
     UUID id,
+    OrderBaseResponse order,
+    PartnerBaseResponse partner,
     String invoiceNumber,
     Instant dueDate,
     BigDecimal totalAmount,

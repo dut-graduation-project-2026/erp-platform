@@ -9,6 +9,9 @@ public record WarehouseBaseResponse(
     String code,
     String name,
     String address,
+    String description,
     boolean isActive,
-    UserBaseResponse manager
+    UserBaseResponse manager,
+    int staffCount,
+    java.util.List<UserBaseResponse> staff
 ) {}

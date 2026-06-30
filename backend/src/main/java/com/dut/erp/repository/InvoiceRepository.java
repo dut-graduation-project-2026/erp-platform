@@ -45,20 +45,39 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
       SELECT i.id
       FROM Invoice i
       WHERE i.organization.id = :organizationId
+        AND (:status IS NULL OR i.status = :status)
+      ORDER BY 
+        CASE WHEN i.status = com.dut.erp.enums.InvoiceStatus.PAID THEN 1 ELSE 0 END ASC,
+        CASE WHEN i.dueDate IS NULL THEN 1 ELSE 0 END ASC,
+        i.dueDate ASC,
+        i.createdAt ASC
       """)
   Page<UUID> findInvoiceIdsByOrganizationId(
-      @Param("organizationId") UUID organizationId, Pageable pageable);
+      @Param("organizationId") UUID organizationId,
+      @Param("status") com.dut.erp.enums.InvoiceStatus status,
+      Pageable pageable);
 
   @Query(
       """
       SELECT i.id
       FROM Invoice i
+      LEFT JOIN i.order o
+      LEFT JOIN i.partner p
       WHERE i.organization.id = :organizationId
-      AND LOWER(i.invoiceNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+        AND (:status IS NULL OR i.status = :status)
+        AND (LOWER(i.invoiceNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+             OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+             OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+      ORDER BY 
+        CASE WHEN i.status = com.dut.erp.enums.InvoiceStatus.PAID THEN 1 ELSE 0 END ASC,
+        CASE WHEN i.dueDate IS NULL THEN 1 ELSE 0 END ASC,
+        i.dueDate ASC,
+        i.createdAt ASC
       """)
   Page<UUID> findInvoiceIdsByOrganizationIdAndSearch(
       @Param("organizationId") UUID organizationId,
       @Param("search") String search,
+      @Param("status") com.dut.erp.enums.InvoiceStatus status,
       Pageable pageable);
 
   @Query(

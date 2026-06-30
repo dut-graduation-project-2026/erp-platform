@@ -1,8 +1,10 @@
 package com.dut.erp.controller.v1;
 
 import com.dut.erp.dto.request.CreatePartnerRequest;
+import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
+import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.PartnerBaseResponse;
 import com.dut.erp.dto.response.PartnerResponse;
 import com.dut.erp.security.CustomUserDetails;
@@ -17,12 +19,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -77,10 +81,13 @@ public class PartnerController {
         and
         @securityAuthService.hasPermission('partners:read', #organizationId, #userDetails)
       """)
-  public ResponseEntity<List<PartnerBaseResponse>> getPartners(
+  public ResponseEntity<PagedEntityResponse<PartnerBaseResponse>> getPartners(
       @PathVariable UUID organizationId,
+      @RequestParam(required = false) String search,
+      @Valid @ModelAttribute PaginationRequest paginationRequest,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
-    List<PartnerBaseResponse> responses = partnerService.getPartners(organizationId);
+    PagedEntityResponse<PartnerBaseResponse> responses =
+        partnerService.getPartners(organizationId, search, paginationRequest);
     return ResponseEntity.ok(responses);
   }
 

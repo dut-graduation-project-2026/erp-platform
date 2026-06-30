@@ -42,17 +42,38 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
   @Query(
       """
       SELECT DISTINCT p FROM Product p
+      LEFT JOIN FETCH p.category
       WHERE p.id IN :ids
       """)
   List<Product> findAllByIdIn(@Param("ids") List<UUID> ids);
 
   @Query(
       """
+      SELECT DISTINCT p FROM Product p
+      LEFT JOIN FETCH p.category
+      WHERE p.id IN :ids AND p.organization.id = :organizationId
+      """)
+  List<Product> findAllByIdInAndOrganizationId(
+      @Param("ids") List<UUID> ids, @Param("organizationId") UUID organizationId);
+
+  @Query(
+      """
       SELECT p FROM Product p
       LEFT JOIN FETCH p.organization
+      LEFT JOIN FETCH p.category
       LEFT JOIN FETCH p.createdBy
       LEFT JOIN FETCH p.updatedBy
       WHERE p.id = :id AND p.organization.id = :organizationId
       """)
   Optional<Product> findByIdAndOrganizationId(UUID id, UUID organizationId);
+
+  @Query("""
+      SELECT p FROM Product p
+      WHERE p.organization.id = :organizationId
+      """)
+  List<Product> findAllByOrganizationId(@Param("organizationId") UUID organizationId);
+
+  boolean existsByOrganizationIdAndSkuIgnoreCase(UUID organizationId, String sku);
+
+  boolean existsByOrganizationIdAndSkuIgnoreCaseAndIdNot(UUID organizationId, String sku, UUID id);
 }

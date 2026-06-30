@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 043-create-inventory-transactions-table
+      author: halwins
+      changes:
+        - createTable:
+            tableName: inventory_transactions
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_inventory_transactions
+                    nullable: false
+              - column:
+                  name: inventory_document_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_cost
+                  type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: valuation
+                  type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: remaining_quantity
+                  type: DECIMAL(15, 4)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_inventory_transactions_document
+            baseTableName: inventory_transactions
+            baseColumnNames: inventory_document_id
+            referencedTableName: inventory_documents
+            referencedColumnNames: id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_inventory_transactions_product
+            baseTableName: inventory_transactions
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            onDelete: RESTRICT
+            onUpdate: CASCADE

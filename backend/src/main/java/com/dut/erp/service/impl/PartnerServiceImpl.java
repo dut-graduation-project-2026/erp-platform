@@ -1,9 +1,11 @@
 package com.dut.erp.service.impl;
 
 import com.dut.erp.dto.request.CreatePartnerRequest;
+import com.dut.erp.dto.request.PaginationRequest;
 import com.dut.erp.dto.request.PartnerContactRequest;
 import com.dut.erp.dto.request.UpdateArchiveStatusRequest;
 import com.dut.erp.dto.request.UpdatePartnerRequest;
+import com.dut.erp.dto.response.PagedEntityResponse;
 import com.dut.erp.dto.response.PartnerBaseResponse;
 import com.dut.erp.dto.response.PartnerResponse;
 import com.dut.erp.entity.Organization;
@@ -17,12 +19,18 @@ import com.dut.erp.repository.PartnerRepository;
 import com.dut.erp.service.PartnerService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,11 +90,37 @@ public class PartnerServiceImpl implements PartnerService {
   }
 
   @Override
-  public List<PartnerBaseResponse> getPartners(UUID organizationId) {
+  public PagedEntityResponse<PartnerBaseResponse> getPartners(
+      UUID organizationId, String search, PaginationRequest paginationRequest) {
     findOrganizationById(organizationId);
-    return partnerRepository.findAllByOrganizationId(organizationId).stream()
-        .map(partnerMapper::toPartnerBaseResponse)
-        .toList();
+
+    Pageable pageable =
+        PageRequest.of(
+            paginationRequest.page() - 1,
+            paginationRequest.limit());
+
+    Page<UUID> ids =
+        (search != null && !search.trim().isEmpty())
+            ? partnerRepository.findPartnerIdsByOrganizationIdAndSearch(
+                organizationId, search, pageable)
+            : partnerRepository.findPartnerIdsByOrganizationId(organizationId, pageable);
+
+    if (ids.isEmpty()) {
+      return PagedEntityResponse.from(Page.empty(pageable));
+    }
+
+    Map<UUID, Partner> partnerMap =
+        partnerRepository.findAllByIdIn(ids.getContent()).stream()
+            .collect(Collectors.toMap(Partner::getId, Function.identity()));
+
+    List<PartnerBaseResponse> responses =
+        ids.getContent().stream()
+            .map(partnerMap::get)
+            .filter(Objects::nonNull)
+            .map(partnerMapper::toPartnerBaseResponse)
+            .collect(Collectors.toList());
+
+    return PagedEntityResponse.from(new PageImpl<>(responses, pageable, ids.getTotalElements()));
   }
 
   @Override

@@ -1,8 +1,10 @@
 package com.dut.erp.controller.v1;
 
 import com.dut.erp.dto.jwt.TokenPair;
+import com.dut.erp.dto.request.ForgotPasswordRequest;
 import com.dut.erp.dto.request.LoginRequest;
 import com.dut.erp.dto.request.RegisterRequest;
+import com.dut.erp.dto.request.ResetPasswordRequest;
 import com.dut.erp.dto.response.AuthResponse;
 import com.dut.erp.dto.response.UserResponse;
 import com.dut.erp.service.AuthenticationService;
@@ -13,9 +15,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -99,6 +103,44 @@ public class AuthController {
     AuthResponse authResponse = authenticationService.register(request);
     setAuthCookies(response, authResponse.tokens());
     return ResponseEntity.status(HttpStatus.CREATED).body(authResponse.user());
+  }
+
+  /**
+   * Sends a password reset link to the user's email if they forgot their password.
+   *
+   * @param request the request containing the user's email
+   * @return a success message indicating that the reset email was sent
+   */
+  @PostMapping("/forgot-password")
+  public ResponseEntity<String> forgotPassword(
+      @Valid @RequestBody ForgotPasswordRequest request) {
+    authenticationService.sendForgotPasswordEmail(request);
+    return ResponseEntity.ok("Password reset email sent successfully.");
+  }
+
+  /**
+   * Resets the user's password using the validation token.
+   *
+   * @param request the request containing the token and new password
+   * @return a success message indicating successful password reset
+   */
+  @PostMapping("/reset-password")
+  public ResponseEntity<String> resetPassword(
+      @Valid @RequestBody ResetPasswordRequest request) {
+    authenticationService.resetPassword(request);
+    return ResponseEntity.ok("Password has been reset successfully.");
+  }
+
+  /**
+   * Validates a password reset token.
+   *
+   * @param token the token to validate
+   * @return a success message indicating successful validation
+   */
+  @GetMapping("/reset-password/validate")
+  public ResponseEntity<String> validateResetToken(@RequestParam String token) {
+    authenticationService.validateResetToken(token);
+    return ResponseEntity.ok("Token is valid.");
   }
 
   /**

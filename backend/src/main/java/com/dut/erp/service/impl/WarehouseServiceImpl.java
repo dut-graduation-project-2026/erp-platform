@@ -11,6 +11,8 @@ import com.dut.erp.dto.response.WarehouseResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.User;
 import com.dut.erp.entity.Warehouse;
+import com.dut.erp.entity.Product;
+import com.dut.erp.entity.InventoryBalance;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceAlreadyExistsException;
 import com.dut.erp.exception.ResourceNotFoundException;
@@ -18,7 +20,12 @@ import com.dut.erp.mapper.WarehouseMapper;
 import com.dut.erp.repository.OrganizationRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.repository.WarehouseRepository;
+import com.dut.erp.repository.ProductRepository;
+import com.dut.erp.repository.InventoryBalanceRepository;
+import com.dut.erp.service.SecurityAuthService;
 import com.dut.erp.service.WarehouseService;
+import com.dut.erp.security.CustomUserDetails;
+import com.dut.erp.util.SecurityUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +41,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.dut.erp.repository.PermissionRepository;
+import com.dut.erp.repository.InventoryDocumentRepository;
+import com.dut.erp.repository.OrderRepository;
 
 @Slf4j
 @Service
@@ -44,7 +54,13 @@ public class WarehouseServiceImpl implements WarehouseService {
   private final OrganizationRepository organizationRepository;
   private final WarehouseRepository warehouseRepository;
   private final UserRepository userRepository;
+  private final ProductRepository productRepository;
+  private final InventoryBalanceRepository inventoryBalanceRepository;
+  private final InventoryDocumentRepository inventoryDocumentRepository;
+  private final OrderRepository orderRepository;
+  private final PermissionRepository permissionRepository;
   private final WarehouseMapper warehouseMapper;
+  private final SecurityAuthService securityAuthService;
 
   @Override
   public PagedEntityResponse<WarehouseBaseResponse> getWarehouses(
@@ -57,7 +73,18 @@ public class WarehouseServiceImpl implements WarehouseService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.asc("name"), SortField.asc("updatedAt")));
 
-    Page<UUID> ids = warehouseRepository.findIdsByOrganizationId(organizationId, pageable);
+    CustomUserDetails currentUser = SecurityUtils.getCurrentUser();
+    boolean isAllWarehouses = securityAuthService.isAdmin(currentUser) || 
+        permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+            currentUser.getId(), organizationId, "warehouses:read_all"
+        );
+
+    Page<UUID> ids;
+    if (isAllWarehouses) {
+      ids = warehouseRepository.findIdsByOrganizationId(organizationId, pageable);
+    } else {
+      ids = warehouseRepository.findIdsByOrganizationIdAndUserId(organizationId, currentUser.getId(), pageable);
+    }
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));
@@ -81,6 +108,7 @@ public class WarehouseServiceImpl implements WarehouseService {
   public WarehouseResponse getWarehouseById(UUID organizationId, UUID warehouseId) {
     log.info("Fetching warehouse {} for organization {}", warehouseId, organizationId);
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
+    securityAuthService.isWarehouseStaffOrManagerOrAdmin(warehouse, SecurityUtils.getCurrentUser());
     return warehouseMapper.toResponse(warehouse);
   }
 
@@ -114,7 +142,6 @@ public class WarehouseServiceImpl implements WarehouseService {
             .code(request.code())
             .address(request.address())
             .description(request.description())
-            .maximumCapacity(request.maximumCapacity())
             .isActive(Boolean.TRUE)
             .staff(staff)
             .manager(manager)
@@ -122,6 +149,22 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     warehouse = warehouseRepository.save(warehouse);
     log.info("Created warehouse {} in organization {}", warehouse.getId(), organizationId);
+
+    // Seed a zero-quantity InventoryBalance for every product in the organization
+    List<Product> products = productRepository.findAllByOrganizationId(organizationId);
+    if (!products.isEmpty()) {
+      final Warehouse savedWarehouse = warehouse;
+      List<InventoryBalance> balances = products.stream()
+          .map(product -> InventoryBalance.builder()
+              .warehouse(savedWarehouse)
+              .product(product)
+              .build())
+          .collect(Collectors.toList());
+      inventoryBalanceRepository.saveAll(balances);
+      log.info("Seeded {} inventory balance(s) for warehouse {} across products",
+          balances.size(), savedWarehouse.getId());
+    }
+
     return warehouseMapper.toResponse(warehouse);
   }
 
@@ -131,6 +174,8 @@ public class WarehouseServiceImpl implements WarehouseService {
       UUID organizationId, UUID warehouseId, UpdateWarehouseRequest request) {
     log.info("Updating warehouse {} in organization {}", warehouseId, organizationId);
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
+
+    securityAuthService.isWarehouseManagerOrAdmin(warehouse, SecurityUtils.getCurrentUser());
 
     if (warehouseRepository.existsByOrganizationIdAndCodeAndIdNot(organizationId, request.code(), warehouseId)) {
       throw new ResourceAlreadyExistsException(
@@ -156,7 +201,6 @@ public class WarehouseServiceImpl implements WarehouseService {
     warehouse.setCode(request.code());
     warehouse.setAddress(request.address());
     warehouse.setDescription(request.description());
-    warehouse.setMaximumCapacity(request.maximumCapacity());
     warehouse.setStaff(staff);
     warehouse.setManager(manager);
 
@@ -170,6 +214,9 @@ public class WarehouseServiceImpl implements WarehouseService {
   public void deleteWarehouse(UUID organizationId, UUID warehouseId) {
     log.info("Deleting warehouse {} in organization {}", warehouseId, organizationId);
     Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
+    if (!securityAuthService.isAdmin(SecurityUtils.getCurrentUser())) {
+      throw new org.springframework.security.access.AccessDeniedException("Access denied: Only system administrators can delete warehouses.");
+    }
     warehouseRepository.delete(warehouse);
     log.info("Deleted warehouse {} from organization {}", warehouseId, organizationId);
   }
@@ -215,5 +262,73 @@ public class WarehouseServiceImpl implements WarehouseService {
       throw new BadRequestException(
           "Manager (id: " + managerId + ") must be included in the staff list.");
     }
+  }
+
+  @Override
+  public com.dut.erp.dto.response.WarehouseMetricsResponse getWarehouseMetrics(UUID organizationId, UUID warehouseId) {
+    log.info("Fetching metrics for warehouse {} in organization {}", warehouseId, organizationId);
+    Warehouse warehouse = findWarehouseByIdAndOrganizationId(warehouseId, organizationId);
+    securityAuthService.isWarehouseStaffOrManagerOrAdmin(warehouse, SecurityUtils.getCurrentUser());
+
+    // 1. Receipts Metrics
+    long receiptsToProcess = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.RECEIPT),
+        List.of(com.dut.erp.enums.DocumentStatus.DRAFT)
+    );
+    long receiptsBackorders = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.RECEIPT),
+        List.of(com.dut.erp.enums.DocumentStatus.WAITING_FOR_STOCK)
+    );
+    long receiptsLate = inventoryDocumentRepository.countLateDocuments(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.RECEIPT),
+        List.of(com.dut.erp.enums.DocumentStatus.COMPLETED, com.dut.erp.enums.DocumentStatus.CANCELLED)
+    );
+
+    // 2. Deliveries Metrics
+    long deliveriesToProcess = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.ISSUE),
+        List.of(com.dut.erp.enums.DocumentStatus.DRAFT)
+    );
+    long deliveriesBackorders = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.ISSUE),
+        List.of(com.dut.erp.enums.DocumentStatus.WAITING_FOR_STOCK)
+    );
+    long deliveriesLate = inventoryDocumentRepository.countLateDocuments(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.ISSUE),
+        List.of(com.dut.erp.enums.DocumentStatus.COMPLETED, com.dut.erp.enums.DocumentStatus.CANCELLED)
+    );
+
+    // 3. Transfers Metrics
+    long transfersToProcess = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.TRANSFER_IN, com.dut.erp.enums.DocumentType.TRANSFER_OUT),
+        List.of(com.dut.erp.enums.DocumentStatus.DRAFT)
+    );
+    long transfersBackorders = inventoryDocumentRepository.countByWarehouseIdAndDocumentTypeInAndDocumentStatusIn(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.TRANSFER_IN, com.dut.erp.enums.DocumentType.TRANSFER_OUT),
+        List.of(com.dut.erp.enums.DocumentStatus.WAITING_FOR_STOCK)
+    );
+    long transfersLate = inventoryDocumentRepository.countLateDocuments(
+        warehouseId,
+        List.of(com.dut.erp.enums.DocumentType.TRANSFER_IN, com.dut.erp.enums.DocumentType.TRANSFER_OUT),
+        List.of(com.dut.erp.enums.DocumentStatus.COMPLETED, com.dut.erp.enums.DocumentStatus.CANCELLED)
+    );
+
+    // 4. Pending Fulfillment Count (Global for organization)
+    long pendingFulfillmentCount = orderRepository.countPendingFulfillmentOrders(organizationId);
+
+    return new com.dut.erp.dto.response.WarehouseMetricsResponse(
+        new com.dut.erp.dto.response.WarehouseMetricsResponse.MetricDetail(receiptsToProcess, receiptsBackorders, receiptsLate),
+        new com.dut.erp.dto.response.WarehouseMetricsResponse.MetricDetail(deliveriesToProcess, deliveriesBackorders, deliveriesLate),
+        new com.dut.erp.dto.response.WarehouseMetricsResponse.MetricDetail(transfersToProcess, transfersBackorders, transfersLate),
+        pendingFulfillmentCount
+    );
   }
 }

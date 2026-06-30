@@ -14,6 +14,21 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface InventoryBalanceRepository extends JpaRepository<InventoryBalance, UUID> {
 
+  @Query("""
+      SELECT p.category.id, p.category.name,
+        COALESCE(SUM(ib.quantity * p.purchasePrice), 0),
+        COALESCE(SUM(ib.quantity), 0),
+        COUNT(DISTINCT p.id)
+      FROM InventoryBalance ib
+      JOIN ib.product p
+      JOIN ib.warehouse w
+      WHERE w.organization.id = :orgId
+        AND ib.quantity > 0
+      GROUP BY p.category.id, p.category.name
+      ORDER BY COALESCE(SUM(ib.quantity * p.purchasePrice), 0) DESC
+      """)
+  List<Object[]> findAssetDistributionByCategory(@Param("orgId") UUID orgId);
+
   // ---- Paginated ID list for list-view queries ----
 
   @Query(
@@ -56,5 +71,34 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
   Optional<InventoryBalance> findByIdAndWarehouseId(
       @Param("id") UUID id, @Param("warehouseId") UUID warehouseId);
 
+  @Query(
+      """
+      SELECT ib FROM InventoryBalance ib
+      JOIN FETCH ib.product
+      WHERE ib.warehouse.id = :warehouseId AND ib.product.id IN :productIds
+      """)
+  List<InventoryBalance> findAllByWarehouseIdAndProductIdIn(
+      @Param("warehouseId") UUID warehouseId, @Param("productIds") List<UUID> productIds);
+
+  @Query(
+      """
+      SELECT ib FROM InventoryBalance ib
+      JOIN FETCH ib.warehouse w
+      WHERE ib.product.id = :productId AND w.organization.id = :organizationId
+      """)
+  List<InventoryBalance> findAllByProductIdAndOrganizationId(
+      @Param("productId") UUID productId, @Param("organizationId") UUID organizationId);
+
   Optional<InventoryBalance> findByWarehouseIdAndProductId(UUID warehouseId, UUID productId);
+
+  @Query(
+      """
+      SELECT ib FROM InventoryBalance ib
+      JOIN FETCH ib.warehouse w
+      JOIN FETCH ib.product p
+      WHERE w.organization.id = :organizationId
+      """)
+  List<InventoryBalance> findAllByOrganizationId(
+      @Param("organizationId") UUID organizationId);
 }
+

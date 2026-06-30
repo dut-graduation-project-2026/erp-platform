@@ -77,15 +77,42 @@ public class OrganizationServiceImpl implements OrganizationService {
     creator.getRoles().add(adminRole);
     userRepository.save(creator);
 
-    log.info("Organization {} created by user {}", organization.getId(), userId);
-
-    return organizationMapper.toOrganizationResponse(organization);
+    OrganizationResponse mappedResponse = organizationMapper.toOrganizationResponse(organization);
+    return OrganizationResponse.builder()
+        .id(mappedResponse.id())
+        .name(mappedResponse.name())
+        .description(mappedResponse.description())
+        .hotline(mappedResponse.hotline())
+        .address(mappedResponse.address())
+        .taxCode(mappedResponse.taxCode())
+        .role(DEFAULT_ADMIN_ROLE_NAME)
+        .build();
   }
 
   @Override
   public List<OrganizationResponse> getOrganizationsByUserId(UUID userId) {
-    return organizationRepository.findAllByUserId(userId).stream()
-        .map(organizationMapper::toOrganizationResponse)
+    User user = userRepository.findByIdWithRolesAndOrganizations(userId)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+    return user.getOrganizations().stream()
+        .map(org -> {
+          String roleName = user.getRoles().stream()
+              .filter(role -> role.getOrganization() != null && role.getOrganization().getId().equals(org.getId()))
+              .map(Role::getName)
+              .findFirst()
+              .orElse("MEMBER");
+          
+          OrganizationResponse mappedResponse = organizationMapper.toOrganizationResponse(org);
+          return OrganizationResponse.builder()
+              .id(mappedResponse.id())
+              .name(mappedResponse.name())
+              .description(mappedResponse.description())
+              .hotline(mappedResponse.hotline())
+              .address(mappedResponse.address())
+              .taxCode(mappedResponse.taxCode())
+              .role(roleName)
+              .build();
+        })
         .toList();
   }
 

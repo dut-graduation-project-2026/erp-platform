@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 048-alter-products-add-cogs-method
+      author: halwins
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: cogs_method
+                  type: VARCHAR(50)
+                  defaultValue: 'FIFO'
+                  constraints:
+                    nullable: false

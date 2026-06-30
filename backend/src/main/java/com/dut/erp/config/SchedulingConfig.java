@@ -12,15 +12,15 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @EnableScheduling
 public class SchedulingConfig {
 
-  @Bean(name = "mailTaskExecutor")
-  public Executor mailTaskExecutor() {
+  @Bean(name = "taskExecutor")
+  public Executor taskExecutor() {
     int availableProcessors = Runtime.getRuntime().availableProcessors();
 
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(Math.max(2, Math.min(availableProcessors, 4)));
     executor.setMaxPoolSize(Math.max(4, availableProcessors * 2));
     executor.setQueueCapacity(500);
-    executor.setThreadNamePrefix("mail-sender-");
+    executor.setThreadNamePrefix("task-");
     executor.setWaitForTasksToCompleteOnShutdown(true);
     executor.setAwaitTerminationSeconds(30);
     executor.initialize();

@@ -20,6 +20,7 @@ public class CookieUtils {
   private static final String REFRESH_TOKEN_COOKIE = "refresh_token";
 
   private static final String REFRESH_TOKEN_PATH = "/api/v1/auth";
+  private static final String LEGACY_REFRESH_TOKEN_PATH = "/";
   private static final String ACCESS_TOKEN_PATH = "/";
 
   private final CookieProperties cookieProperties;
@@ -59,14 +60,21 @@ public class CookieUtils {
     return createCookie(REFRESH_TOKEN_COOKIE, "", REFRESH_TOKEN_PATH, Duration.ZERO);
   }
 
+  public ResponseCookie clearLegacyRefreshTokenCookie() {
+    return createCookie(REFRESH_TOKEN_COOKIE, "", LEGACY_REFRESH_TOKEN_PATH, Duration.ZERO);
+  }
+
   public void setAuthCookies(
       HttpServletResponse response, String accessToken, String refreshToken) {
     response.addHeader(HttpHeaders.SET_COOKIE, createAccessTokenCookie(accessToken).toString());
+    // Clear legacy root-path cookie to avoid duplicate refresh_token entries.
+    response.addHeader(HttpHeaders.SET_COOKIE, clearLegacyRefreshTokenCookie().toString());
     response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(refreshToken).toString());
   }
 
   public void clearAuthCookies(HttpServletResponse response) {
     response.addHeader(HttpHeaders.SET_COOKIE, clearAccessTokenCookie().toString());
+    response.addHeader(HttpHeaders.SET_COOKIE, clearLegacyRefreshTokenCookie().toString());
     response.addHeader(HttpHeaders.SET_COOKIE, clearRefreshTokenCookie().toString());
   }
 

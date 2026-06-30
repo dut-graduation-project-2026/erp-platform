@@ -45,8 +45,14 @@ public class Product {
   @Column(name = "name", nullable = false, length = 255)
   String name;
 
-  @Column(name = "price", nullable = false, precision = 15, scale = 2)
-  BigDecimal price;
+  @Column(name = "sku", nullable = false, length = 100)
+  String sku;
+
+  @Column(name = "purchase_price", nullable = false, precision = 15, scale = 2)
+  BigDecimal purchasePrice;
+
+  @Column(name = "sales_price", nullable = false, precision = 15, scale = 2)
+  BigDecimal salesPrice;
 
   @Column(name = "description", columnDefinition = "TEXT")
   String description;
@@ -55,9 +61,21 @@ public class Product {
   @Builder.Default
   boolean isArchived = false;
 
+  @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+  @Column(name = "cogs_method", nullable = false, length = 50)
+  @Builder.Default
+  com.dut.erp.enums.CogsMethod cogsMethod = com.dut.erp.enums.CogsMethod.FIFO;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "organization_id", nullable = false)
   Organization organization;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "category_id", nullable = false)
+  ProductCategory category;
+
+  @Column(name = "image", length = 512)
+  String image;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)

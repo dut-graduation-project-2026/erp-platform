@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductController {
 
   private final ProductService productService;
+  private final com.dut.erp.service.CloudinaryService cloudinaryService;
 
   @GetMapping
   @PreAuthorize(
@@ -126,5 +127,20 @@ public class ProductController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     productService.deleteProduct(organizationId, id);
     return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/upload")
+  @PreAuthorize(
+      """
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('products:write', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<java.util.Map<String, String>> uploadProductImage(
+      @PathVariable UUID organizationId,
+      @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    String url = cloudinaryService.uploadImage(file);
+    return ResponseEntity.ok(java.util.Map.of("url", url != null ? url : ""));
   }
 }

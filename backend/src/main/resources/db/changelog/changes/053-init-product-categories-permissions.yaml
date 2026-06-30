@@ -1,0 +1,114 @@
+databaseChangeLog:
+  - changeSet:
+      id: 053-init-product-categories-permissions
+      author: halwins
+      changes:
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: 'product_categories:select'
+              - column:
+                  name: code
+                  value: 'product_categories:select'
+              - column:
+                  name: description
+                  value: 'Allow selecting product categories.'
+              - column:
+                  name: module_id
+                  valueComputed: "(SELECT id FROM erp_modules WHERE code = 'products')"
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: 'product_categories:read'
+              - column:
+                  name: code
+                  value: 'product_categories:read'
+              - column:
+                  name: description
+                  value: 'Allow reading product categories.'
+              - column:
+                  name: module_id
+                  valueComputed: "(SELECT id FROM erp_modules WHERE code = 'products')"
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: 'product_categories:write'
+              - column:
+                  name: code
+                  value: 'product_categories:write'
+              - column:
+                  name: description
+                  value: 'Allow writing/updating product categories.'
+              - column:
+                  name: module_id
+                  valueComputed: "(SELECT id FROM erp_modules WHERE code = 'products')"
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: 'product_categories:create'
+              - column:
+                  name: code
+                  value: 'product_categories:create'
+              - column:
+                  name: description
+                  value: 'Allow creating product categories.'
+              - column:
+                  name: module_id
+                  valueComputed: "(SELECT id FROM erp_modules WHERE code = 'products')"
+        - insert:
+            tableName: permissions
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: name
+                  value: 'product_categories:delete'
+              - column:
+                  name: code
+                  value: 'product_categories:delete'
+              - column:
+                  name: description
+                  value: 'Allow deleting product categories.'
+              - column:
+                  name: module_id
+                  valueComputed: "(SELECT id FROM erp_modules WHERE code = 'products')"
+        - sql:
+            dbms: postgresql
+            sql: |
+              INSERT INTO role_permissions (role_id, permission_id)
+              SELECT r.id, p.id
+              FROM roles r
+              CROSS JOIN permissions p
+              WHERE r.name = 'ADMIN'
+                AND p.code IN (
+                  'product_categories:select',
+                  'product_categories:read',
+                  'product_categories:write',
+                  'product_categories:create',
+                  'product_categories:delete'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = r.id AND rp.permission_id = p.id
+                );

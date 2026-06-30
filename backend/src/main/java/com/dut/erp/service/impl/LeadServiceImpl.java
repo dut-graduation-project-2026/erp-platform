@@ -24,6 +24,11 @@ import com.dut.erp.repository.SaleTeamRepository;
 import com.dut.erp.repository.UserRepository;
 import com.dut.erp.security.CustomUserDetails;
 import com.dut.erp.service.LeadService;
+import com.dut.erp.service.SecurityAuthService;
+import com.dut.erp.util.SecurityUtils;
+import com.dut.erp.dto.event.LeadAssignedEvent;
+import com.dut.erp.dto.event.LeadStageChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +44,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.dut.erp.repository.PermissionRepository;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -50,7 +57,10 @@ public class LeadServiceImpl implements LeadService {
   private final SaleTeamRepository saleTeamRepository;
   private final PartnerRepository partnerRepository;
   private final UserRepository userRepository;
+  private final PermissionRepository permissionRepository;
   private final LeadMapper leadMapper;
+  private final ApplicationEventPublisher applicationEventPublisher;
+  private final SecurityAuthService securityAuthService;
 
   @Override
   public PagedEntityResponse<LeadBaseResponse> getLeadsWithFilterByOrganizationId(
@@ -63,10 +73,26 @@ public class LeadServiceImpl implements LeadService {
             paginationRequest.limit(),
             SortingConstants.customEntitiesSort(SortField.asc("name"), SortField.asc("updatedAt")));
 
-    Page<UUID> ids =
-        (search != null && !search.trim().isEmpty())
-            ? leadRepository.findIdsByOrganizationIdAndSearch(organizationId, search, pageable)
-            : leadRepository.findIdsByOrganizationId(organizationId, pageable);
+    CustomUserDetails currentUser = SecurityUtils.getCurrentUser();
+    boolean isAllLeads = securityAuthService.isAdmin(currentUser) || 
+        permissionRepository.existsByUserIdAndOrganizationIdAndPermissionCode(
+            currentUser.getId(), organizationId, "leads:read_all"
+        );
+
+    Page<UUID> ids;
+    if (isAllLeads) {
+      ids = (search != null && !search.trim().isEmpty())
+          ? leadRepository.findIdsByOrganizationIdAndSearch(organizationId, search, pageable)
+          : leadRepository.findIdsByOrganizationId(organizationId, pageable);
+    } else {
+      List<UUID> teamIds = saleTeamRepository.findIdsByOrganizationIdAndUserId(organizationId, currentUser.getId());
+      if (teamIds.isEmpty()) {
+        teamIds = List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+      }
+      ids = (search != null && !search.trim().isEmpty())
+          ? leadRepository.findIdsByOrganizationIdAndSearchAndUser(organizationId, search, currentUser.getId(), teamIds, pageable)
+          : leadRepository.findIdsByOrganizationIdAndUser(organizationId, currentUser.getId(), teamIds, pageable);
+    }
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));
@@ -90,6 +116,7 @@ public class LeadServiceImpl implements LeadService {
   public LeadResponse getLeadById(UUID organizationId, UUID leadId) {
     log.info("Fetching lead {} for organization {}", leadId, organizationId);
     Lead lead = findLeadByIdAndOrganizationId(leadId, organizationId);
+    securityAuthService.isLeadOwnerOrManagerOrAdmin(lead, SecurityUtils.getCurrentUser());
     return leadMapper.toResponse(lead);
   }
 
@@ -123,6 +150,11 @@ public class LeadServiceImpl implements LeadService {
 
     lead = leadRepository.save(lead);
     log.info("Created lead {} in organization {}", lead.getId(), organizationId);
+
+    if (lead.getSalePerson() != null) {
+      applicationEventPublisher.publishEvent(new LeadAssignedEvent(lead.getId(), lead.getSalePerson().getId()));
+    }
+
     return leadMapper.toResponse(lead);
   }
 
@@ -132,9 +164,13 @@ public class LeadServiceImpl implements LeadService {
     log.info("Updating lead {} in organization {}", leadId, organizationId);
     Lead lead = findLeadByIdAndOrganizationId(leadId, organizationId);
 
+    securityAuthService.isLeadOwnerOrManagerOrAdmin(lead, SecurityUtils.getCurrentUser());
+
     SaleTeam saleTeam = validateAndGetSaleTeam(request.saleTeamId(), organizationId);
     User salePerson = validateAndGetSalePerson(request.salePersonId(), saleTeam);
     Partner partner = validateAndGetPartner(request.partnerId(), organizationId);
+
+    User oldAssignee = lead.getSalePerson();
 
     lead.setName(request.name());
     lead.setTaxCode(request.taxCode());
@@ -150,6 +186,11 @@ public class LeadServiceImpl implements LeadService {
 
     lead = leadRepository.save(lead);
     log.info("Updated lead {} in organization {}", leadId, organizationId);
+
+    if (salePerson != null && (oldAssignee == null || !oldAssignee.getId().equals(salePerson.getId()))) {
+      applicationEventPublisher.publishEvent(new LeadAssignedEvent(lead.getId(), salePerson.getId()));
+    }
+
     return leadMapper.toResponse(lead);
   }
 
@@ -158,6 +199,8 @@ public class LeadServiceImpl implements LeadService {
   public LeadResponse updateLeadStage(UUID organizationId, UUID leadId, String stage) {
     log.info("Updating stage to {} for lead {} in organization {}", stage, leadId, organizationId);
     Lead lead = findLeadByIdAndOrganizationId(leadId, organizationId);
+
+    securityAuthService.isLeadOwnerOrManagerOrAdmin(lead, SecurityUtils.getCurrentUser());
 
     try {
       LeadStage leadStage = LeadStage.valueOf(stage);
@@ -170,6 +213,9 @@ public class LeadServiceImpl implements LeadService {
     lead = leadRepository.save(lead);
     log.info(
         "Updated lead stage to {} for lead {} in organization {}", stage, leadId, organizationId);
+
+    applicationEventPublisher.publishEvent(new LeadStageChangedEvent(lead.getId(), stage));
+
     return leadMapper.toResponse(lead);
   }
 
@@ -178,6 +224,14 @@ public class LeadServiceImpl implements LeadService {
   public void deleteLead(UUID organizationId, UUID leadId) {
     log.info("Deleting lead {} from organization {}", leadId, organizationId);
     Lead lead = findLeadByIdAndOrganizationId(leadId, organizationId);
+
+    if (!securityAuthService.isAdmin(SecurityUtils.getCurrentUser())) {
+      if (lead.getSaleTeam() == null || lead.getSaleTeam().getLeader() == null
+          || !lead.getSaleTeam().getLeader().getId().equals(SecurityUtils.getCurrentUser().getId())) {
+        throw new org.springframework.security.access.AccessDeniedException("Access denied: Only system administrators or sales team leaders can delete leads.");
+      }
+    }
+
     leadRepository.delete(lead);
     log.info("Deleted lead {} from organization {}", leadId, organizationId);
   }

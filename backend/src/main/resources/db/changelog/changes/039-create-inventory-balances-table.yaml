@@ -49,7 +49,7 @@ databaseChangeLog:
             baseColumnNames: product_id
             referencedTableName: products
             referencedColumnNames: id
-            onDelete: CASCADE
+            onDelete: RESTRICT
             onUpdate: CASCADE
         - addForeignKeyConstraint:
             constraintName: fk_inventory_balances_updated_by

@@ -37,4 +37,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
 
   @Query("SELECT COALESCE(SUM(oi.subtotal), 0) FROM OrderItem oi WHERE oi.order.id = :orderId")
   BigDecimal sumSubtotalByOrderId(@Param("orderId") UUID orderId);
+
+  List<OrderItem> findByProductIdAndOrderStatus(UUID productId, com.dut.erp.enums.OrderStatus status);
 }

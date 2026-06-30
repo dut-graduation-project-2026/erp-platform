@@ -2,6 +2,7 @@ package com.dut.erp.service.impl;
 
 import com.dut.erp.constant.ExpirationDurationDefault;
 import com.dut.erp.dto.event.OrganizationInvitationCreatedEvent;
+import com.dut.erp.dto.event.OrganizationInvitationStatusChangedEvent;
 import com.dut.erp.dto.response.OrganizationInvitationResponse;
 import com.dut.erp.entity.Organization;
 import com.dut.erp.entity.OrganizationInvitation;
@@ -99,6 +100,75 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
 
   @Override
   @Transactional
+  public java.util.List<OrganizationInvitationResponse> bulkInviteUsersToOrganization(
+      UUID organizationId, UUID roleId, java.util.List<String> emails, CustomUserDetails inviter) {
+
+    Role role = findRoleByIdWithOrganization(roleId);
+    Organization organization = role.getOrganization();
+
+    if (!organizationId.equals(organization.getId())) {
+      log.warn("Role {} does not belong to organization {}", roleId, organizationId);
+      throw new BadRequestException("Role does not belong to the specified organization.");
+    }
+
+    java.util.List<OrganizationInvitation> validInvitations = new java.util.ArrayList<>();
+
+    for (String email : emails) {
+      if (email == null || email.isBlank()) continue;
+      String cleanEmail = email.trim();
+
+      if (isUserAlreadyInvited(cleanEmail, organizationId)) {
+        log.info("Skipping email {}: already invited", cleanEmail);
+        continue;
+      }
+
+      boolean skip = false;
+      var existingUserOpt = userRepository.findByEmail(cleanEmail);
+      if (existingUserOpt.isPresent()) {
+        User existingUser = existingUserOpt.get();
+        boolean isMember =
+            existingUser.getOrganizations().stream()
+                .anyMatch(org -> org.getId().equals(organizationId));
+        boolean hasRole =
+            existingUser.getRoles().stream().anyMatch(r -> r.getId().equals(roleId));
+
+        if (isMember && hasRole) {
+          log.info("Skipping email {}: already member with role", cleanEmail);
+          skip = true;
+        }
+      }
+
+      if (skip) continue;
+
+      OrganizationInvitation invitation =
+          OrganizationInvitation.builder()
+              .organization(organization)
+              .role(role)
+              .email(cleanEmail)
+              .expiresAt(
+                  Instant.now()
+                      .plusMillis(ExpirationDurationDefault.INVITATION_EXPIRATION_DURATION_MS))
+              .build();
+      
+      validInvitations.add(invitation);
+    }
+
+    if (!validInvitations.isEmpty()) {
+      organizationInvitationRepository.saveAll(validInvitations);
+      for (OrganizationInvitation inv : validInvitations) {
+        applicationEventPublisher.publishEvent(new OrganizationInvitationCreatedEvent(inv.getId()));
+      }
+    }
+
+    log.info("Successfully bulk invited {} users to organization {}", validInvitations.size(), organizationId);
+
+    return validInvitations.stream()
+        .map(invitationMapper::toOrganizationInvitationResponse)
+        .toList();
+  }
+
+  @Override
+  @Transactional
   public OrganizationInvitationResponse resendInvitationToOrganization(
       UUID organizationId, UUID invitationId, CustomUserDetails inviter) {
 
@@ -191,6 +261,9 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
 
     organizationInvitationRepository.save(invitation);
 
+    applicationEventPublisher.publishEvent(
+        new OrganizationInvitationStatusChangedEvent(invitation.getId(), newStatusEnum));
+
     return invitationMapper.toOrganizationInvitationResponse(invitation);
   }
 
@@ -275,5 +348,13 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
   private boolean isUserAlreadyInvited(String email, UUID organizationId) {
     return organizationInvitationRepository.existsByEmailAndOrganizationIdAndStatus(
         email, organizationId, OrganizationInvitationStatus.PENDING);
+  }
+
+  @Override
+  public java.util.List<OrganizationInvitationResponse> getInvitationsByOrganizationId(UUID organizationId) {
+    return organizationInvitationRepository.findAllByOrganizationId(organizationId)
+        .stream()
+        .map(invitationMapper::toOrganizationInvitationResponse)
+        .toList();
   }
 }

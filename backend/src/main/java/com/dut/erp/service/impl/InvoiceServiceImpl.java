@@ -12,12 +12,20 @@ import com.dut.erp.entity.Invoice;
 import com.dut.erp.entity.Order;
 import com.dut.erp.enums.InvoiceStatus;
 import com.dut.erp.enums.OrderStatus;
+import com.dut.erp.enums.DocumentStatus;
+import com.dut.erp.enums.DocumentType;
+import com.dut.erp.enums.ReferenceType;
+import com.dut.erp.enums.LeadStage;
 import com.dut.erp.exception.BadRequestException;
 import com.dut.erp.exception.ResourceNotFoundException;
 import com.dut.erp.mapper.InvoiceMapper;
 import com.dut.erp.repository.InvoiceRepository;
 import com.dut.erp.repository.OrderRepository;
+import com.dut.erp.repository.InventoryDocumentRepository;
 import com.dut.erp.service.InvoiceService;
+import com.dut.erp.dto.event.InvoiceStatusChangedEvent;
+import com.dut.erp.dto.event.OrderStatusChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -45,7 +53,9 @@ public class InvoiceServiceImpl implements InvoiceService {
 
   private final InvoiceRepository invoiceRepository;
   private final OrderRepository orderRepository;
+  private final InventoryDocumentRepository inventoryDocumentRepository;
   private final InvoiceMapper invoiceMapper;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   @Transactional
@@ -85,12 +95,14 @@ public class InvoiceServiceImpl implements InvoiceService {
             .invoiceNumber(invoiceNumber)
             .dueDate(dueDate)
             .totalAmount(order.getTotalAmount())
-            .paidAmount(order.getTotalAmount())
+            .paidAmount(java.math.BigDecimal.ZERO)
             .status(InvoiceStatus.DRAFT)
             .build();
 
     invoice = invoiceRepository.save(invoice);
     log.info("Successfully created invoice {} from order {}", invoice.getId(), order.getId());
+
+    applicationEventPublisher.publishEvent(new InvoiceStatusChangedEvent(invoice.getId(), null, InvoiceStatus.DRAFT));
 
     return invoiceMapper.toResponse(invoice);
   }
@@ -148,16 +160,46 @@ public class InvoiceServiceImpl implements InvoiceService {
     invoice.setStatus(newStatus);
     invoice = invoiceRepository.save(invoice);
 
+    applicationEventPublisher.publishEvent(new InvoiceStatusChangedEvent(invoice.getId(), currentStatus, newStatus));
+
     if (newStatus == InvoiceStatus.PAID) {
-      Order order = invoice.getOrder();
-      order.setStatus(OrderStatus.COMPLETED);
-      orderRepository.save(order);
-      log.info(
-          "Automatically completed order {} because invoice {} was marked PAID",
-          order.getId(),
-          invoice.getId());
+      checkAndCompleteOrder(invoice.getOrder());
     }
 
+    return invoiceMapper.toResponse(invoice);
+  }
+
+  @Override
+  @Transactional
+  public InvoiceResponse registerPayment(UUID organizationId, UUID id, com.dut.erp.dto.request.RegisterPaymentRequest request) {
+    log.info("Registering payment of {} for invoice {} in organization {}", request.amount(), id, organizationId);
+
+    Invoice invoice = invoiceRepository
+        .findByIdAndOrganizationId(id, organizationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Invoice not found with id: " + id));
+
+    if (invoice.getStatus() == InvoiceStatus.PAID || invoice.getStatus() == InvoiceStatus.CANCELLED || invoice.getStatus() == InvoiceStatus.DRAFT) {
+        throw new BadRequestException("Cannot register payment for invoice in status: " + invoice.getStatus());
+    }
+
+    java.math.BigDecimal newPaidAmount = invoice.getPaidAmount().add(request.amount());
+    if (newPaidAmount.compareTo(invoice.getTotalAmount()) > 0) {
+        throw new BadRequestException("Payment amount exceeds remaining balance");
+    }
+
+    InvoiceStatus oldStatus = invoice.getStatus();
+    InvoiceStatus newStatus = (newPaidAmount.compareTo(invoice.getTotalAmount()) >= 0) ? InvoiceStatus.PAID : InvoiceStatus.PARTIAL_PAID;
+
+    invoice.setPaidAmount(newPaidAmount);
+    invoice.setStatus(newStatus);
+    invoice = invoiceRepository.save(invoice);
+
+    if (oldStatus != newStatus) {
+        applicationEventPublisher.publishEvent(new InvoiceStatusChangedEvent(invoice.getId(), oldStatus, newStatus));
+        if (newStatus == InvoiceStatus.PAID) {
+            checkAndCompleteOrder(invoice.getOrder());
+        }
+    }
     return invoiceMapper.toResponse(invoice);
   }
 
@@ -186,20 +228,28 @@ public class InvoiceServiceImpl implements InvoiceService {
 
   @Override
   public PagedEntityResponse<InvoiceBaseResponse> getInvoices(
-      UUID organizationId, String search, PaginationRequest paginationRequest) {
+      UUID organizationId, String search, String status, PaginationRequest paginationRequest) {
     log.info("Fetching invoices for organization {}", organizationId);
 
     Pageable pageable =
         PageRequest.of(
             paginationRequest.page() - 1,
-            paginationRequest.limit(),
-            SortingConstants.customEntitiesSort(SortField.desc("updatedAt")));
+            paginationRequest.limit());
+
+    InvoiceStatus invoiceStatus = null;
+    if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+      try {
+        invoiceStatus = InvoiceStatus.valueOf(status.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        log.warn("Invalid status value: {}", status);
+      }
+    }
 
     Page<UUID> ids =
         (search != null && !search.trim().isEmpty())
             ? invoiceRepository.findInvoiceIdsByOrganizationIdAndSearch(
-                organizationId, search, pageable)
-            : invoiceRepository.findInvoiceIdsByOrganizationId(organizationId, pageable);
+                organizationId, search, invoiceStatus, pageable)
+            : invoiceRepository.findInvoiceIdsByOrganizationId(organizationId, invoiceStatus, pageable);
 
     if (ids.isEmpty()) {
       return PagedEntityResponse.from(Page.empty(pageable));
@@ -228,5 +278,43 @@ public class InvoiceServiceImpl implements InvoiceService {
     } while (invoiceRepository.existsByOrganizationIdAndInvoiceNumber(organizationId, generated));
 
     return generated;
+  }
+
+  private void checkAndCompleteOrder(Order order) {
+    if (order == null) return;
+
+    // 1. Check if the linked invoice is paid
+    boolean isInvoicePaid = invoiceRepository.findByOrderIdAndOrganizationId(order.getId(), order.getOrganization().getId())
+        .map(inv -> inv.getStatus() == InvoiceStatus.PAID)
+        .orElse(false);
+
+    // 2. Check if the active warehouse issue document is completed or sent
+    boolean isDeliveryCompleted = inventoryDocumentRepository
+        .findByReferenceTypeAndReferenceIdAndDocumentType(
+            ReferenceType.SALES_ORDER, order.getId(), DocumentType.ISSUE)
+        .map(doc -> doc.getDocumentStatus() == DocumentStatus.COMPLETED || doc.getDocumentStatus() == DocumentStatus.SENT)
+        .orElse(false);
+
+    // 3. If both are completed/paid -> Close the order
+    if (isInvoicePaid && isDeliveryCompleted) {
+      OrderStatus oldStatus = order.getStatus();
+      if (oldStatus != OrderStatus.COMPLETED) {
+        order.setStatus(OrderStatus.COMPLETED);
+        if (order.getLead() != null && order.getLead().getStage() != LeadStage.WON) {
+          order.getLead().setStage(LeadStage.WON);
+        }
+        orderRepository.save(order);
+        log.info("Automatically completed order {} because both delivery and payment are completed.", order.getOrderNumber());
+        applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.COMPLETED));
+      }
+    } else if (isDeliveryCompleted) {
+      OrderStatus oldStatus = order.getStatus();
+      if (oldStatus != OrderStatus.SENT && oldStatus != OrderStatus.COMPLETED) {
+        order.setStatus(OrderStatus.SENT);
+        orderRepository.save(order);
+        log.info("Order {} transitioned to SENT status because delivery is sent but invoice is not paid.", order.getOrderNumber());
+        applicationEventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), oldStatus, OrderStatus.SENT));
+      }
+    }
   }
 }

@@ -41,6 +41,46 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
 
   @Query(
       """
+      SELECT l.id
+      FROM Lead l
+      WHERE l.organization.id = :organizationId
+      AND (
+        l.createdBy.id = :userId 
+        OR l.salePerson.id = :userId 
+        OR l.saleTeam.id IN :teamIds
+      )
+      """)
+  Page<UUID> findIdsByOrganizationIdAndUser(
+      @Param("organizationId") UUID organizationId,
+      @Param("userId") UUID userId,
+      @Param("teamIds") List<UUID> teamIds,
+      Pageable pageable);
+
+  @Query(
+      """
+      SELECT l.id
+      FROM Lead l
+      WHERE l.organization.id = :organizationId
+      AND (
+        l.createdBy.id = :userId 
+        OR l.salePerson.id = :userId 
+        OR l.saleTeam.id IN :teamIds
+      )
+      AND (
+        LOWER(l.name) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(l.email) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(l.phone) LIKE LOWER(CONCAT('%', :search, '%'))
+      )
+      """)
+  Page<UUID> findIdsByOrganizationIdAndSearchAndUser(
+      @Param("organizationId") UUID organizationId,
+      @Param("search") String search,
+      @Param("userId") UUID userId,
+      @Param("teamIds") List<UUID> teamIds,
+      Pageable pageable);
+
+  @Query(
+      """
       SELECT DISTINCT l FROM Lead l
       LEFT JOIN FETCH l.salePerson
       LEFT JOIN FETCH l.saleTeam
@@ -51,6 +91,25 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
       WHERE l.id IN :ids
       """)
   List<Lead> findAllByIdIn(@Param("ids") List<UUID> ids);
+
+  @Query("""
+      SELECT l.stage, COUNT(l.id)
+      FROM Lead l
+      WHERE l.organization.id = :orgId
+      GROUP BY l.stage
+      """)
+  List<Object[]> countLeadsByStage(@Param("orgId") UUID orgId);
+
+  @Query("""
+      SELECT l.stage,
+        COUNT(l.id),
+        COALESCE(SUM(l.expectedRevenue), 0),
+        COALESCE(AVG(l.probability), 0)
+      FROM Lead l
+      WHERE l.organization.id = :orgId
+      GROUP BY l.stage
+      """)
+  List<Object[]> findPipelineGroupByStage(@Param("orgId") UUID orgId);
 
   @Query(
       """
