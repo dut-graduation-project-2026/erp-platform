@@ -32,6 +32,7 @@ import { PERMISSIONS } from '@/config/permissions';
 import { toast } from 'sonner';
 import { APP_ROUTES } from '@/config/constants';
 import { Textarea } from '@/components/ui/textarea';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 
 // Helper to iterate warehouses and find the document
 const getInventoryDocumentByIdWithFallback = async (orgId: string, docId: string): Promise<InventoryDocument> => {
@@ -74,6 +75,11 @@ export default function DocumentDetailsPage({
   // Replenishment Dialog state
   const [isReplenishOpen, setIsReplenishOpen] = useState(false);
   const [replenishNotes, setReplenishNotes] = useState('');
+  
+  // Confirmation Dialog states
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isCompleteOpen, setIsCompleteOpen] = useState(false);
+  const [isCancelOpen, setIsCancelOpen] = useState(false);
   
   // Stock Balances mapping
   const [stockBalances, setStockBalances] = useState<Record<string, number>>({});
@@ -174,7 +180,6 @@ export default function DocumentDetailsPage({
 
   const handleCancel = async () => {
     if (!doc) return;
-    if (!confirm('Are you sure you want to cancel this movement document?')) return;
     setIsActionLoading(true);
     try {
       const updated = await cancelInventoryDocument(orgId, doc.warehouseId, doc.id);
@@ -264,14 +269,14 @@ export default function DocumentDetailsPage({
           {isDraft && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
             <>
               <Button 
-                onClick={handleConfirm} 
+                onClick={() => setIsConfirmOpen(true)} 
                 disabled={isActionLoading}
                 className="bg-[#0066cc] hover:bg-[#004499] text-white h-9 px-4 rounded-[4px] font-[600] text-[13px]"
               >
                 <CheckCircle className="w-4 h-4 mr-2" /> Confirm Details
               </Button>
               <Button 
-                onClick={handleCancel} 
+                onClick={() => setIsCancelOpen(true)} 
                 disabled={isActionLoading}
                 variant="ghost"
                 className="text-[#dc3545] hover:bg-[#fff0f0] h-9 px-4 rounded-[4px] font-[600] text-[13px]"
@@ -283,7 +288,7 @@ export default function DocumentDetailsPage({
 
           {isConfirmed && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
             <Button 
-              onClick={handleComplete} 
+              onClick={() => setIsCompleteOpen(true)} 
               disabled={isActionLoading}
               className="bg-[#28a745] hover:bg-[#218838] text-white h-9 px-4 rounded-[4px] font-[600] text-[13px]"
             >
@@ -293,7 +298,7 @@ export default function DocumentDetailsPage({
 
           {(isConfirmed || isWaitingStock) && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
             <Button 
-              onClick={handleCancel} 
+              onClick={() => setIsCancelOpen(true)} 
               disabled={isActionLoading}
               variant="ghost"
               className="text-[#dc3545] hover:bg-[#fff0f0] h-9 px-4 rounded-[4px] font-[600] text-[13px]"
@@ -526,6 +531,43 @@ export default function DocumentDetailsPage({
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title="Confirm Details"
+        description="Are you sure you want to confirm these movement details? This will validate the items list and transition the document to Confirmed state."
+        onConfirm={async () => {
+          await handleConfirm();
+          setIsConfirmOpen(false);
+        }}
+        confirmText="Confirm Details"
+        variant="default"
+      />
+      <ConfirmDialog
+        isOpen={isCompleteOpen}
+        onOpenChange={setIsCompleteOpen}
+        title="Complete Transfer"
+        description="Are you sure you want to complete this transfer? This action will update inventory balances, generate accounting valuations (COGS), and is irreversible."
+        onConfirm={async () => {
+          await handleComplete();
+          setIsCompleteOpen(false);
+        }}
+        confirmText="Complete Transfer"
+        variant="success"
+      />
+      <ConfirmDialog
+        isOpen={isCancelOpen}
+        onOpenChange={setIsCancelOpen}
+        title="Cancel Movement"
+        description="Are you sure you want to cancel this movement document? This action cannot be undone."
+        onConfirm={async () => {
+          await handleCancel();
+          setIsCancelOpen(false);
+        }}
+        confirmText="Cancel Move"
+        variant="destructive"
+      />
     </div>
   );
 }

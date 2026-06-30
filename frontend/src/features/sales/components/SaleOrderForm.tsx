@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Trash2, ChevronRight, Save, CheckCircle, XCircle, Receipt, Building, Mail, Phone, User, Calendar, ArrowLeft, Clock, Activity, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import {
   getProducts,
   getTaxes,
@@ -47,6 +48,10 @@ export function SaleOrderForm({ order, orgId }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { hasPermission } = usePermissions();
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isCancelOpen, setIsCancelOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
 
   // ─── Lookup data ─────────────────────────────────────────────────────────
   const [products, setProducts] = useState<Product[]>([]);
@@ -251,14 +256,40 @@ export function SaleOrderForm({ order, orgId }: Props) {
 
   if (isReadOnly && order) {
     return (
-      <SaleOrderReadOnlyView
-        order={order}
-        orgId={orgId}
-        localStatus={localStatus}
-        handleCreateInvoice={handleCreateInvoice}
-        handleCancel={handleCancel}
-        canWrite={canWrite}
-      />
+      <>
+        <SaleOrderReadOnlyView
+          order={order}
+          orgId={orgId}
+          localStatus={localStatus}
+          handleCreateInvoiceClick={() => setIsInvoiceOpen(true)}
+          handleCancelClick={() => setIsCancelOpen(true)}
+          canWrite={canWrite}
+        />
+        <ConfirmDialog
+          isOpen={isCancelOpen}
+          onOpenChange={setIsCancelOpen}
+          title="Cancel Order"
+          description="Are you sure you want to cancel this order? This action cannot be undone."
+          onConfirm={async () => {
+            await handleCancel();
+            setIsCancelOpen(false);
+          }}
+          confirmText="Yes, Cancel"
+          variant="destructive"
+        />
+        <ConfirmDialog
+          isOpen={isInvoiceOpen}
+          onOpenChange={setIsInvoiceOpen}
+          title="Create Invoice"
+          description="Are you sure you want to generate a draft invoice for this order?"
+          onConfirm={async () => {
+            await handleCreateInvoice();
+            setIsInvoiceOpen(false);
+          }}
+          confirmText="Yes, Create Invoice"
+          variant="success"
+        />
+      </>
     );
   }
 
@@ -292,17 +323,17 @@ export function SaleOrderForm({ order, orgId }: Props) {
             </Button>
           )}
           {canWrite && order?.id && localStatus === 'DRAFT' && (
-            <Button className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px]" onClick={handleConfirm}>
+            <Button className="bg-[#0066cc] hover:bg-[#004499] text-white h-10 px-4 rounded-[4px]" onClick={() => setIsConfirmOpen(true)}>
               <CheckCircle className="w-4 h-4 mr-2" />Confirm Order
             </Button>
           )}
           {canWrite && order?.id && localStatus !== 'COMPLETED' && localStatus !== 'CANCELLED' && (
-            <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 h-10 px-4 rounded-[4px]" onClick={handleCancel}>
+            <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 h-10 px-4 rounded-[4px]" onClick={() => setIsCancelOpen(true)}>
               <XCircle className="w-4 h-4 mr-2" />Cancel
             </Button>
           )}
           {canWrite && order?.id && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && !order?.invoiceId && (
-            <Button className="bg-[#28a745] hover:bg-[#218838] text-white h-10 px-4 rounded-[4px]" onClick={handleCreateInvoice}>
+            <Button className="bg-[#28a745] hover:bg-[#218838] text-white h-10 px-4 rounded-[4px]" onClick={() => setIsInvoiceOpen(true)}>
               <Receipt className="w-4 h-4 mr-2" />Create Invoice
             </Button>
           )}
@@ -512,6 +543,42 @@ export function SaleOrderForm({ order, orgId }: Props) {
 
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title="Confirm Order"
+        description="Are you sure you want to confirm this order? This will convert the quotation into a sales order and initiate stock reservations."
+        onConfirm={async () => {
+          await handleConfirm();
+          setIsConfirmOpen(false);
+        }}
+        confirmText="Confirm Order"
+        variant="default"
+      />
+      <ConfirmDialog
+        isOpen={isCancelOpen}
+        onOpenChange={setIsCancelOpen}
+        title="Cancel Order"
+        description="Are you sure you want to cancel this order? This action cannot be undone."
+        onConfirm={async () => {
+          await handleCancel();
+          setIsCancelOpen(false);
+        }}
+        confirmText="Yes, Cancel"
+        variant="destructive"
+      />
+      <ConfirmDialog
+        isOpen={isInvoiceOpen}
+        onOpenChange={setIsInvoiceOpen}
+        title="Create Invoice"
+        description="Are you sure you want to generate a draft invoice for this order?"
+        onConfirm={async () => {
+          await handleCreateInvoice();
+          setIsInvoiceOpen(false);
+        }}
+        confirmText="Yes, Create Invoice"
+        variant="success"
+      />
     </div>
   );
 }
@@ -523,12 +590,12 @@ interface ReadOnlyProps {
   order: SaleOrder;
   orgId: string;
   localStatus: string;
-  handleCreateInvoice: () => Promise<void>;
-  handleCancel: () => Promise<void>;
+  handleCreateInvoiceClick: () => void;
+  handleCancelClick: () => void;
   canWrite: boolean;
 }
 
-function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice, handleCancel, canWrite }: ReadOnlyProps) {
+function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoiceClick, handleCancelClick, canWrite }: ReadOnlyProps) {
   const router = useRouter();
 
   const formatCurrency = (val: number | undefined) => {
@@ -571,7 +638,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
             <Button
               variant="outline"
               className="border-[#dc3545] text-[#dc3545] hover:bg-[#fdf2f2] h-8 px-3 text-[13px] rounded-[4px] flex items-center"
-              onClick={handleCancel}
+              onClick={handleCancelClick}
             >
               <XCircle className="w-4 h-4 mr-1.5" /> Cancel
             </Button>
@@ -579,7 +646,7 @@ function SaleOrderReadOnlyView({ order, orgId, localStatus, handleCreateInvoice,
           {canWrite && ['CONFIRMED', 'SENT', 'WAITING_FOR_STOCK'].includes(localStatus) && !order.invoiceId && (
             <Button
               className="bg-[#28a745] hover:bg-[#218838] text-white h-8 px-3 text-[13px] rounded-[4px] flex items-center"
-              onClick={handleCreateInvoice}
+              onClick={handleCreateInvoiceClick}
             >
               <Receipt className="w-4 h-4 mr-1.5" /> Create Invoice
             </Button>

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { updateLead, createLead } from '../services/crmService';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/use-permissions';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { getSaleTeams, getSaleTeamById } from '../services/crmService';
 import { getPartners, createPartner } from '@/features/sales/services/salesService';
 import { toast } from 'sonner';
@@ -45,6 +46,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
   const [newCustomer, setNewCustomer] = useState<any>({ name: '', type: 'INDIVIDUAL', code: '', email: '', phone: '', address: '', taxCode: '', contacts: [] });
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<any[]>([]);
+  const [isConvertOpen, setIsConvertOpen] = useState(false);
 
   useEffect(() => {
     // Load Sale Teams
@@ -68,8 +70,8 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
 
 
   const handleCreateCustomer = async () => {
-    if (!newCustomer.name?.trim()) return alert('Customer name is required.');
-    if (!newCustomer.code?.trim()) return alert('Customer code is required.');
+    if (!newCustomer.name?.trim()) return toast.error('Customer name is required.');
+    if (!newCustomer.code?.trim()) return toast.error('Customer code is required.');
     setIsSavingCustomer(true);
     try {
       const res = await createPartner(orgId, newCustomer);
@@ -88,21 +90,21 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
   };
 
   const handleSave = async () => {
-    if (!formData.name) return alert("Opportunity name is required.");
-    if (!formData.saleTeamId) return alert("Sale Team is required.");
+    if (!formData.name) return toast.error("Opportunity name is required.");
+    if (!formData.saleTeamId) return toast.error("Sale Team is required.");
     setIsSaving(true);
     try {
       if (isNew) {
         const res = await createLead(orgId, formData as CreateCrmLeadRequest);
-        alert("Lead created successfully!");
+        toast.success("Lead created successfully!");
         router.push(APP_ROUTES.CRM.LEAD_DETAIL(orgId, res.id));
       } else if (lead?.id) {
         await updateLead(orgId, lead.id, formData as CreateCrmLeadRequest);
-        alert("Lead updated successfully!");
+        toast.success("Lead updated successfully!");
       }
     } catch (e) {
       console.error(e);
-      alert("Error saving lead.");
+      toast.error("Error saving lead.");
     } finally {
       setIsSaving(false);
     }
@@ -133,7 +135,7 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
                   toast.error('You must link a Customer/Partner to this lead and save before converting to an order.');
                   return;
                 }
-                router.push(`${APP_ROUTES.SALES.QUOTATION_NEW(orgId)}?leadId=${lead?.id}`);
+                setIsConvertOpen(true);
               }}
             >
               Convert to Order
@@ -422,6 +424,18 @@ export function CrmLeadForm({ lead, orgId, isNew = false }: Props) {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={isConvertOpen}
+        onOpenChange={setIsConvertOpen}
+        title="Convert Lead to Quotation"
+        description="Are you sure you want to convert this CRM lead/opportunity to a sales quotation? You will be redirected to the sales quotation form."
+        onConfirm={() => {
+          setIsConvertOpen(false);
+          router.push(`${APP_ROUTES.SALES.QUOTATION_NEW(orgId)}?leadId=${lead?.id}`);
+        }}
+        confirmText="Convert"
+        variant="default"
+      />
     </div>
   );
 }
