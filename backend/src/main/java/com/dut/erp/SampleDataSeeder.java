@@ -1429,16 +1429,23 @@ public class SampleDataSeeder implements CommandLineRunner {
 
         boolean exists = replenishmentRequestRepository.findAllByWarehouseId(wh.getId()).size() > 0;
         if (!exists) {
-          replenishmentRequestRepository.save(
+          com.dut.erp.enums.ReplenishmentStatus status = receiptDoc.getDocumentStatus() == com.dut.erp.enums.DocumentStatus.COMPLETED
+              ? com.dut.erp.enums.ReplenishmentStatus.RESOLVED
+              : com.dut.erp.enums.ReplenishmentStatus.OPEN;
+
+          ReplenishmentRequest req = replenishmentRequestRepository.save(
               ReplenishmentRequest.builder()
                   .warehouse(wh)
                   .inventoryDocument(receiptDoc)
                   .notes("Auto replenishment triggered by low stock alert. Check item levels.")
-                  .status(
-                      index % 2 == 0
-                          ? com.dut.erp.enums.ReplenishmentStatus.RESOLVED
-                          : com.dut.erp.enums.ReplenishmentStatus.OPEN)
+                  .status(status)
                   .build());
+
+          if (status == com.dut.erp.enums.ReplenishmentStatus.RESOLVED) {
+            receiptDoc.setReferenceType(com.dut.erp.enums.ReferenceType.REPLENISHMENT);
+            receiptDoc.setReferenceId(req.getId());
+            inventoryDocumentRepository.save(receiptDoc);
+          }
           index++;
         }
       }

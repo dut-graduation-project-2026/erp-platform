@@ -2,15 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { getOrders } from '@/features/sales/services/salesService';
+import { getOrders, getOrderById } from '@/features/sales/services/salesService';
 import { 
   claimOrderStockMove, 
   previewSmartRoute, 
-  confirmSmartRoute 
+  confirmSmartRoute,
+  getInventoryBalances
 } from '@/features/inventory/services/inventoryService';
 import { SaleOrder } from '@/features/sales/types';
 import { ORDER_STATUS, APP_ROUTES } from '@/config/constants';
-import { Clock, ArrowRightLeft, Search, Building, Brain, Loader2 } from 'lucide-react';
+import { Clock, ArrowRightLeft, Search, Building, Brain, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -34,6 +35,38 @@ export default function PendingOrdersPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isConfirmingRoute, setIsConfirmingRoute] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  // Verification modal states
+  const [verifyingOrder, setVerifyingOrder] = useState<SaleOrder | null>(null);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [isVerifyingLoading, setIsVerifyingLoading] = useState(false);
+  const [stockBalances, setStockBalances] = useState<Record<string, number>>({});
+
+  const handleOpenVerify = async (order: SaleOrder) => {
+    if (!warehouseId) {
+      toast.error('Please select a warehouse from the dashboard first.');
+      return;
+    }
+    setVerifyingOrder(order);
+    setIsVerifyModalOpen(true);
+    setIsVerifyingLoading(true);
+    try {
+      const fullOrder = await getOrderById(orgId, order.id);
+      setVerifyingOrder(fullOrder);
+
+      const res = await getInventoryBalances(orgId, warehouseId, { limit: 1000 });
+      const map: Record<string, number> = {};
+      (res.data || []).forEach((b: any) => {
+        map[b.product.id] = b.quantity;
+      });
+      setStockBalances(map);
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Failed to load verification data');
+    } finally {
+      setIsVerifyingLoading(false);
+    }
+  };
 
   const handlePreviewSmartRoute = async () => {
     setIsPreviewLoading(true);
@@ -194,7 +227,10 @@ export default function PendingOrdersPage() {
                 ) : (
                   filteredOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-[#fafafa] transition-colors">
-                      <td className="px-4 py-3 font-[600] text-[#0066cc]">
+                      <td 
+                        className="px-4 py-3 font-[600] text-[#0066cc] cursor-pointer hover:underline"
+                        onClick={() => handleOpenVerify(order)}
+                      >
                         {order.orderNumber}
                       </td>
                       <td className="px-4 py-3 text-[#242424]">
@@ -208,7 +244,7 @@ export default function PendingOrdersPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button
-                          onClick={() => handleClaimOrder(order.id)}
+                          onClick={() => handleOpenVerify(order)}
                           disabled={!warehouseId || isClaiming === order.id}
                           className="bg-[#0066cc] hover:bg-[#004499] text-white h-8 px-3 text-[12px] rounded-[4px] inline-flex items-center"
                         >
@@ -235,6 +271,85 @@ export default function PendingOrdersPage() {
         onConfirm={handleConfirmRoute}
         isConfirming={isConfirmingRoute}
       />
+
+      {/* Fulfillment Verification Modal */}
+      {isVerifyModalOpen && verifyingOrder && (
+        <div className="fixed inset-0 bg-black/55 z-50 flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-white rounded-[8px] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] w-full max-w-[700px] flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-[#e0e0e0] flex justify-between items-center bg-[#f8f8f8] shrink-0">
+              <h2 className="text-[18px] font-[700] text-[#242424]">Verification: Order {verifyingOrder.orderNumber}</h2>
+              <Button variant="ghost" size="icon" onClick={() => setIsVerifyModalOpen(false)} className="h-8 w-8 text-[#898989] hover:text-[#242424]">
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <h3 className="text-[14px] font-[600] text-[#242424] mb-3">Item Fulfillment Check</h3>
+              
+              {isVerifyingLoading ? (
+                <div className="py-12 flex justify-center text-[#898989]">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  Checking available stock...
+                </div>
+              ) : (
+                <table className="w-full text-left text-[13px]">
+                  <thead className="bg-[#f5f5f5] text-[#898989] font-[600] uppercase text-[11px] border-b border-[#e0e0e0]">
+                    <tr>
+                      <th className="px-4 py-2">Product</th>
+                      <th className="px-4 py-2 text-right">Required</th>
+                      <th className="px-4 py-2 text-right">Available</th>
+                      <th className="px-4 py-2 text-right">Shortage</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e0e0e0]">
+                    {verifyingOrder.items?.map(item => {
+                      const required = item.quantity;
+                      const available = stockBalances[item.product.id] || 0;
+                      const shortage = required > available ? required - available : 0;
+                      return (
+                        <tr key={item.id} className={shortage > 0 ? "bg-[#fff0f0]" : ""}>
+                          <td className="px-4 py-3 font-[500] text-[#242424]">{item.product.name}</td>
+                          <td className="px-4 py-3 text-right font-[600]">{required}</td>
+                          <td className="px-4 py-3 text-right text-[#0066cc] font-[600]">{available}</td>
+                          <td className={`px-4 py-3 text-right font-[600] ${shortage > 0 ? 'text-[#dc3545]' : 'text-[#28a745]'}`}>
+                            {shortage > 0 ? `-${shortage}` : '✓ Sufficient'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+              
+              {!isVerifyingLoading && verifyingOrder.items?.some(item => item.quantity > (stockBalances[item.product.id] || 0)) && (
+                <div className="mt-4 p-3 bg-[#fff3cd] border border-[#ffeeba] text-[#856404] rounded-[4px] text-[13px]">
+                  <strong>Warning:</strong> Some items have insufficient stock. If you proceed, the system will create a <strong>Waiting for Stock</strong> Delivery Order.
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 bg-[#f8f8f8] border-t border-[#e0e0e0] flex justify-end space-x-2 shrink-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsVerifyModalOpen(false)}
+                className="bg-white border-[#d0d0d0] text-[#242424]"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  handleClaimOrder(verifyingOrder.id);
+                  setIsVerifyModalOpen(false);
+                }}
+                disabled={isVerifyingLoading || isClaiming === verifyingOrder.id}
+                className="bg-[#0066cc] hover:bg-[#004499] text-white"
+              >
+                {isClaiming === verifyingOrder.id ? 'Claiming...' : 'Confirm Claim'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -206,6 +206,7 @@ export const DOCUMENT_STATUS = {
   COMPLETED: "COMPLETED",
   CANCELLED: "CANCELLED",
   WAITING_FOR_STOCK: "WAITING_FOR_STOCK",
+  SENT: "SENT",
 } as const;
 export type DocumentStatus = typeof DOCUMENT_STATUS[keyof typeof DOCUMENT_STATUS];
 

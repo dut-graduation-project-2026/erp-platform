@@ -14,6 +14,8 @@ public record CreateInventoryDocumentRequest(
 
     UUID transferSourceWarehouseId,
 
+    UUID replenishmentRequestId,
+
     Instant scheduledDate,
 
     String notes,

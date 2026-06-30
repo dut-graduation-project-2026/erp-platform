@@ -103,6 +103,20 @@ public class InventoryDocumentController {
     return ResponseEntity.ok(inventoryDocumentService.completeDocument(organizationId, warehouseId, documentId));
   }
 
+  @PostMapping("/documents/{documentId}/sent")
+  @PreAuthorize("""
+        @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)
+        and
+        @securityAuthService.hasPermission('warehouses:write', #organizationId, #userDetails)
+      """)
+  public ResponseEntity<InventoryDocumentResponse> sentDocument(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID warehouseId,
+      @PathVariable UUID documentId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    return ResponseEntity.ok(inventoryDocumentService.sentDocument(organizationId, warehouseId, documentId));
+  }
+
   @PostMapping("/documents/{documentId}/cancel")
   @PreAuthorize("""
         @securityAuthService.hasOrganizationAccess(#organizationId, #userDetails)

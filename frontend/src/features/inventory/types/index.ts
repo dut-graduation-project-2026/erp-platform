@@ -53,6 +53,7 @@ export interface InventoryDocumentItemRequest {
 export interface CreateInventoryDocumentRequest {
   documentType: DocumentType;
   transferSourceWarehouseId?: string; // Used if TRANSFER_IN/TRANSFER_OUT or ADJUSTMENT
+  replenishmentRequestId?: string;
   scheduledDate: string; // ISO String
   notes?: string;
   items: InventoryDocumentItemRequest[];
@@ -118,6 +119,7 @@ export interface InventoryDocument {
   createdBy?: UserBaseResponse;
   updatedBy?: UserBaseResponse;
   hasActiveReplenishment?: boolean;
+  replenishmentRequestId?: string;
 }
 
 export interface StockValuation {
@@ -140,7 +142,7 @@ export interface ReplenishmentRequest {
   inventoryDocumentName: string;
   requestedBy: UserBaseResponse;
   notes?: string;
-  status: 'OPEN' | 'RESOLVED';
+  status: 'OPEN' | 'RESOLVED' | 'CANCELED';
   createdAt: string;
   orderNumber?: string;
   referenceId?: string;

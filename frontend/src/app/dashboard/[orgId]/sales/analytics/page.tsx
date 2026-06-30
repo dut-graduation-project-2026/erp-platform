@@ -291,30 +291,7 @@ export default function SalesAnalyticsPage({ params }: { params: Promise<{ orgId
               </div>
             </div>
 
-            {/* Scientific Validation Block */}
-            {validationMetrics.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-[#0066cc]/10 flex flex-wrap gap-x-6 gap-y-2 text-[12px] text-[#4a4a4a] bg-[#0066cc]/[0.01] p-3 rounded">
-                <span className="font-[600] text-[#0066cc] flex items-center gap-1">
-                  🔬 Scientific Validation (Backtesting):
-                </span>
-                {validationMetrics.map((metric, idx) => {
-                  const cleanText = metric.replace('📊 [Accuracy] ', '').replace('📊 ', '');
-                  const parts = cleanText.split(': ');
-                  if (parts.length === 2) {
-                    return (
-                      <span key={idx} className="font-[500] flex items-center gap-1">
-                        <strong>{parts[0]}:</strong> <span className="text-[#0066cc] font-[600] bg-[#f0f4ff] px-2 py-0.5 rounded border border-blue-50/50">{parts[1]}</span>
-                      </span>
-                    );
-                  }
-                  return (
-                    <span key={idx} className="font-[500]">
-                      {cleanText}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
+
           </div>
         );
       })()}

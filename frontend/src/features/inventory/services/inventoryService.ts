@@ -159,6 +159,17 @@ export const completeInventoryDocument = async (
   return response.data;
 };
 
+export const sentInventoryDocument = async (
+  orgId: string,
+  warehouseId: string,
+  documentId: string
+): Promise<InventoryDocument> => {
+  const response = await apiClient.post<InventoryDocument>(
+    `${API_ENDPOINTS.INVENTORY.DOCUMENTS(orgId, warehouseId)}/${documentId}/sent`
+  );
+  return response.data;
+};
+
 export const cancelInventoryDocument = async (
   orgId: string,
   warehouseId: string,

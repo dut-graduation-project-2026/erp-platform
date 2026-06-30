@@ -5,5 +5,6 @@ public enum DocumentStatus {
   CONFIRMED,
   COMPLETED,
   CANCELLED,
-  WAITING_FOR_STOCK
+  WAITING_FOR_STOCK,
+  SENT
 }

@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Building, Package, ArrowRightLeft, Clock, Search, ExternalLink, Settings, LayoutGrid } from 'lucide-react';
-import { getWarehouses, getWarehouseMetrics } from '@/features/inventory/services/inventoryService';
-import { Warehouse } from '@/features/inventory/types';
+import { Building, Package, ArrowRightLeft, Clock, Search, ExternalLink, Settings, LayoutGrid, X, Loader2 } from 'lucide-react';
+import { getWarehouses, getWarehouseMetrics, getInventoryDocuments } from '@/features/inventory/services/inventoryService';
+import { Warehouse, InventoryDocument } from '@/features/inventory/types';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PERMISSIONS } from '@/config/permissions';
 import { DOCUMENT_TYPE, DOCUMENT_STATUS, ORDER_STATUS, APP_ROUTES } from '@/config/constants';
@@ -28,13 +28,104 @@ export default function InventoryDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
 
+  // Drill-down Modal State
+  const [drillDownModal, setDrillDownModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    type: 'RECEIPT' | 'ISSUE' | 'TRANSFER';
+    filter: 'LATE' | 'WAITING' | 'BACKORDER';
+  }>({
+    isOpen: false,
+    title: '',
+    type: 'RECEIPT',
+    filter: 'LATE'
+  });
+  const [drillDownDocs, setDrillDownDocs] = useState<InventoryDocument[]>([]);
+  const [isDrillDownLoading, setIsDrillDownLoading] = useState(false);
+
+  const openDrillDown = async (title: string, type: 'RECEIPT' | 'ISSUE' | 'TRANSFER', filter: 'LATE' | 'WAITING' | 'BACKORDER') => {
+    setDrillDownModal({ isOpen: true, title, type, filter });
+    
+    // Update URL query parameters
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('modalType', type);
+    searchParams.set('modalFilter', filter);
+    router.replace(`${window.location.pathname}?${searchParams.toString()}`);
+
+    setIsDrillDownLoading(true);
+    try {
+      const res = await getInventoryDocuments(orgId, selectedWarehouseId, { type, limit: 300 });
+      const activeDocs = (res.data || []).filter(d => d.documentStatus !== 'COMPLETED' && d.documentStatus !== 'CANCELLED');
+      
+      let filtered = [];
+      if (filter === 'WAITING' || filter === 'BACKORDER') {
+        filtered = activeDocs.filter(d => d.documentStatus === 'WAITING_FOR_STOCK');
+      } else if (filter === 'LATE') {
+        const now = new Date();
+        filtered = activeDocs.filter(d => {
+          if (!d.scheduledDate) return false;
+          return new Date(d.scheduledDate) < now;
+        });
+      }
+      setDrillDownDocs(filtered);
+    } catch (e) {
+      console.error("Failed to load drill down docs", e);
+    } finally {
+      setIsDrillDownLoading(false);
+    }
+  };
+
+  const closeDrillDown = () => {
+    setDrillDownModal(prev => ({ ...prev, isOpen: false }));
+    
+    // Clear URL query parameters
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.delete('modalType');
+    searchParams.delete('modalFilter');
+    const newSearch = searchParams.toString();
+    router.replace(`${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`);
+  };
+
+  useEffect(() => {
+    if (!selectedWarehouseId) return;
+    
+    const searchParams = new URLSearchParams(window.location.search);
+    const mType = searchParams.get('modalType');
+    const mFilter = searchParams.get('modalFilter');
+    
+    if (mType && mFilter) {
+      const type = mType as 'RECEIPT' | 'ISSUE' | 'TRANSFER';
+      const filter = mFilter as 'LATE' | 'WAITING' | 'BACKORDER';
+      
+      let title = '';
+      if (type === 'RECEIPT') {
+        title = filter === 'LATE' ? 'Late Receipts' : 'Backordered Receipts';
+      } else if (type === 'ISSUE') {
+        title = filter === 'LATE' ? 'Late Deliveries' : 'Waiting Deliveries';
+      } else if (type === 'TRANSFER') {
+        title = filter === 'LATE' ? 'Late Transfers' : 'Waiting Transfers';
+      }
+      
+      if (title) {
+        openDrillDown(title, type, filter);
+      }
+    }
+  }, [selectedWarehouseId]);
+
+
   useEffect(() => {
     // 1. Fetch Warehouses
     getWarehouses(orgId, { limit: 50 }).then((res) => {
       const whs = res.data || [];
       setWarehouses(whs);
       if (whs.length > 0) {
-        setSelectedWarehouseId(whs[0].id);
+        const savedWhId = localStorage.getItem(`erp_last_warehouse_id_${orgId}`);
+        if (savedWhId && whs.some(w => w.id === savedWhId)) {
+          setSelectedWarehouseId(savedWhId);
+        } else {
+          setSelectedWarehouseId(whs[0].id);
+          localStorage.setItem(`erp_last_warehouse_id_${orgId}`, whs[0].id);
+        }
       } else {
         setIsLoading(false);
       }
@@ -72,7 +163,11 @@ export default function InventoryDashboard() {
           <label className="text-[13px] font-[600] text-[#555]">Warehouse</label>
           <select
             value={selectedWarehouseId}
-            onChange={(e) => setSelectedWarehouseId(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedWarehouseId(val);
+              localStorage.setItem(`erp_last_warehouse_id_${orgId}`, val);
+            }}
             className="h-9 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc] min-w-[200px] shadow-sm bg-[#f9fafb]"
           >
             {warehouses.map(w => (
@@ -121,12 +216,18 @@ export default function InventoryDashboard() {
                   </div>
                   <div className="flex flex-col space-y-2 justify-center">
                     {metrics.receipts.late > 0 && (
-                      <div className="flex justify-between items-center text-[13px] text-red-600 hover:underline cursor-pointer font-[600]">
+                      <div 
+                        className="flex justify-between items-center text-[13px] text-red-600 hover:underline cursor-pointer font-[600]"
+                        onClick={() => openDrillDown('Late Receipts', 'RECEIPT', 'LATE')}
+                      >
                         <span>Late</span><span>{metrics.receipts.late}</span>
                       </div>
                     )}
                     {metrics.receipts.backorders > 0 && (
-                      <div className="flex justify-between items-center text-[13px] text-[#ff9800] hover:underline cursor-pointer font-[600]">
+                      <div 
+                        className="flex justify-between items-center text-[13px] text-[#ff9800] hover:underline cursor-pointer font-[600]"
+                        onClick={() => openDrillDown('Backordered Receipts', 'RECEIPT', 'BACKORDER')}
+                      >
                         <span>Backorders</span><span>{metrics.receipts.backorders}</span>
                       </div>
                     )}
@@ -163,24 +264,27 @@ export default function InventoryDashboard() {
                   </div>
                   <div className="flex flex-col space-y-2 justify-center">
                     {metrics.deliveries.late > 0 && (
-                      <div className="flex justify-between items-center text-[13px] text-red-600 hover:underline cursor-pointer font-[600]">
+                      <div 
+                        className="flex justify-between items-center text-[13px] text-red-600 hover:underline cursor-pointer font-[600]"
+                        onClick={() => openDrillDown('Late Deliveries', 'ISSUE', 'LATE')}
+                      >
                         <span>Late</span><span>{metrics.deliveries.late}</span>
                       </div>
                     )}
                     {metrics.deliveries.backorders > 0 && (
-                      <div className="flex justify-between items-center text-[13px] text-[#ff9800] hover:underline cursor-pointer font-[600]">
+                      <div 
+                        className="flex justify-between items-center text-[13px] text-[#ff9800] hover:underline cursor-pointer font-[600]"
+                        onClick={() => openDrillDown('Waiting Deliveries', 'ISSUE', 'WAITING')}
+                      >
                         <span>Waiting</span><span>{metrics.deliveries.backorders}</span>
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="px-5 py-3 bg-[#fbfbfb] border-t border-[#f0f0f0]">
-                  <button 
-                    onClick={() => router.push(`${APP_ROUTES.INVENTORY.DELIVERIES_NEW(orgId)}?warehouseId=${selectedWarehouseId}`)} 
-                    className="text-[13px] font-[600] text-[#0066cc] hover:underline"
-                  >
-                    New Delivery
-                  </button>
+                  <span className="text-[13px] font-[500] text-[#898989] italic">
+                    Auto-generated from Sales Orders
+                  </span>
                 </div>
               </div>
 
@@ -205,12 +309,18 @@ export default function InventoryDashboard() {
                   </div>
                   <div className="flex flex-col space-y-2 justify-center">
                     {metrics.transfers.late > 0 && (
-                      <div className="flex justify-between items-center text-[13px] text-red-600 hover:underline cursor-pointer font-[600]">
+                      <div 
+                        className="flex justify-between items-center text-[13px] text-red-600 hover:underline cursor-pointer font-[600]"
+                        onClick={() => openDrillDown('Late Transfers', 'TRANSFER', 'LATE')}
+                      >
                         <span>Late</span><span>{metrics.transfers.late}</span>
                       </div>
                     )}
                     {metrics.transfers.backorders > 0 && (
-                      <div className="flex justify-between items-center text-[13px] text-[#ff9800] hover:underline cursor-pointer font-[600]">
+                      <div 
+                        className="flex justify-between items-center text-[13px] text-[#ff9800] hover:underline cursor-pointer font-[600]"
+                        onClick={() => openDrillDown('Waiting Transfers', 'TRANSFER', 'WAITING')}
+                      >
                         <span>Waiting</span><span>{metrics.transfers.backorders}</span>
                       </div>
                     )}
@@ -261,9 +371,96 @@ export default function InventoryDashboard() {
 
             </div>
           )}
-
         </div>
       </div>
+
+      {/* Drill Down Modal */}
+      {drillDownModal.isOpen && (
+        <div className="fixed inset-0 bg-black/55 z-50 flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-white rounded-[8px] shadow-[0px_12px_28px_rgba(0,0,0,0.30)] w-full max-w-[800px] flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-[#e0e0e0] flex justify-between items-center bg-[#f8f8f8] shrink-0">
+              <h2 className="text-[18px] font-[700] text-[#242424] flex items-center">
+                {drillDownModal.filter === 'LATE' ? (
+                  <Clock className="w-5 h-5 mr-2 text-red-600" />
+                ) : (
+                  <Package className="w-5 h-5 mr-2 text-[#ff9800]" />
+                )}
+                {drillDownModal.title}
+              </h2>
+              <button 
+                onClick={closeDrillDown} 
+                className="h-8 w-8 text-[#898989] hover:text-[#242424] flex items-center justify-center rounded-full hover:bg-[#f0f0f0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-0 overflow-y-auto flex-1">
+              {isDrillDownLoading ? (
+                <div className="py-12 flex justify-center items-center text-[#898989]">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  Loading details...
+                </div>
+              ) : (
+                <table className="w-full text-left text-[13px]">
+                  <thead className="bg-[#f5f5f5] text-[#898989] font-[600] uppercase text-[11px] border-b border-[#e0e0e0] sticky top-0">
+                    <tr>
+                      <th className="px-6 py-3">Document No.</th>
+                      <th className="px-6 py-3">Status</th>
+                      <th className="px-6 py-3">Scheduled Date</th>
+                      <th className="px-6 py-3">Contact</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e0e0e0]">
+                    {drillDownDocs.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-[#898989]">
+                          No documents found.
+                        </td>
+                      </tr>
+                    ) : (
+                      drillDownDocs.map((doc) => (
+                        <tr key={doc.id} className="hover:bg-[#fafafa] transition-colors">
+                          <td className="px-6 py-3 font-[600] text-[#0066cc]">
+                            <a href={`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?warehouseId=${selectedWarehouseId}`} className="hover:underline">
+                              {doc.name}
+                            </a>
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className={`inline-flex px-2 py-0.5 rounded-[4px] text-[11px] font-[600] ${
+                              doc.documentStatus === 'WAITING_FOR_STOCK' ? 'bg-[#fff4e5] text-[#ed6c02]' :
+                              doc.documentStatus === 'DRAFT' ? 'bg-[#f0f0f0] text-[#555]' :
+                              'bg-[#e3f2fd] text-[#1976d2]'
+                            }`}>
+                              {doc.documentStatus.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-[#4a4a4a]">
+                            {doc.scheduledDate ? new Date(doc.scheduledDate).toLocaleDateString() : '-'}
+                          </td>
+                          <td className="px-6 py-3 text-[#242424]">
+                            {doc.partner?.name || '-'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            
+            <div className="px-6 py-4 bg-[#f8f8f8] border-t border-[#e0e0e0] flex justify-end shrink-0">
+              <button 
+                onClick={closeDrillDown}
+                className="bg-white border border-[#d0d0d0] text-[#242424] hover:bg-[#f0f0f0] px-4 py-2 rounded-[4px] text-[13px] font-[600]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

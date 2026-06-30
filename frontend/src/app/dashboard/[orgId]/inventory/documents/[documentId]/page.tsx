@@ -9,7 +9,8 @@ import {
   cancelInventoryDocument,
   createReplenishmentRequest,
   getWarehouses,
-  getInventoryBalances
+  getInventoryBalances,
+  sentInventoryDocument
 } from '@/features/inventory/services/inventoryService';
 import { InventoryDocument } from '@/features/inventory/types';
 import { Button } from '@/components/ui/button';
@@ -79,6 +80,7 @@ export default function DocumentDetailsPage({
   // Confirmation Dialog states
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isCompleteOpen, setIsCompleteOpen] = useState(false);
+  const [isSentOpen, setIsSentOpen] = useState(false);
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   
   // Stock Balances mapping
@@ -178,6 +180,21 @@ export default function DocumentDetailsPage({
     }
   };
 
+  const handleSent = async () => {
+    if (!doc) return;
+    setIsActionLoading(true);
+    try {
+      const updated = await sentInventoryDocument(orgId, doc.warehouseId, doc.id);
+      toast.success('Document marked as SENT. Stock was deducted from inventory.');
+      setDoc(updated);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to send document. Check stock availability.');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const handleCancel = async () => {
     if (!doc) return;
     setIsActionLoading(true);
@@ -256,6 +273,7 @@ export default function DocumentDetailsPage({
             "text-[11px] font-[700] px-2.5 py-0.5 rounded-[4px] min-w-[110px] text-center uppercase ml-3",
             doc.documentStatus === 'DRAFT' && "bg-[#e2e8f0] text-[#475569]",
             doc.documentStatus === 'CONFIRMED' && "bg-[#e8f4fd] text-[#0066cc]",
+            doc.documentStatus === 'SENT' && "bg-[#e6fffa] text-[#008080] border border-[#b2ebeb]",
             doc.documentStatus === 'COMPLETED' && "bg-[#e2f0d9] text-[#385723]",
             doc.documentStatus === 'CANCELLED' && "bg-[#fbe5d6] text-[#c65911]",
             doc.documentStatus === 'WAITING_FOR_STOCK' && "bg-[#fff2cc] text-[#d68100]"
@@ -266,7 +284,7 @@ export default function DocumentDetailsPage({
 
         {/* State Action Buttons */}
         <div className="flex space-x-2">
-          {isDraft && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
+          {isDraft && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && doc.documentType !== 'TRANSFER_IN' && (
             <>
               <Button 
                 onClick={() => setIsConfirmOpen(true)} 
@@ -287,13 +305,23 @@ export default function DocumentDetailsPage({
           )}
 
           {isConfirmed && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
-            <Button 
-              onClick={() => setIsCompleteOpen(true)} 
-              disabled={isActionLoading}
-              className="bg-[#28a745] hover:bg-[#218838] text-white h-9 px-4 rounded-[4px] font-[600] text-[13px]"
-            >
-              <Send className="w-4 h-4 mr-2" /> Complete Transfer
-            </Button>
+            doc.documentType === 'ISSUE' || doc.documentType === 'TRANSFER_OUT' ? (
+              <Button 
+                onClick={() => setIsSentOpen(true)} 
+                disabled={isActionLoading}
+                className="bg-[#0066cc] hover:bg-[#004499] text-white h-9 px-4 rounded-[4px] font-[600] text-[13px]"
+              >
+                <Send className="w-4 h-4 mr-2" /> Send Move
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => setIsCompleteOpen(true)} 
+                disabled={isActionLoading}
+                className="bg-[#28a745] hover:bg-[#218838] text-white h-9 px-4 rounded-[4px] font-[600] text-[13px]"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" /> Complete Transfer
+              </Button>
+            )
           )}
 
           {(isConfirmed || isWaitingStock) && hasPermission(PERMISSIONS.INVENTORY_DOCUMENTS.WRITE) && (
@@ -341,12 +369,22 @@ export default function DocumentDetailsPage({
 
         {/* Replenishment In Progress Alert */}
         {isWaitingStock && doc.hasActiveReplenishment && (
-          <div className="bg-[#e8f4fd] border border-[#b8daff] rounded-[4px] p-4 mb-6 flex items-center text-[#0066cc]">
-            <Clock className="w-5 h-5 shrink-0 mr-3" />
-            <div>
-              <p className="text-[13px] font-[700]">Replenishment In Progress</p>
-              <p className="text-[12px]">Replenishment has been requested. Awaiting stock arrival.</p>
+          <div className="bg-[#e8f4fd] border border-[#b8daff] rounded-[4px] p-4 mb-6 flex justify-between items-center text-[#0066cc]">
+            <div className="flex items-center">
+              <Clock className="w-5 h-5 shrink-0 mr-3" />
+              <div>
+                <p className="text-[13px] font-[700]">Replenishment In Progress</p>
+                <p className="text-[12px]">Replenishment has been requested. Awaiting stock arrival.</p>
+              </div>
             </div>
+            {doc.replenishmentRequestId && (
+              <Button 
+                onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENTS(orgId)}?createFromReplenishment=${doc.replenishmentRequestId}&replenishDocId=${doc.id}&whId=${doc.warehouseId}`)}
+                className="bg-[#0066cc] hover:bg-[#004499] text-white text-[12px] h-8 px-3 rounded-[4px] font-[600]"
+              >
+                Create Stock Move
+              </Button>
+            )}
           </div>
         )}
 
@@ -554,6 +592,18 @@ export default function DocumentDetailsPage({
           setIsCompleteOpen(false);
         }}
         confirmText="Complete Transfer"
+        variant="success"
+      />
+      <ConfirmDialog
+        isOpen={isSentOpen}
+        onOpenChange={setIsSentOpen}
+        title="Send Movement"
+        description="Are you sure you want to send this stock movement? This action will deduct inventory balances, generate accounting valuations (COGS), and is irreversible."
+        onConfirm={async () => {
+          await handleSent();
+          setIsSentOpen(false);
+        }}
+        confirmText="Send Move"
         variant="success"
       />
       <ConfirmDialog

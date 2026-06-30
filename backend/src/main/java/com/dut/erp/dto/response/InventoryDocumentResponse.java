@@ -31,5 +31,6 @@ public record InventoryDocumentResponse(
     Instant updatedAt,
     UserBaseResponse createdBy,
     UserBaseResponse updatedBy,
-    Boolean hasActiveReplenishment
+    Boolean hasActiveReplenishment,
+    UUID replenishmentRequestId
 ) {}

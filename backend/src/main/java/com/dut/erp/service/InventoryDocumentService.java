@@ -23,5 +23,7 @@ public interface InventoryDocumentService {
 
   InventoryDocumentResponse completeDocument(UUID organizationId, UUID warehouseId, UUID documentId);
 
+  InventoryDocumentResponse sentDocument(UUID organizationId, UUID warehouseId, UUID documentId);
+
   InventoryDocumentResponse cancelDocument(UUID organizationId, UUID warehouseId, UUID documentId);
 }

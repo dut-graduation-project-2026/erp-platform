@@ -27,7 +27,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
   const [appliedSearch, setAppliedSearch] = useState('');
 
   // Tabs filter state
-  const [activeTab, setActiveTab] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'OPEN' | 'RESOLVED' | 'CANCELED'>('ALL');
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -147,7 +147,7 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
 
       {/* Tabs */}
       <div className="flex space-x-1 border-b border-[#e0e0e0] mb-4 shrink-0">
-        {(['ALL', 'OPEN', 'RESOLVED'] as const).map(tab => (
+        {(['ALL', 'OPEN', 'RESOLVED', 'CANCELED'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => {
@@ -172,7 +172,6 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white border-b border-[#e0e0e0]">
-                <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Ticket ID</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Warehouse</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Linked Stock Move</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Order No.</th>
@@ -185,14 +184,14 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={7} className="py-12 text-center text-[#898989] text-[13px]">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#0066cc]" />
                     Loading requests...
                   </td>
                 </tr>
               ) : filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={7} className="py-12 text-center text-[#898989] text-[13px]">
                     <div className="bg-[#f8f8f8] w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Boxes className="w-6 h-6 text-[#d0d0d0]" />
                     </div>
@@ -209,9 +208,6 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
                       onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, req.inventoryDocumentId)}?whId=${req.warehouseId}`)}
                       className="border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f0f4ff] transition-colors cursor-pointer group"
                     >
-                      <td className="py-3.5 px-4 font-mono text-[12px] text-[#898989]">
-                        #{req.id.substring(0, 8)}
-                      </td>
                       <td className="py-3.5 px-4 text-[13px] font-[500] text-[#242424]">
                         {req.warehouseName}
                       </td>
@@ -247,7 +243,9 @@ export default function ReplenishmentsListPage({ params }: { params: Promise<{ o
                           "inline-block px-2.5 py-0.5 rounded-[4px] min-w-[80px] text-center text-[11px] font-[600] uppercase",
                           req.status === 'OPEN' 
                             ? "bg-[#fff2cc] text-[#d68100]" 
-                            : "bg-[#e2f0d9] text-[#385723]"
+                            : req.status === 'RESOLVED'
+                              ? "bg-[#e2f0d9] text-[#385723]"
+                              : "bg-[#f8d7da] text-[#721c24]"
                         )}>
                           {req.status}
                         </span>

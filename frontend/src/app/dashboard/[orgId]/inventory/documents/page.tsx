@@ -6,7 +6,10 @@ import Link from 'next/link';
 import { 
   getWarehouses, 
   getInventoryDocuments, 
-  createInventoryDocument 
+  createInventoryDocument,
+  getInventoryBalances,
+  getInventoryDocumentById,
+  getReplenishmentRequests
 } from '@/features/inventory/services/inventoryService';
 import { getProducts } from '@/features/sales/services/salesService';
 import { 
@@ -66,13 +69,99 @@ export default function DocumentsListPage() {
   const [items, setItems] = useState<InventoryDocumentItemRequest[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Stock tracking for source warehouses in TRANSFER_IN
+  const [warehouseBalances, setWarehouseBalances] = useState<Record<string, any[]>>({});
+
+  // Replenishment connection states
+  const [openReplenishments, setOpenReplenishments] = useState<any[]>([]);
+  const [linkedReplenishmentId, setLinkedReplenishmentId] = useState<string>('');
+
+  // Automatically open modal and prefill details if redirected from replenishment request
+  useEffect(() => {
+    const createFromReplenishment = searchParams.get('createFromReplenishment');
+    const replenishDocId = searchParams.get('replenishDocId');
+    const queryWhId = searchParams.get('whId');
+
+    if (createFromReplenishment && replenishDocId) {
+      const whIdToUse = queryWhId || selectedWarehouseId;
+      if (whIdToUse) {
+        setIsModalOpen(true);
+        setDocType(DOCUMENT_TYPE.RECEIPT); // Default to RECEIPT
+        
+        getInventoryDocumentById(orgId, whIdToUse, replenishDocId)
+          .then(res => {
+            if (res && res.lines) {
+              const prefilledItems = res.lines.map(line => ({
+                productId: line.productId,
+                quantity: line.quantity
+              }));
+              setItems(prefilledItems);
+              setNotes(`[Replenishment Move] Replenishing stock for outbound ticket ${res.name}.`);
+              setLinkedReplenishmentId(createFromReplenishment);
+            }
+          })
+          .catch(err => {
+            console.error("Failed to load replenishment document lines", err);
+            toast.error("Failed to load items from original document");
+          });
+      }
+    }
+  }, [searchParams, selectedWarehouseId, orgId]);
+
+  // Load open replenishment requests when modal is opened
+  useEffect(() => {
+    if (isModalOpen && selectedWarehouseId) {
+      getReplenishmentRequests(orgId, selectedWarehouseId, { status: 'OPEN', limit: 100 })
+        .then(res => {
+          setOpenReplenishments(res.data || []);
+        })
+        .catch(err => console.error("Failed to load open replenishment requests", err));
+    }
+  }, [isModalOpen, selectedWarehouseId, orgId]);
+
+  useEffect(() => {
+    if (!isModalOpen || docType !== DOCUMENT_TYPE.TRANSFER_IN || warehouses.length === 0) return;
+
+    const otherWhs = warehouses.filter(wh => wh.id !== selectedWarehouseId);
+    otherWhs.forEach(wh => {
+      getInventoryBalances(orgId, wh.id, { limit: 100 })
+        .then(res => {
+          setWarehouseBalances(prev => ({
+            ...prev,
+            [wh.id]: res.data || []
+          }));
+        })
+        .catch(err => console.error("Failed to load balances for warehouse", wh.id, err));
+    });
+  }, [isModalOpen, docType, warehouses, selectedWarehouseId, orgId]);
+
+  const getFilteredSourceWarehouses = () => {
+    const otherWhs = warehouses.filter(wh => wh.id !== selectedWarehouseId);
+    if (docType !== DOCUMENT_TYPE.TRANSFER_IN) return otherWhs;
+
+    return otherWhs.filter(wh => {
+      const balances = warehouseBalances[wh.id] || [];
+      return items.every(item => {
+        if (!item.productId) return true;
+        const bal = balances.find(b => b.product?.id === item.productId);
+        return bal && bal.quantity >= item.quantity;
+      });
+    });
+  };
+
   // Load warehouses first
   useEffect(() => {
     getWarehouses(orgId)
       .then(res => {
         setWarehouses(res.data || []);
         if (res.data && res.data.length > 0) {
-          setSelectedWarehouseId(res.data[0].id);
+          const savedWhId = localStorage.getItem(`erp_last_warehouse_id_${orgId}`);
+          if (savedWhId && res.data.some(w => w.id === savedWhId)) {
+            setSelectedWarehouseId(savedWhId);
+          } else {
+            setSelectedWarehouseId(res.data[0].id);
+            localStorage.setItem(`erp_last_warehouse_id_${orgId}`, res.data[0].id);
+          }
         }
       })
       .catch(err => {
@@ -123,7 +212,9 @@ export default function DocumentsListPage() {
   }, [orgId, selectedWarehouseId, page, appliedSearch, activeTab, activeType, limit]);
 
   const handleWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedWarehouseId(e.target.value);
+    const val = e.target.value;
+    setSelectedWarehouseId(val);
+    localStorage.setItem(`erp_last_warehouse_id_${orgId}`, val);
     setPage(1);
   };
 
@@ -165,6 +256,7 @@ export default function DocumentsListPage() {
     const payload: CreateInventoryDocumentRequest = {
       documentType: docType,
       transferSourceWarehouseId: srcWhId || undefined,
+      replenishmentRequestId: linkedReplenishmentId || undefined,
       scheduledDate: new Date(scheduledDate).toISOString(),
       notes,
       items
@@ -176,7 +268,7 @@ export default function DocumentsListPage() {
       toast.success('Draft document created successfully');
       setIsModalOpen(false);
       fetchDocuments();
-      router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, created.id));
+      router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, created.id)}?whId=${selectedWarehouseId}`);
     } catch (e) {
       console.error(e);
       toast.error('Failed to create stock move document');
@@ -283,7 +375,7 @@ export default function DocumentsListPage() {
 
       {/* Tabs */}
       <div className="flex space-x-1 border-b border-[#e0e0e0] mb-4 shrink-0">
-        {(['ALL', DOCUMENT_STATUS.DRAFT, DOCUMENT_STATUS.CONFIRMED, DOCUMENT_STATUS.COMPLETED, DOCUMENT_STATUS.CANCELLED] as const).map(tab => (
+        {(['ALL', DOCUMENT_STATUS.DRAFT, DOCUMENT_STATUS.CONFIRMED, DOCUMENT_STATUS.WAITING_FOR_STOCK, DOCUMENT_STATUS.SENT, DOCUMENT_STATUS.COMPLETED, DOCUMENT_STATUS.CANCELLED] as const).map(tab => (
           <button
             key={tab}
             onClick={() => {
@@ -297,7 +389,7 @@ export default function DocumentsListPage() {
                 : "border-transparent text-[#64748b] hover:text-[#242424]"
             )}
           >
-            {tab}
+            {tab.replace(/_/g, ' ')}
           </button>
         ))}
       </div>
@@ -311,6 +403,8 @@ export default function DocumentsListPage() {
               <tr className="bg-white border-b border-[#e0e0e0]">
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Reference</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Operation Type</th>
+                <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">From</th>
+                <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">To</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Source Document</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Order No.</th>
                 <th className="py-3 px-4 text-[12px] font-bold text-[#242424] uppercase tracking-wider">Scheduled Date</th>
@@ -322,14 +416,14 @@ export default function DocumentsListPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={10} className="py-12 text-center text-[#898989] text-[13px]">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#0066cc]" />
                     Fetching documents...
                   </td>
                 </tr>
               ) : filteredDocs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[#898989] text-[13px]">
+                  <td colSpan={10} className="py-12 text-center text-[#898989] text-[13px]">
                     No stock movements found.
                   </td>
                 </tr>
@@ -337,10 +431,30 @@ export default function DocumentsListPage() {
                 filteredDocs.map((doc) => {
                   const dateStr = new Date(doc.scheduledDate).toLocaleDateString();
 
+                  let fromLocation = '-';
+                  let toLocation = '-';
+                  
+                  if (doc.documentType === DOCUMENT_TYPE.RECEIPT) {
+                    fromLocation = doc.partnerName || 'Partner/Supplier';
+                    toLocation = doc.warehouseName || 'Current Warehouse';
+                  } else if (doc.documentType === DOCUMENT_TYPE.ISSUE) {
+                    fromLocation = doc.warehouseName || 'Current Warehouse';
+                    toLocation = doc.partnerName || 'Partner/Customer';
+                  } else if (doc.documentType === DOCUMENT_TYPE.TRANSFER_IN) {
+                    fromLocation = doc.sourceWarehouseName || 'Source Warehouse';
+                    toLocation = doc.warehouseName || 'Current Warehouse';
+                  } else if (doc.documentType === DOCUMENT_TYPE.TRANSFER_OUT) {
+                    fromLocation = doc.warehouseName || 'Current Warehouse';
+                    toLocation = doc.sourceWarehouseName || 'Destination Warehouse';
+                  } else if (doc.documentType === DOCUMENT_TYPE.ADJUSTMENT) {
+                    fromLocation = doc.warehouseName || 'Current Warehouse';
+                    toLocation = doc.warehouseName || 'Current Warehouse';
+                  }
+
                   return (
                     <tr 
                       key={doc.id} 
-                      onClick={() => router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id))}
+                      onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?whId=${selectedWarehouseId}`)}
                       className="border-b border-[#e0e0e0] last:border-b-0 hover:bg-[#f0f4ff] transition-colors cursor-pointer group"
                     >
                       <td className="py-3.5 px-4 font-mono text-[13px] font-[700] text-[#0066cc] group-hover:underline">
@@ -357,6 +471,12 @@ export default function DocumentsListPage() {
                         )}>
                           {doc.documentType.replace('_', ' ')}
                         </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-[13px] text-[#4a4a4a] font-[600]">
+                        {fromLocation}
+                      </td>
+                      <td className="py-3.5 px-4 text-[13px] text-[#4a4a4a] font-[600]">
+                        {toLocation}
                       </td>
                       <td className="py-3.5 px-4 text-[13px] text-[#4a4a4a] font-medium">
                         {doc.referenceType !== REFERENCE_TYPE.MANUAL ? (
@@ -397,6 +517,7 @@ export default function DocumentsListPage() {
                           "inline-block px-2.5 py-0.5 rounded-[4px] min-w-[110px] text-center text-[11px] font-[600] uppercase",
                           doc.documentStatus === DOCUMENT_STATUS.DRAFT && "bg-[#e2e8f0] text-[#475569]",
                           doc.documentStatus === DOCUMENT_STATUS.CONFIRMED && "bg-[#e8f4fd] text-[#0066cc]",
+                          doc.documentStatus === DOCUMENT_STATUS.SENT && "bg-[#e6fffa] text-[#008080] border border-[#b2ebeb]",
                           doc.documentStatus === DOCUMENT_STATUS.COMPLETED && "bg-[#e2f0d9] text-[#385723]",
                           doc.documentStatus === DOCUMENT_STATUS.CANCELLED && "bg-[#fbe5d6] text-[#c65911]",
                           doc.documentStatus === DOCUMENT_STATUS.WAITING_FOR_STOCK && "bg-[#fff2cc] text-[#d68100]"
@@ -406,7 +527,7 @@ export default function DocumentsListPage() {
                       </td>
                       <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
                         <Button 
-                          onClick={() => router.push(APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id))}
+                          onClick={() => router.push(`${APP_ROUTES.INVENTORY.DOCUMENT_DETAIL(orgId, doc.id)}?whId=${selectedWarehouseId}`)}
                           variant="ghost" 
                           className="h-8 px-2 text-[#64748b] hover:bg-[#f5f5f5] hover:text-[#242424]"
                         >
@@ -459,7 +580,8 @@ export default function DocumentsListPage() {
                   >
                     <option value={DOCUMENT_TYPE.RECEIPT}>INBOUND: Stock Receipt</option>
                     <option value={DOCUMENT_TYPE.ISSUE}>OUTBOUND: Stock Issue</option>
-                    <option value={DOCUMENT_TYPE.TRANSFER_OUT}>INTERNAL: Stock Transfer</option>
+                    <option value={DOCUMENT_TYPE.TRANSFER_OUT}>INTERNAL: Stock Transfer (Send)</option>
+                    <option value={DOCUMENT_TYPE.TRANSFER_IN}>INTERNAL: Stock Request (Receive)</option>
                     <option value={DOCUMENT_TYPE.ADJUSTMENT}>AUDIT: Inventory Adjustment</option>
                   </select>
                 </div>
@@ -474,23 +596,46 @@ export default function DocumentsListPage() {
                 </div>
               </div>
 
-              {/* Source warehouse selector if Internal Transfer */}
-              {docType === DOCUMENT_TYPE.TRANSFER_OUT && (
+              {/* Source/Dest warehouse selector if Internal Transfer */}
+              {(docType === DOCUMENT_TYPE.TRANSFER_OUT || docType === DOCUMENT_TYPE.TRANSFER_IN) && (
                 <div>
-                  <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">Destination Warehouse Location</label>
+                  <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">
+                    {docType === DOCUMENT_TYPE.TRANSFER_OUT ? 'Destination Warehouse Location' : 'Source Warehouse Location'}
+                  </label>
                   <select
                     value={srcWhId}
                     onChange={e => setSrcWhId(e.target.value)}
                     className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc]"
                   >
-                    <option value="">-- Select Destination --</option>
-                    {warehouses
-                      .filter(wh => wh.id !== selectedWarehouseId)
-                      .map(wh => (
-                        <option key={wh.id} value={wh.id}>
-                          [{wh.code}] {wh.name}
-                        </option>
-                      ))}
+                    <option value="">
+                      {docType === DOCUMENT_TYPE.TRANSFER_OUT ? '-- Select Destination --' : '-- Select Source --'}
+                    </option>
+                    {getFilteredSourceWarehouses().map(wh => (
+                      <option key={wh.id} value={wh.id}>
+                        [{wh.code}] {wh.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Replenishment Request Link (Optional) */}
+              {(docType === DOCUMENT_TYPE.RECEIPT || docType === DOCUMENT_TYPE.TRANSFER_IN) && openReplenishments.length > 0 && (
+                <div>
+                  <label className="block text-[13px] font-[600] text-[#242424] mb-1.5">
+                    Link to Replenishment Request (Optional)
+                  </label>
+                  <select
+                    value={linkedReplenishmentId}
+                    onChange={e => setLinkedReplenishmentId(e.target.value)}
+                    className="w-full h-10 border border-[#d0d0d0] rounded-[4px] px-3 text-[13px] bg-white focus:outline-none focus:border-[#0066cc]"
+                  >
+                    <option value="">-- No Link --</option>
+                    {openReplenishments.map(req => (
+                      <option key={req.id} value={req.id}>
+                        [{req.inventoryDocumentName}] {req.notes ? req.notes.substring(0, 40) : 'No notes'} (#{req.id.substring(0, 8)})
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
