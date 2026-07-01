@@ -11,9 +11,8 @@ import {
   ProductAbcXyz,
   AiInventoryAnalysisResponse,
   AiReorderItem,
-  StockLayer,
 } from '@/features/inventory/services/inventoryService';
-import { Warehouse, InventoryBalance } from '@/features/inventory/types';
+import { Warehouse, InventoryBalance, StockLayer } from '@/features/inventory/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, RefreshCcw, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle, CheckCircle, Brain, ShoppingCart, Check, Loader2 } from 'lucide-react';
