@@ -64,7 +64,15 @@ class OpenAIClient:
             # Fallback: request as a json_object for non-official endpoints or when parse fails
             kwargs["response_format"] = {"type": "json_object"}
             res = await self.client.chat.completions.create(**kwargs)
-            content = res.choices[0].message.content
+            logger.info(f"OpenAI API Response: {res}")
+            if not res or not hasattr(res, "choices") or res.choices is None or len(res.choices) == 0:
+                logger.error(f"OpenAI API returned invalid response or empty choices: {res}")
+                raise ValueError("OpenAI API returned invalid response or empty choices")
+            choice = res.choices[0]
+            if not hasattr(choice, "message") or choice.message is None:
+                logger.error(f"OpenAI API choice has no message: {choice}")
+                raise ValueError("OpenAI API choice has no message")
+            content = choice.message.content
             
             # Clean and parse content
             if content:
