@@ -11,4 +11,5 @@ public record EmailProperties(
     @NotBlank(message = "SMTP host is required") String host,
     @Positive(message = "SMTP port is required") int port,
     @NotBlank(message = "SMTP username is required") String username,
-    @NotBlank(message = "SMTP password is required") String password) {}
+    @NotBlank(message = "SMTP password is required") String password,
+    String fromAddress) {}
